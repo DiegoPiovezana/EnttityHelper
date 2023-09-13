@@ -15,10 +15,10 @@ namespace EH
     {
         internal static Dictionary<string, object> GetProperties<T>(T objectEntity, bool includeNotMapped = false, bool ignoreVirtual = true, bool includeFormat = false)
         {
-            if(objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
+            if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
 
             PropertyInfo[] properties = objectEntity.GetType().GetProperties();
-            Dictionary<string, object> propertiesDictionary = new ();
+            Dictionary<string, object> propertiesDictionary = new();
 
             foreach (PropertyInfo prop in properties)
             {
@@ -86,7 +86,7 @@ namespace EH
 
         internal static List<T> MapDataReaderToList1<T>(IDataReader reader)
         {
-            List<T> list = new ();
+            List<T> list = new();
 
             while (reader.Read())
             {
@@ -112,7 +112,7 @@ namespace EH
 
         internal static List<T> MapDataReaderToList2<T>(IDataReader reader)
         {
-            List<T> list = new (reader.FieldCount);
+            List<T> list = new(reader.FieldCount);
 
             while (reader.Read())
             {
@@ -120,10 +120,33 @@ namespace EH
 
                 foreach (PropertyInfo propInfo in typeof(T).GetProperties())
                 {
+                    if (propInfo == null || propInfo.GetGetMethod().IsVirtual || propInfo.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
+
+                    //var test = reader.GetOrdinal(propInfo.Name); // propInfo.Name == "Supervisor" => virtual
+
+
                     if (!reader.IsDBNull(reader.GetOrdinal(propInfo.Name)))
                     {
                         object value = reader[propInfo.Name];
-                        propInfo.SetValue(obj, Convert.ChangeType(value, propInfo.PropertyType));
+                        Type propType = propInfo.PropertyType;
+
+                        //if (propType == typeof(DateTime))
+                        //{
+                        //    propInfo.SetValue(obj, Convert.ToDateTime(value));
+                        //}
+                        //else if (propType == typeof(DateTime?))
+                        //{
+                        //    if (value != null) { propInfo.SetValue(obj, (DateTime)value); }
+                        //    else { propInfo.SetValue(obj, null); }
+
+                        if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                        {
+                            if (value != null) { propInfo.SetValue(obj, Convert.ChangeType(value, Nullable.GetUnderlyingType(propType))); }
+                        }
+                        else
+                        {
+                            propInfo.SetValue(obj, Convert.ChangeType(value, propType));
+                        }
                     }
                 }
 
