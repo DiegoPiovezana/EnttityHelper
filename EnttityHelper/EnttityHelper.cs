@@ -1,7 +1,6 @@
 ﻿using EH.Connection;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Linq;
 using System.Text;
@@ -59,7 +58,7 @@ namespace EH
             string values = string.Join("', '", properties.Values);
 
             string insertQuery = $"INSERT INTO {tableName} ({columns}) VALUES ('{values}')";
-            
+
             IDbConnection connection = DbContext.IDbConnection;
             connection.Open();
 
@@ -93,7 +92,7 @@ namespace EH
         /// <returns></returns>
         public int Update<TEntity>(TEntity entity, string nameId)
         {
-            StringBuilder queryBuilder = new ();
+            StringBuilder queryBuilder = new();
             queryBuilder.Append($"UPDATE {ToolsEH.GetTable<TEntity>()} SET ");
 
             var properties = ToolsEH.GetProperties(entity);
@@ -140,83 +139,149 @@ namespace EH
         /// </summary>
         /// <param name="entity">Entity to be searched for in the bank.</param>
         /// <param name="idPropName">Entity identifier name.</param>
+        /// <param name="includeAll">Defines whether it will include all other FK entities.</param>
         /// <returns></returns>
-        public TEntity? Search<TEntity>(TEntity entity, string idPropName)
+        public TEntity? Search<TEntity>(TEntity entity, string idPropName, bool includeAll = true)
         {
-            //var properties = ToolsEH.GetProperties(entity);
+            //var propertiesFK = ToolsEH.GetProperties(entity);
 
-            IDbConnection connection = DbContext.IDbConnection;
             //string nameProperty = ToolsEH.GetPropertyName(() => idProp);
             //object valueProperty = ToolsEH.GetPropertyValue(entity, nameProperty);
 
             // $"SELECT * FROM {typeof(TEntity).Name} WHERE {idProp.name)} = {idProp.value}"
             //string selectQuery = $"SELECT * FROM {tableName} WHERE {idProp.GetType().Name} = {idProp}"; 
-            string selectQuery = $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE {idPropName} = {typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}";
+            string selectQuery = $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({idPropName} = {typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)})";
             //string selectQuery = $"SELECT * FROM {tableName} WHERE {idPropName} = {typeof(TEntity).GetProperty(idPropName)}";
 
-            connection.Open();
+            //selectQuery = "SELECT * FROM TB_SR_USERS__USUARIOS WHERE (1 = 1)";
 
-            using (IDbCommand command = DbContext.CreateCommand(selectQuery))
+            //IDbConnection connection = DbContext.IDbConnection;
+            //connection.Open();
+
+            //using (IDbCommand command = DbContext.CreateCommand(selectQuery))
+            //{
+            //    //var idParameter = command.CreateParameter();
+            //idParameter.ParameterName = "@Id";
+            //idParameter.Value = idProp;
+            //command.Parameters.Add(idParameter);
+
+            // linha.Field<DateTime>("DT_ALTERACAO")
+
+            //using (var reader = command.ExecuteReader())
+            //{
+            //    if (reader.Read())
+            //    {
+            //TEntity entityBd = Activator.CreateInstance<TEntity>();
+
+            //foreach (PropertyInfo propInfo in typeof(TEntity).GetProperties())
+            //{
+            //    if (propInfo.Name != idPropName)
+            //    {
+            //        propInfo.SetValue(entityBd, Convert.ChangeType(reader[propInfo.Name], propInfo.PropertyType));
+            //    }
+            //}
+
+            //var entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
+
+            //connection.Close();
+
+            var entities = Select<TEntity>(selectQuery);
+
+            if (includeAll)
             {
-                //var idParameter = command.CreateParameter();
-                //idParameter.ParameterName = "@Id";
-                //idParameter.Value = idProp;
-                //command.Parameters.Add(idParameter);
-
-                // linha.Field<DateTime>("DT_ALTERACAO")
-
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        //TEntity entityBd = Activator.CreateInstance<TEntity>();
-
-                        //foreach (PropertyInfo propInfo in typeof(TEntity).GetProperties())
-                        //{
-                        //    if (propInfo.Name != idPropName)
-                        //    {
-                        //        propInfo.SetValue(entityBd, Convert.ChangeType(reader[propInfo.Name], propInfo.PropertyType));
-                        //    }
-                        //}
-
-                        var entities = ToolsEH.MapDataReaderToList1<TEntity>(reader);
-
-                        connection.Close();
-                        return entities.FirstOrDefault();
-                    }
-                }
+                IncludeAll(entities.FirstOrDefault());
             }
+            return entities.FirstOrDefault();
+            //}
+            //}
+            //}
 
-            connection.Close();
-            return default;
+            //connection.Close();
+            //return default;
         }
 
         /// <summary>
         /// Gets one or more entities from the database.
-        /// </summary>
-        /// <param name="objectEntity"></param>
+        /// </summary>        
         /// <returns></returns>
-        public List<TEntity> Get<TEntity>(string? filter = null)
+        public List<TEntity> Get<TEntity>(bool includeAll = true, string? filter = null)
         {
             //TableAttribute ta = ToolsEH.GetTableAttribute(typeof(TEntity));
             ////string tableName = ta?.Name != null ? ta.Name : typeof(TEntity).Name;
             //string tableName = ta?.Name ?? typeof(TEntity).Name;
 
             filter = string.IsNullOrEmpty(filter?.Trim()) ? "1 = 1" : filter;
+            string query = $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({filter})";
 
             IDbConnection connection = DbContext.IDbConnection;
             connection.Open();
 
-            using (IDbCommand command = DbContext.CreateCommand($"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({filter})"))
+            using (IDbCommand command = DbContext.CreateCommand(query))
             {
                 using (var reader = command.ExecuteReader())
                 {
-                    List<TEntity> entities = ToolsEH.MapDataReaderToList2<TEntity>(reader);
+                    List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
                     connection.Close();
                     return entities;
                 }
             }
+        }
 
+        private List<TEntity> Select<TEntity>(string query)
+        {
+            IDbConnection connection = DbContext.IDbConnection;
+            connection.Open();
+            using IDbCommand command = DbContext.CreateCommand(query);
+            using var reader = command.ExecuteReader();
+            List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
+            connection.Close();
+            return entities;
+        }
+
+        /// <summary>
+        /// Include all FK entities.
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="entities"></param>
+        /// <returns></returns>
+        public bool IncludeAll<TEntity>(List<TEntity> entities)
+        {
+            if (entities == null || entities.Count == 0) return false;
+            foreach (TEntity entity in entities) { IncludeForeignKeyEntities(entity); }
+            return true;
+        }
+
+        private void IncludeForeignKeyEntities<TEntity>(TEntity entity)
+        {
+            var propertiesFK = ToolsEH.GetFKProperties(entity);
+
+            foreach (KeyValuePair<object, object> pair in propertiesFK)
+            {
+                if (pair.Value != null)
+                {
+                    var pk = ToolsEH.GetPK(pair.Key);
+                    if (pk == null) continue;
+
+                    var entityFK = Get<TEntity>(true, $"{pk.Name}={pk.GetValue(pair.Key, null)}").FirstOrDefault();
+                    if (entityFK != null)
+                    {
+                        var objProp = pair.Key;
+                        objProp.GetType().GetProperty(pair.Key.GetType().Name)?.SetValue(objProp, entityFK);
+                    }
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Include all FK entities.
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public bool IncludeAll<TEntity>(TEntity entity)
+        {
+            return IncludeAll(new List<TEntity> { entity });
         }
 
         /// <summary>
@@ -246,7 +311,7 @@ namespace EH
                 //IDbConnection connection = DbContext.IDbConnection;
                 //connection.Close();
                 return false;
-            }            
+            }
         }
 
         /// <summary>
@@ -265,7 +330,12 @@ namespace EH
                 connection.Close();
                 return result;
             }
-        }   
+        }
+
+
+
+
+
 
 
 

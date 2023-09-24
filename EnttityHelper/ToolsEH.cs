@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Linq;
@@ -36,6 +37,64 @@ namespace EH
 
             return propertiesDictionary;
         }
+
+        /// <summary>
+        /// Gets FK entities according to ids.
+        /// </summary>   
+        internal static Dictionary<object, object> GetFKProperties<T>(T objectEntity)
+        {
+            if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
+
+            PropertyInfo[] properties = objectEntity.GetType().GetProperties();
+            Dictionary<object, object> propertiesId = new();
+            Dictionary<object, object> propertiesVirtual = new();
+            Dictionary<object, object> propertiesObj = new();
+
+            foreach (PropertyInfo prop in properties)
+            {
+                if (prop.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
+
+                if (prop.GetCustomAttribute<ForeignKeyAttribute>() != null)
+                {
+                    var entityNameFk = prop.GetCustomAttribute<ForeignKeyAttribute>().Name;
+                    var idFk = prop.GetValue(objectEntity, null);
+                    propertiesId.Add(entityNameFk, idFk);
+                }
+
+                if (prop.GetGetMethod().IsVirtual)
+                {
+                    //var valueProp = prop.GetValue(objectEntity, null);
+
+                    //var objProp = objectEntity.GetType().GetProperty(prop.Name);
+                    //var objProp = typeof(T).GetProperty(prop.Name);
+                    //var objProp = propertyExpression.Compile()(objectEntity);
+                    //propertiesVirtual.Add(prop, valueProp);
+
+                    T obj = Activator.CreateInstance<T>();
+                    //prop.SetValue(obj, Convert.ChangeType(prop.GetValue(objectEntity, null), prop.PropertyType));
+                    if (obj != null) propertiesVirtual.Add(prop.Name, obj);
+                }
+            }
+
+            foreach (var propFkKey in propertiesId.Keys.ToList())
+            {
+                propertiesObj.Add(propertiesVirtual[propFkKey], propertiesId[propFkKey]);
+            }
+
+            return propertiesObj;
+        }
+
+        public static PropertyInfo GetPK<T>(T obj) where T : class
+        {    
+            return obj.GetType().GetProperties().FirstOrDefault(p => Attribute.IsDefined(p, typeof(KeyAttribute)));
+        }
+
+        internal static TProperty GetRelatedObject<T, TProperty>(T objectEntity, Expression<Func<T, TProperty>> propertyExpression) where T : class
+        {
+            TProperty relatedObject = propertyExpression.Compile()(objectEntity);
+            return relatedObject;
+        }
+
 
         internal static TAttribute? GetAttributeByName<TAttribute>(Type type, string attributeName) where TAttribute : Attribute
         {
@@ -84,35 +143,11 @@ namespace EH
             return $"{schema}{tableName}";
         }
 
-        internal static List<T> MapDataReaderToList1<T>(IDataReader reader)
+
+
+        internal static List<T> MapDataReaderToList<T>(IDataReader reader)
         {
             List<T> list = new();
-
-            while (reader.Read())
-            {
-                T obj = Activator.CreateInstance<T>();
-
-                for (int i = 0; i < reader.FieldCount; i++)
-                {
-                    string propertyName = reader.GetName(i);
-                    object value = reader[i];
-
-                    var property = typeof(T).GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                    if (property != null && value != DBNull.Value)
-                    {
-                        property.SetValue(obj, Convert.ChangeType(value, property.PropertyType), null);
-                    }
-                }
-
-                list.Add(obj);
-            }
-
-            return list;
-        }
-
-        internal static List<T> MapDataReaderToList2<T>(IDataReader reader)
-        {
-            List<T> list = new(reader.FieldCount);
 
             while (reader.Read())
             {
@@ -124,7 +159,6 @@ namespace EH
 
                     //var test = reader.GetOrdinal(propInfo.Name); // propInfo.Name == "Supervisor" => virtual
 
-
                     if (!reader.IsDBNull(reader.GetOrdinal(propInfo.Name)))
                     {
                         object value = reader[propInfo.Name];
@@ -132,11 +166,11 @@ namespace EH
 
                         //if (propType == typeof(DateTime))
                         //{
-                        //    propInfo.SetValue(obj, Convert.ToDateTime(value));
+                        //    propInfo.SetValue(obj, Convert.ToDateTime(idFk));
                         //}
                         //else if (propType == typeof(DateTime?))
                         //{
-                        //    if (value != null) { propInfo.SetValue(obj, (DateTime)value); }
+                        //    if (idFk != null) { propInfo.SetValue(obj, (DateTime)idFk); }
                         //    else { propInfo.SetValue(obj, null); }
 
                         if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
@@ -155,8 +189,5 @@ namespace EH
 
             return list;
         }
-
-
-
     }
 }
