@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace EH
@@ -266,7 +267,20 @@ namespace EH
                     var pk = ToolsEH.GetPK(pair.Value);
                     if (pk == null) continue;
 
-                    var entityFK = Get<TEntity>(true, $"{pk.Name}={pk.GetValue(pair.Value, null)}").FirstOrDefault();
+                    // !!!!
+                    //TEntity = applicable only to the type of entity being manipulated
+                    //pair.Value
+                    //pk.PropertyType
+
+                    //var entityFK = Get<TEntity>(true, $"{pk.Name}={pk.GetValue(pair.Value, null)}").FirstOrDefault();
+                    //var entityFK = Search(pair.Value, pk.Name, false);
+
+
+                    //Type objectType = pair.Value.GetType();
+                    MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(pair.Value.GetType());
+                    var entityFK = genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}={pk.GetValue(pair.Value, null)}" });
+
+
                     if (entityFK != null)
                     {
                         //var objProp = pair.Key;

@@ -101,7 +101,6 @@ namespace EH
             return relatedObject;
         }
 
-
         internal static TAttribute? GetAttributeByName<TAttribute>(Type type, string attributeName) where TAttribute : Attribute
         {
             var attributes = type.GetCustomAttributes(typeof(TAttribute), true);
@@ -148,8 +147,6 @@ namespace EH
 
             return $"{schema}{tableName}";
         }
-
-
 
         internal static List<T> MapDataReaderToList<T>(IDataReader reader)
         {
