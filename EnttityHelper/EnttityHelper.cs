@@ -90,10 +90,12 @@ namespace EH
         /// <param name="entity"></param>
         /// <param name="nameId">Entity Id column name.</param>
         /// <returns></returns>
-        public int Update<TEntity>(TEntity entity, string nameId)
+        public int Update<TEntity>(TEntity entity, string? nameId = null) where TEntity : class
         {
             StringBuilder queryBuilder = new();
             queryBuilder.Append($"UPDATE {ToolsEH.GetTable<TEntity>()} SET ");
+
+            nameId ??= ToolsEH.GetPK(entity)?.Name;
 
             var properties = ToolsEH.GetProperties(entity);
 
@@ -141,12 +143,14 @@ namespace EH
         /// <param name="idPropName">Entity identifier name.</param>
         /// <param name="includeAll">Defines whether it will include all other FK entities.</param>
         /// <returns></returns>
-        public TEntity? Search<TEntity>(TEntity entity, string idPropName, bool includeAll = true)
+        public TEntity? Search<TEntity>(TEntity entity, string? idPropName = null, bool includeAll = true) where TEntity : class
         {
             //var propertiesFK = ToolsEH.GetProperties(entity);
 
             //string nameProperty = ToolsEH.GetPropertyName(() => idProp);
             //object valueProperty = ToolsEH.GetPropertyValue(entity, nameProperty);
+
+            idPropName ??= ToolsEH.GetPK(entity)?.Name;
 
             // $"SELECT * FROM {typeof(TEntity).Name} WHERE {idProp.name)} = {idProp.value}"
             //string selectQuery = $"SELECT * FROM {tableName} WHERE {idProp.GetType().Name} = {idProp}"; 
@@ -186,11 +190,7 @@ namespace EH
             //connection.Close();
 
             var entities = Select<TEntity>(selectQuery);
-
-            if (includeAll)
-            {
-                IncludeAll(entities.FirstOrDefault());
-            }
+            if (includeAll) { IncludeAll(entities.FirstOrDefault()); }
             return entities.FirstOrDefault();
             //}
             //}
@@ -213,18 +213,22 @@ namespace EH
             filter = string.IsNullOrEmpty(filter?.Trim()) ? "1 = 1" : filter;
             string query = $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({filter})";
 
-            IDbConnection connection = DbContext.IDbConnection;
-            connection.Open();
+            //IDbConnection connection = DbContext.IDbConnection;
+            //connection.Open();
 
-            using (IDbCommand command = DbContext.CreateCommand(query))
-            {
-                using (var reader = command.ExecuteReader())
-                {
-                    List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
-                    connection.Close();
-                    return entities;
-                }
-            }
+            //using (IDbCommand command = DbContext.CreateCommand(query))
+            //{
+            //    using (var reader = command.ExecuteReader())
+            //    {
+            //        List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
+            //        connection.Close();
+            //        return entities;
+            //    }
+            //}
+
+            var entities = Select<TEntity>(query);
+            if (includeAll) { IncludeAll(entities.FirstOrDefault()); }
+            return entities;
         }
 
         private List<TEntity> Select<TEntity>(string query)
