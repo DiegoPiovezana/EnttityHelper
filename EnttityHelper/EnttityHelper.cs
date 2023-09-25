@@ -259,14 +259,17 @@ namespace EH
             {
                 if (pair.Value != null)
                 {
-                    var pk = ToolsEH.GetPK(pair.Key);
+                    var pk = ToolsEH.GetPK(pair.Value);
                     if (pk == null) continue;
 
-                    var entityFK = Get<TEntity>(true, $"{pk.Name}={pk.GetValue(pair.Key, null)}").FirstOrDefault();
+                    var entityFK = Get<TEntity>(true, $"{pk.Name}={pk.GetValue(pair.Value, null)}").FirstOrDefault();
                     if (entityFK != null)
                     {
-                        var objProp = pair.Key;
-                        objProp.GetType().GetProperty(pair.Key.GetType().Name)?.SetValue(objProp, entityFK);
+                        //var objProp = pair.Key;
+                        //objProp.GetType().GetProperty(pair.Key.GetType().Name)?.SetValue(objProp, entityFK);
+
+                        var propertyToUpdate = entity.GetType().GetProperty(pair.Key.ToString());
+                        propertyToUpdate?.SetValue(entity, entityFK);
                     }
                 }
             }

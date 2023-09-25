@@ -78,7 +78,11 @@ namespace EH
 
             foreach (var propFkKey in propertiesId.Keys.ToList())
             {
-                propertiesObj.Add(propertiesVirtual[propFkKey], propertiesId[propFkKey]);
+                //propertiesObj.Add(propertiesVirtual[propFkKey], propertiesId[propFkKey]);
+
+                var propFk = propertiesVirtual[propFkKey];
+                propFk.GetType().GetProperty(GetPK(propFk).Name).SetValue(propFk, propertiesId[propFkKey]);
+                propertiesObj.Add(propFkKey, propFk);
             }
 
             return propertiesObj;
