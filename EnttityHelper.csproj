@@ -10,23 +10,39 @@
 		<AssemblyName>EnttityHelper</AssemblyName>
 		<PackageId>EnttityHelper</PackageId>
 		<Description>Allows easy manipulation of entities in different databases.</Description>
-		<Version>0.1.0</Version>
+		<Version>0.2.0</Version>
 		<Authors>Diêgo Piovezana</Authors>
 		<Company>DiegoPiov</Company>
 		<RepositoryUrl>https://github.com/DiegoPiovezana</RepositoryUrl>
 		<PackageTags>Entity;Framework;EF;Data;O/RM;ORM;SQL;EnttityHelper;Enttity;ADO.NET;ADO;PL/SQL;Oracle;SqlServer;Table;Object;</PackageTags>
-		<Copyright>GNU General Public License v3.0</Copyright>		
-		<!--<PackageReadmeFile>LICENSE.md</PackageReadmeFile>-->
-		<!--<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>-->
-		<!--<ApplicationIcon>Images\EnttityHelper_icon.ico</ApplicationIcon>-->
-		<!--<PackageIcon>EnttityHelper_icon.png</PackageIcon>-->
-		<PackageReleaseNotes>First release</PackageReleaseNotes>
+		<Copyright>GNU General Public License v3.0</Copyright>
+		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+		<ApplicationIcon>Images\EnttityHelper_icon.ico</ApplicationIcon>
+		<PackageIcon>EnttityHelper_icon.png</PackageIcon>
+		<PackageReleaseNotes>
+			- Possible to manipulate FK entities (considering include, virtual, etc);
+			- CustomCommand to perform personalized commands;
+			- PK property can be automatically inferred;
+			- When performing updates, it returns the amount of changes instead of true or false.
+		</PackageReleaseNotes>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>		
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="Images\EnttityHelper_icon.png" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <Content Include="Images\EnttityHelper_icon.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="Images\EnttityHelper_icon.png">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </Resource>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -50,18 +66,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Reference Include="System.Web.Extensions" />
+		<None Include="LICENSE.txt" Pack="true" PackagePath="" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <None Update="Images\EnttityHelper_icon.png">
-	    <Pack>True</Pack>
-	    <PackagePath>\</PackagePath>
-	  </None>
-	  <None Update="LICENSE.md">
-	    <Pack>True</Pack>
-	    <PackagePath>\</PackagePath>
-	  </None>
-	</ItemGroup>
+	
 
 </Project>
