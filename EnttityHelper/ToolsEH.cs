@@ -70,7 +70,9 @@ namespace EH
                     //var objProp = propertyExpression.Compile()(objectEntity);
                     //propertiesVirtual.Add(prop, valueProp);
 
-                    T obj = Activator.CreateInstance<T>();
+                    //T obj = Activator.CreateInstance<T>();
+                    var obj = Activator.CreateInstance(prop.PropertyType);
+
                     //prop.SetValue(obj, Convert.ChangeType(prop.GetValue(objectEntity, null), prop.PropertyType));
                     if (obj != null) propertiesVirtual.Add(prop.Name, obj);
                 }
