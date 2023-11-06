@@ -62,20 +62,21 @@ namespace EH
             //string insertQuery = $"INSERT INTO {tableName} ({columns}) VALUES ('{values}')";
 
             string? insertQuery = Commands.Insert(this, entity, namePropUnique);
-            if (string.IsNullOrEmpty(insertQuery))
-            {
-                Console.WriteLine("Insert command not exists!");
-                return false;
-            }
+            //if (string.IsNullOrEmpty(insertQuery))
+            //{
+            //    Console.WriteLine("Insert command not exists!");
+            //    return false;
+            //}
 
-            DbContext.IDbConnection.Open();
+            //DbContext.IDbConnection.Open();
 
-            using var command = DbContext.CreateCommand(insertQuery);
-            //command.Parameters.AddWithValue("@Nome", "John Doe");
-            //command.Parameters.AddWithValue("@Email", "john.doe@example.com");
+            //using var command = DbContext.CreateCommand(insertQuery);
+            ////command.Parameters.AddWithValue("@Nome", "John Doe");
+            ////command.Parameters.AddWithValue("@Email", "john.doe@example.com");
 
-            int rowsAffected = command.ExecuteNonQuery();
-            DbContext.IDbConnection.Close();
+            //int rowsAffected = command.ExecuteNonQuery();
+            //DbContext.IDbConnection.Close();
+            int rowsAffected = ExecuteNonQuery(insertQuery);
             Console.WriteLine($"Rows Affected: {rowsAffected}");
 
             if (rowsAffected > 0)
@@ -119,21 +120,23 @@ namespace EH
             //string updateQuery = queryBuilder.ToString();
 
             string? updateQuery = Commands.Update(entity, nameId);
-            if (string.IsNullOrEmpty(updateQuery))
-            {
-                Console.WriteLine("Update command not exists!");
-                return 0;
-            }
+            //if (string.IsNullOrEmpty(updateQuery))
+            //{
+            //    Console.WriteLine("Update command not exists!");
+            //    return 0;
+            //}
 
-            IDbConnection connection = DbContext.IDbConnection;
-            connection.Open();
+            //IDbConnection connection = DbContext.IDbConnection;
+            //connection.Open();
 
-            using var command = DbContext.CreateCommand(updateQuery);
-            int rowsAffected = command.ExecuteNonQuery();
-            connection.Close();
-            Console.WriteLine($"Rows Affected: {rowsAffected}");
+            //using var command = DbContext.CreateCommand(updateQuery);
+            //int rowsAffected = command.ExecuteNonQuery();
+            //connection.Close();
 
-            return rowsAffected;
+            //Console.WriteLine($"Rows Affected: {rowsAffected}");
+
+            //return rowsAffected;
+            return ExecuteNonQuery(updateQuery);
 
             //if (rowsAffected > 0)
             //{
@@ -261,16 +264,48 @@ namespace EH
             return entities;
         }
 
+        /// <summary>
+        /// Execute the query.
+        /// </summary>
+        /// <param name="query">Custom query to be executed.</param>
+        /// <returns>DataReader.</returns>
+        public IDataReader? CustomCommand(string query)
+        {
+            if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return null; }
+
+            IDbConnection connection = DbContext.IDbConnection;
+            connection.Open();
+            using IDbCommand command = DbContext.CreateCommand(query);
+            IDataReader? result = command.ExecuteReader();
+            connection.Close();
+            return result;
+        }
+
         private List<TEntity> Select<TEntity>(string query)
         {
             IDbConnection connection = DbContext.IDbConnection;
             connection.Open();
             using IDbCommand command = DbContext.CreateCommand(query);
             using var reader = command.ExecuteReader();
+            //using var reader = CustomCommand(query);
+
             List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
             connection.Close();
             return entities;
         }
+
+        private int ExecuteNonQuery(string? query)
+        {
+            if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return 0; }
+
+            IDbConnection connection = DbContext.IDbConnection;
+            connection.Open();
+            using IDbCommand command = DbContext.CreateCommand(query);
+            int rowsAffected = command.ExecuteNonQuery();
+            connection.Close();
+            Console.WriteLine($"Rows Affected: {rowsAffected}");
+            return rowsAffected;
+        }        
 
         /// <summary>
         /// Include all FK entities.
@@ -287,7 +322,7 @@ namespace EH
 
         private void IncludeForeignKeyEntities<TEntity>(TEntity entity)
         {
-            if(entity == null) return;
+            if (entity == null) return;
 
             var propertiesFK = ToolsEH.GetFKProperties(entity);
             if (propertiesFK == null || propertiesFK.Count == 0)
@@ -421,20 +456,7 @@ namespace EH
             }
         }
 
-        /// <summary>
-        /// Execute the query.
-        /// </summary>
-        /// <param name="query">Custom query to be executed.</param>
-        /// <returns>DataReader.</returns>
-        public IDataReader? CustomCommand(string query)
-        {
-            IDbConnection connection = DbContext.IDbConnection;
-            connection.Open();
-            using IDbCommand command = DbContext.CreateCommand(query);
-            IDataReader? result = command.ExecuteReader();
-            connection.Close();
-            return result;
-        }
+
 
 
 
