@@ -260,7 +260,7 @@ namespace EH
             }
 
             var entities = Select<TEntity>(query);
-            if (includeAll) { IncludeAll(entities.FirstOrDefault()); }
+            if (includeAll) { IncludeAll(entities); }
             return entities;
         }
 
@@ -305,22 +305,9 @@ namespace EH
             connection.Close();
             Console.WriteLine($"Rows Affected: {rowsAffected}");
             return rowsAffected;
-        }        
+        }     
 
-        /// <summary>
-        /// Include all FK entities.
-        /// </summary>
-        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
-        /// <param name="entities">Entities that will have their FK entities included.</param>
-        /// <returns></returns>
-        public bool IncludeAll<TEntity>(List<TEntity> entities)
-        {
-            if (entities == null || entities.Count == 0) return false;
-            foreach (TEntity entity in entities) { IncludeForeignKeyEntities(entity); }
-            return true;
-        }
-
-        private void IncludeForeignKeyEntities<TEntity>(TEntity entity)
+        private void IncludeForeignKeyEntities<TEntity>(TEntity entity, string? fkOnly = null)
         {
             if (entity == null) return;
 
@@ -329,6 +316,11 @@ namespace EH
             {
                 Console.WriteLine("No foreign key properties found!");
                 return;
+            }
+
+            if (!string.IsNullOrEmpty(fkOnly)) // If not all
+            {
+                propertiesFK = propertiesFK.Where(x => x.Key.ToString() == fkOnly).ToDictionary(x => x.Key, x => x.Value);
             }
 
             foreach (KeyValuePair<object, object> pair in propertiesFK)
@@ -384,16 +376,13 @@ namespace EH
 
                     if (propertyToUpdate != null)
                     {
-
                         var entityFKList = genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}={pk.GetValue(pair.Value, null)}" }) as IEnumerable<TEntity>;
 
                         if (entityFKList != null)
                         {
-                            // Verifique se a propriedade é uma coleção antes de atribuir
+                            // Checks if the property is a collection before assigning
                             if (typeof(ICollection<TEntity>).IsAssignableFrom(propertyToUpdate.PropertyType))
-                            {
-                                // Use o método AddRange ou similar, dependendo do tipo de coleção
-                                // para adicionar a lista de entidades à propriedade de navegação
+                            {                               
                                 var collection = propertyToUpdate.GetValue(entity) as ICollection<TEntity>;
                                 if (collection != null)
                                 {
@@ -403,17 +392,18 @@ namespace EH
                                     }
                                 }
                             }
+                            else
+                            {
+                                // If isnt a collection, assign the first entity
+                                var entityFK = entityFKList.FirstOrDefault();
+                                propertyToUpdate.SetValue(entity, entityFK);
+                            }
 
                         }
-
-
                     }
                 }
             }
-
-
         }
-
 
         /// <summary>
         /// Include all FK entities.
@@ -425,6 +415,34 @@ namespace EH
         {
             return IncludeAll(new List<TEntity> { entity });
         }
+
+        /// <summary>
+        /// Include all FK entities.
+        /// </summary>
+        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
+        /// <param name="entities">Entities that will have their FK entities included.</param>
+        /// <returns></returns>
+        public bool IncludeAll<TEntity>(List<TEntity> entities)
+        {
+            if (entities == null || entities.Count == 0) return false;
+            foreach (TEntity entity in entities) { IncludeForeignKeyEntities(entity); }
+            return true;
+        }
+
+        /// <summary>
+        /// Include FK entity.
+        /// </summary>
+        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
+        /// <param name="entity">Entity that will have their FK entity included.</param>
+        /// <param name="fkName">Name on the FK entity that will be included.</param>
+        /// <returns></returns>
+        public bool IncludeEntityFK<TEntity>(TEntity entity, string fkName)
+        {
+            if (entity == null) return false;
+            IncludeForeignKeyEntities(entity, fkName);
+            return true;
+        }
+
 
         /// <summary>
         /// Checks if table exists.
