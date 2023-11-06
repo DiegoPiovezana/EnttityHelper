@@ -376,7 +376,7 @@ namespace EH
 
                     if (propertyToUpdate != null)
                     {
-                        var entityFKList = genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}={pk.GetValue(pair.Value, null)}" }) as IEnumerable<TEntity>;
+                        var entityFKList = genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}='{pk.GetValue(pair.Value, null)}'" }) as IEnumerable<TEntity>;
 
                         if (entityFKList != null)
                         {
