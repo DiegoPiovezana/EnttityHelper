@@ -41,105 +41,117 @@ namespace EH
         /// <summary>
         /// Allow to insert an entity in the database.
         /// </summary>
-        /// <param name="entity"></param>
-        /// <param name="namePropUnique"></param>
-        /// <returns></returns>
+        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
+        /// <param name="entity">Entity to be inserted into the database.</param>
+        /// <param name="namePropUnique">Name of the property to be considered as a uniqueness criterion (optional).</param>
+        /// <returns>True, if one or more entities are inserted into the database.</returns>
         public bool Insert<TEntity>(TEntity entity, string? namePropUnique = null)
         {
-            var properties = ToolsEH.GetProperties(entity);
-            string tableName = ToolsEH.GetTable<TEntity>();
+            //var properties = ToolsEH.GetProperties(entity);
+            //string tableName = ToolsEH.GetTable<TEntity>();
 
-            if (!string.IsNullOrEmpty(namePropUnique) && CheckIfExist(tableName, $"{namePropUnique} = {properties[namePropUnique]}"))
+            //if (!string.IsNullOrEmpty(namePropUnique) && CheckIfExist(tableName, $"{namePropUnique} = {properties[namePropUnique]}"))
+            //{
+            //    Console.WriteLine("Entity already exists in table!");
+            //    return false;
+            //}
+
+            //string columns = string.Join(", ", properties.Keys);
+            //string values = string.Join("', '", properties.Values);
+
+            //string insertQuery = $"INSERT INTO {tableName} ({columns}) VALUES ('{values}')";
+
+            string? insertQuery = Commands.Insert(this, entity, namePropUnique);
+            if (string.IsNullOrEmpty(insertQuery))
             {
-                Console.WriteLine("Entity already exists in table!");
+                Console.WriteLine("Insert command not exists!");
                 return false;
             }
 
-            string columns = string.Join(", ", properties.Keys);
-            string values = string.Join("', '", properties.Values);
+            DbContext.IDbConnection.Open();
 
-            string insertQuery = $"INSERT INTO {tableName} ({columns}) VALUES ('{values}')";
+            using var command = DbContext.CreateCommand(insertQuery);
+            //command.Parameters.AddWithValue("@Nome", "John Doe");
+            //command.Parameters.AddWithValue("@Email", "john.doe@example.com");
 
-            IDbConnection connection = DbContext.IDbConnection;
-            connection.Open();
+            int rowsAffected = command.ExecuteNonQuery();
+            DbContext.IDbConnection.Close();
+            Console.WriteLine($"Rows Affected: {rowsAffected}");
 
-            using (var command = DbContext.CreateCommand(insertQuery))
+            if (rowsAffected > 0)
             {
-                //command.Parameters.AddWithValue("@Nome", "John Doe");
-                //command.Parameters.AddWithValue("@Email", "john.doe@example.com");
-
-                int rowsAffected = command.ExecuteNonQuery();
-                connection.Close();
-                Console.WriteLine($"Rows Affected: {rowsAffected}");
-
-                if (rowsAffected > 0)
-                {
-                    Console.WriteLine("Insertion successful!");
-                    return true;
-                }
-                else
-                {
-                    Console.WriteLine("No records entered!");
-                    return false;
-                }
+                Console.WriteLine("Insertion successful!");
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("No records entered!");
+                return false;
             }
         }
 
         /// <summary>
         /// Allow to update an entity in the database.
         /// </summary>
-        /// <param name="entity"></param>
+        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
+        /// <param name="entity">Entity to be updated in the database.</param>
         /// <param name="nameId">Entity Id column name.</param>
-        /// <returns></returns>
+        /// <returns>Number of entities updated in the database.</returns>
         public int Update<TEntity>(TEntity entity, string? nameId = null) where TEntity : class
         {
-            StringBuilder queryBuilder = new();
-            queryBuilder.Append($"UPDATE {ToolsEH.GetTable<TEntity>()} SET ");
+            //StringBuilder queryBuilder = new();
+            //queryBuilder.Append($"UPDATE {ToolsEH.GetTable<TEntity>()} SET ");
 
-            nameId ??= ToolsEH.GetPK(entity)?.Name;
+            //nameId ??= ToolsEH.GetPK(entity)?.Name;
 
-            var properties = ToolsEH.GetProperties(entity);
+            //var properties = ToolsEH.GetProperties(entity);
 
-            foreach (KeyValuePair<string, object> pair in properties)
+            //foreach (KeyValuePair<string, object> pair in properties)
+            //{
+            //    if (pair.Key != nameId)
+            //    {
+            //        queryBuilder.Append($"{pair.Key} = '{pair.Value}', ");
+            //    }
+            //}
+
+            //queryBuilder.Length -= 2; // Remove the last comma and space
+            //queryBuilder.Append($" WHERE {nameId} = '{properties[nameId]}'");
+            //string updateQuery = queryBuilder.ToString();
+
+            string? updateQuery = Commands.Update(entity, nameId);
+            if (string.IsNullOrEmpty(updateQuery))
             {
-                if (pair.Key != nameId)
-                {
-                    queryBuilder.Append($"{pair.Key} = '{pair.Value}', ");
-                }
+                Console.WriteLine("Update command not exists!");
+                return 0;
             }
-
-            queryBuilder.Length -= 2; // Remove the last comma and space
-            queryBuilder.Append($" WHERE {nameId} = '{properties[nameId]}'");
-            string updateQuery = queryBuilder.ToString();
 
             IDbConnection connection = DbContext.IDbConnection;
             connection.Open();
 
-            using (var command = DbContext.CreateCommand(updateQuery))
-            {
-                int rowsAffected = command.ExecuteNonQuery();
-                connection.Close();
-                Console.WriteLine($"Rows Affected: {rowsAffected}");
+            using var command = DbContext.CreateCommand(updateQuery);
+            int rowsAffected = command.ExecuteNonQuery();
+            connection.Close();
+            Console.WriteLine($"Rows Affected: {rowsAffected}");
 
-                return rowsAffected;
+            return rowsAffected;
 
-                //if (rowsAffected > 0)
-                //{
-                //    Console.WriteLine("Successful update!");
-                //    return true;
-                //}
-                //else
-                //{
-                //    Console.WriteLine("No records updated!");
-                //    return false;
-                //}
-            }
+            //if (rowsAffected > 0)
+            //{
+            //    Console.WriteLine("Successful update!");
+            //    return true;
+            //}
+            //else
+            //{
+            //    Console.WriteLine("No records updated!");
+            //    return false;
+            //}
 
         }
 
         /// <summary>
         /// Search the entity by <paramref name="idPropName"/>
         /// </summary>
+        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entity">Entity to be searched for in the bank.</param>
         /// <param name="idPropName">Entity identifier name.</param>
         /// <param name="includeAll">Defines whether it will include all other FK entities.</param>
@@ -151,12 +163,12 @@ namespace EH
             //string nameProperty = ToolsEH.GetPropertyName(() => idProp);
             //object valueProperty = ToolsEH.GetPropertyValue(entity, nameProperty);
 
-            idPropName ??= ToolsEH.GetPK(entity)?.Name;
+            //idPropName ??= ToolsEH.GetPK(entity)?.Name;
 
-            // $"SELECT * FROM {typeof(TEntity).Name} WHERE {idProp.name)} = {idProp.value}"
-            //string selectQuery = $"SELECT * FROM {tableName} WHERE {idProp.GetType().Name} = {idProp}"; 
-            string selectQuery = $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({idPropName} = {typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)})";
-            //string selectQuery = $"SELECT * FROM {tableName} WHERE {idPropName} = {typeof(TEntity).GetProperty(idPropName)}";
+            //// $"SELECT * FROM {typeof(TEntity).Name} WHERE {idProp.name)} = {idProp.value}"
+            ////string selectQuery = $"SELECT * FROM {tableName} WHERE {idProp.GetType().Name} = {idProp}"; 
+            //string selectQuery = $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({idPropName} = {typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)})";
+            ////string selectQuery = $"SELECT * FROM {tableName} WHERE {idPropName} = {typeof(TEntity).GetProperty(idPropName)}";
 
             //selectQuery = "SELECT * FROM TB_SR_USERS__USUARIOS WHERE (1 = 1)";
 
@@ -190,6 +202,13 @@ namespace EH
 
             //connection.Close();
 
+            string? selectQuery = Commands.Search(entity, idPropName, includeAll);
+            if (string.IsNullOrEmpty(selectQuery))
+            {
+                Console.WriteLine("Search command not exists!");
+                return default;
+            }
+
             var entities = Select<TEntity>(selectQuery);
             if (includeAll) { IncludeAll(entities.FirstOrDefault()); }
             return entities.FirstOrDefault();
@@ -203,16 +222,19 @@ namespace EH
 
         /// <summary>
         /// Gets one or more entities from the database.
-        /// </summary>        
-        /// <returns></returns>
+        /// </summary>
+        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
+        /// <param name="includeAll">If true, all entities that are properties of the parent property will be included.</param>
+        /// <param name="filter">Entity search criteria (optional).</param>
+        /// <returns>Entities list.</returns>
         public List<TEntity> Get<TEntity>(bool includeAll = true, string? filter = null)
         {
             //TableAttribute ta = ToolsEH.GetTableAttribute(typeof(TEntity));
             ////string tableName = ta?.Name != null ? ta.Name : typeof(TEntity).Name;
             //string tableName = ta?.Name ?? typeof(TEntity).Name;
 
-            filter = string.IsNullOrEmpty(filter?.Trim()) ? "1 = 1" : filter;
-            string query = $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({filter})";
+            //filter = string.IsNullOrEmpty(filter?.Trim()) ? "1 = 1" : filter;
+            //string query = $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({filter})";
 
             //IDbConnection connection = DbContext.IDbConnection;
             //connection.Open();
@@ -226,6 +248,13 @@ namespace EH
             //        return entities;
             //    }
             //}
+
+            string? query = Commands.Get<TEntity>(includeAll, filter);
+            if (string.IsNullOrEmpty(query))
+            {
+                Console.WriteLine("Get command not exists!");
+                return new List<TEntity>();
+            }
 
             var entities = Select<TEntity>(query);
             if (includeAll) { IncludeAll(entities.FirstOrDefault()); }
@@ -246,8 +275,8 @@ namespace EH
         /// <summary>
         /// Include all FK entities.
         /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <param name="entities"></param>
+        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
+        /// <param name="entities">Entities that will have their FK entities included.</param>
         /// <returns></returns>
         public bool IncludeAll<TEntity>(List<TEntity> entities)
         {
@@ -258,7 +287,14 @@ namespace EH
 
         private void IncludeForeignKeyEntities<TEntity>(TEntity entity)
         {
+            if(entity == null) return;
+
             var propertiesFK = ToolsEH.GetFKProperties(entity);
+            if (propertiesFK == null || propertiesFK.Count == 0)
+            {
+                Console.WriteLine("No foreign key properties found!");
+                return;
+            }
 
             foreach (KeyValuePair<object, object> pair in propertiesFK)
             {
@@ -276,29 +312,79 @@ namespace EH
                     //var entityFK = Search(pair.Value, pk.Name, false);
 
 
-                    //Type objectType = pair.Value.GetType();
-                    MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(pair.Value.GetType());
-                    var entityFK = genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}={pk.GetValue(pair.Value, null)}" });
+                    ////Type objectType = pair.Value.GetType();
+                    //MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(pair.Value.GetType());
+                    //var entityFK = genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}={pk.GetValue(pair.Value, null)}" });
 
 
-                    if (entityFK != null)
+                    //if (entityFK != null)
+                    //{
+                    //    ////var objProp = pair.Key;
+                    //    ////objProp.GetType().GetProperty(pair.Key.GetType().Name)?.SetValue(objProp, entityFK);
+
+                    //    ////var propertyToUpdate = entity.GetType().GetProperty(pair.Key.ToString());
+                    //    ////propertyToUpdate?.SetValue(entity, entityFK);
+
+                    //    var propertyToUpdate = entity.GetType().GetProperty(pair.Key.ToString());                        
+                    //    propertyToUpdate?.SetValue(entity, entityFK);
+                    //}
+
+
+
+                    //var propertyToUpdate = entity?.GetType().GetProperty(pair.Key.ToString());                    
+
+                    //if (propertyToUpdate != null)
+                    //{
+                    //    MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(propertyToUpdate.PropertyType);
+
+                    //    var entityFK = genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}={pk.GetValue(pair.Value, null)}" });
+
+                    //    propertyToUpdate.SetValue(entity, entityFK);
+                    //}
+
+
+                    var propertyToUpdate = entity.GetType().GetProperty(pair.Key.ToString());
+
+                    MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(propertyToUpdate.PropertyType);
+
+                    if (propertyToUpdate != null)
                     {
-                        //var objProp = pair.Key;
-                        //objProp.GetType().GetProperty(pair.Key.GetType().Name)?.SetValue(objProp, entityFK);
 
-                        var propertyToUpdate = entity.GetType().GetProperty(pair.Key.ToString());
-                        propertyToUpdate?.SetValue(entity, entityFK);
+                        var entityFKList = genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}={pk.GetValue(pair.Value, null)}" }) as IEnumerable<TEntity>;
+
+                        if (entityFKList != null)
+                        {
+                            // Verifique se a propriedade é uma coleção antes de atribuir
+                            if (typeof(ICollection<TEntity>).IsAssignableFrom(propertyToUpdate.PropertyType))
+                            {
+                                // Use o método AddRange ou similar, dependendo do tipo de coleção
+                                // para adicionar a lista de entidades à propriedade de navegação
+                                var collection = propertyToUpdate.GetValue(entity) as ICollection<TEntity>;
+                                if (collection != null)
+                                {
+                                    foreach (var entityFK in entityFKList)
+                                    {
+                                        collection.Add(entityFK);
+                                    }
+                                }
+                            }
+
+                        }
+
+
                     }
                 }
             }
+
+
         }
 
 
         /// <summary>
         /// Include all FK entities.
         /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <param name="entity"></param>
+        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
+        /// <param name="entity">Entity that will have its FK entities included.</param>
         /// <returns></returns>
         public bool IncludeAll<TEntity>(TEntity entity)
         {
@@ -308,9 +394,9 @@ namespace EH
         /// <summary>
         /// Checks if table exists.
         /// </summary>
-        /// <param name="nameTable"></param>
+        /// <param name="nameTable">Name of the table to check if it exists.</param>
         /// <param name="filter"></param>
-        /// <returns></returns>
+        /// <returns>Possible filter.</returns>
         public bool CheckIfExist(string nameTable, string? filter = null)
         {
             try
@@ -344,13 +430,10 @@ namespace EH
         {
             IDbConnection connection = DbContext.IDbConnection;
             connection.Open();
-
-            using (IDbCommand command = DbContext.CreateCommand(query))
-            {
-                IDataReader? result = command.ExecuteReader();
-                connection.Close();
-                return result;
-            }
+            using IDbCommand command = DbContext.CreateCommand(query);
+            IDataReader? result = command.ExecuteReader();
+            connection.Close();
+            return result;
         }
 
 
