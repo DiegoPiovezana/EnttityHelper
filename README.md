@@ -22,7 +22,7 @@ Allows easy manipulation of entities in different databases.<br/>
 
 ## INSTALLATION:
 ```
- dotnet add package EnttityHelper --version 0.1.0
+ dotnet add package EnttityHelper --version 0.2.0
 ```
 
 <br/><br/>

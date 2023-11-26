@@ -1,0 +1,16 @@
+## [Version 0.2.0] - 09/24/2023
+
+- Possible manipulation of FK entities (considering include, virtual, etc);
+- `CustomCommand` to perform custom commands;
+- PK property can be automatically inferred from the entity;
+- Possible to obtain only the string of commands for independent execution from the library;
+- When performing updates, returns the number of modifications instead of true or false.
+
+## [Version 0.1.0] - 09/12/2023
+
+- Obtains the table name from class attribute;
+- Considers `NotMapped` attribute;
+- Compatible only with Oracle database;
+- Support for NetFramework;
+- Possible to perform insert, update, and select operations on entities;
+- First version of the library published (alpha version).

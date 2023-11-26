@@ -14,18 +14,17 @@
 		<Authors>Diêgo Piovezana</Authors>
 		<Company>DiegoPiov</Company>
 		<RepositoryUrl>https://github.com/DiegoPiovezana</RepositoryUrl>
-		<PackageTags>Entity;Framework;EF;Data;O/RM;ORM;SQL;EnttityHelper;Enttity;ADO.NET;ADO;PL/SQL;Oracle;SqlServer;Table;Object;</PackageTags>
+		<PackageTags>Entity;Framework;EF;Data;O/RM;ORM;SQL;EnttityHelper;Enttity;Helper;ADO.NET;ADO;PL/SQL;Oracle;SqlServer;Table;Object;</PackageTags>
 		<Copyright>GNU General Public License v3.0</Copyright>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 		<ApplicationIcon>Images\EnttityHelper_icon.ico</ApplicationIcon>
 		<PackageIcon>EnttityHelper_icon.png</PackageIcon>
-		<PackageReleaseNotes>
-			- Possible to manipulate FK entities (considering include, virtual, etc);
-			- CustomCommand to perform personalized commands;
-			- PK property can be automatically inferred;
-			- When performing updates, it returns the amount of changes instead of true or false.
-		</PackageReleaseNotes>
+		<PackageReleaseNotes>- Possible manipulation of FK entities (considering include, virtual, etc);
+- `CustomCommand` to perform custom commands;
+- PK property can be automatically inferred from the entity;
+- Possible to obtain only the string of commands for independent execution from the library;
+- When performing updates, returns the number of modifications instead of true or false.</PackageReleaseNotes>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>		
 	</PropertyGroup>
