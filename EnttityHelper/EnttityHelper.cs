@@ -95,7 +95,7 @@ namespace EH
                 return default;
             }
 
-            var entities = Select<TEntity>(selectQuery);
+            var entities = ExecuteSelect<TEntity>(selectQuery);
             if (includeAll) { _ = IncludeAll(entities.FirstOrDefault()); }
             return entities.FirstOrDefault();
         }
@@ -107,7 +107,7 @@ namespace EH
         /// <param name="includeAll">If true, all entities that are properties of the parent property will be included.</param>
         /// <param name="filter">Entity search criteria (optional).</param>
         /// <returns>Entities list.</returns>
-        public List<TEntity> Get<TEntity>(bool includeAll = true, string? filter = null)
+        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null)
         {
             string? query = Commands.Get<TEntity>(includeAll, filter);
             if (string.IsNullOrEmpty(query))
@@ -116,7 +116,7 @@ namespace EH
                 return new List<TEntity>();
             }
 
-            var entities = Select<TEntity>(query);
+            var entities = ExecuteSelect<TEntity>(query);
             if (includeAll) { _ = IncludeAll(entities); }
             return entities;
         }
@@ -125,51 +125,108 @@ namespace EH
         /// Execute the query.
         /// </summary>
         /// <param name="query">Custom query to be executed.</param>
-        /// <returns>DataReader.</returns>
-        public IDataReader? CustomCommand(string query)
+        /// <returns>Object.</returns>
+        public object? CustomCommand(string query)
         {
-            if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return null; }
-            if (DbContext?.IDbConnection is null) { Console.WriteLine("Connection not exists!"); return null; }
+            //if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return null; }
+            //if (DbContext?.IDbConnection is null) { Console.WriteLine("Connection not exists!"); return null; }
 
-            IDbConnection connection = DbContext.IDbConnection;
-            connection.Open();
-            using IDbCommand command = DbContext.CreateCommand(query);
-            using var result = command.ExecuteReader();
-            connection.Close();
-            return result;
+            //IDbConnection connection = DbContext.IDbConnection;
+            //connection.Open();
+            //using IDbCommand command = DbContext.CreateCommand(query);
+            //using var result = command.ExecuteReader();
+            //connection.Close();
+            //return result;
+
+            return ExecuteCommand<object>(query);
         }
 
         /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="query"></param>
-        /// <returns></returns>
-        public int ExecuteNonQuery(string? query)
+        /// Executes the non query (Create, Alter, Drop, Insert, Update or Delete) on the database.
+        /// </summary>    
+        private int ExecuteNonQuery(string? query)
         {
-            if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return 0; }
+            //if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return 0; }
 
-            IDbConnection connection = DbContext.IDbConnection;
-            connection.Open();
-            using IDbCommand command = DbContext.CreateCommand(query);
-            int rowsAffected = command.ExecuteNonQuery();
-            connection.Close();
-            Console.WriteLine($"Rows Affected: {rowsAffected}");
-            return rowsAffected;
+            //IDbConnection connection = DbContext.IDbConnection;
+            //connection.Open();
+            //using IDbCommand command = DbContext.CreateCommand(query);
+            //int rowsAffected = command.ExecuteNonQuery();
+            //connection.Close();
+            //Console.WriteLine($"Rows Affected: {rowsAffected}");
+            //return rowsAffected;          
+
+            return (int?)ExecuteCommand<object>(query, true) ?? 0;
         }
 
-        private List<TEntity>? Select<TEntity>(string query)
+        private List<TEntity>? ExecuteSelect<TEntity>(string query)
         {
-            if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return null; }
-            if (DbContext?.IDbConnection is null) { Console.WriteLine("Connection not exists!"); return null; }
+            //if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return null; }
+            //if (DbContext?.IDbConnection is null) { Console.WriteLine("Connection not exists!"); return null; }
 
-            IDbConnection connection = DbContext.IDbConnection;
+            //IDbConnection connection = DbContext.IDbConnection;
+            //connection.Open();
+            //using IDbCommand command = DbContext.CreateCommand(query);
+            //using var reader = command.ExecuteReader();
+            //List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
+            //connection.Close();
+            //return entities;
+
+            return (List<TEntity>?)ExecuteCommand<TEntity>(query);
+        }
+
+        /// <summary>
+        /// Executes a SQL command, either non-query or select, based on the provided query.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of entities to retrieve.</typeparam>
+        /// <param name="query">The SQL query to execute.</param>
+        /// <param name="isNonQuery">Flag indicating whether the command is a non-query (true) or select (false).</param>        
+        /// <returns>
+        /// - If the command is a non-query, returns the number of affected rows.
+        /// - If the command is a select, returns a list of entities retrieved from the database.
+        /// </returns>
+        private object? ExecuteCommand<TEntity>(string? query, bool isNonQuery = false)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                //Console.WriteLine("Query does not exist!");
+                throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
+                //return isNonQuery ? 0 : null;
+            }
+
+            if (DbContext?.IDbConnection is null)
+            {
+                //Console.WriteLine("Connection does not exist!");
+                throw new InvalidOperationException("Connection does not exist.");
+                //return isNonQuery ? 0 : null;
+            }
+
+            using IDbConnection connection = DbContext.IDbConnection;
             connection.Open();
+
             using IDbCommand command = DbContext.CreateCommand(query);
-            using var reader = command.ExecuteReader();
-            List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
-            connection.Close();
-            return entities;
-        }   
+
+            if (isNonQuery)
+            {
+                int rowsAffected = command.ExecuteNonQuery();
+                //connection.Close();
+                Console.WriteLine($"Rows Affected: {rowsAffected}");
+                return rowsAffected;
+            }
+            else // isSelect
+            {
+                using var reader = command.ExecuteReader();
+                if (reader != null)
+                {
+                    List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
+                    //connection.Close();
+                    Console.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
+                    return entities;
+                }
+
+                return null;
+            }
+        }
 
         private void IncludeForeignKeyEntities<TEntity>(TEntity entity, string? fkOnly = null)
         {
@@ -243,7 +300,7 @@ namespace EH
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entities">Entities that will have their FK entities included.</param>
         /// <returns></returns>
-        public bool IncludeAll<TEntity>(List<TEntity> entities)
+        public bool IncludeAll<TEntity>(List<TEntity>? entities)
         {
             if (entities == null || entities.Count == 0) return false;
             foreach (TEntity entity in entities) { IncludeForeignKeyEntities(entity); }
@@ -256,7 +313,7 @@ namespace EH
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entity">Entity that will have their FK entity included.</param>
         /// <param name="fkName">Name on the FK entity that will be included.</param>
-        /// <returns></returns>
+        /// <returns>True if success.</returns>
         public bool IncludeEntityFK<TEntity>(TEntity entity, string fkName)
         {
             if (entity == null) return false;

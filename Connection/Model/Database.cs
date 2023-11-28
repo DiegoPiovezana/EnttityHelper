@@ -13,7 +13,17 @@ namespace EH.Connection
         /// <summary>
         /// Creates an object for the database informing the connection string.
         /// </summary>
-        /// <param name="stringConnection">Database connection string</param>       
+        /// <param name="stringConnection">Database connection string</param> 
+        /// <remarks>
+        /// <para>
+        /// This method supports the following database types:
+        /// </para>
+        /// <list type="bullet">
+        /// <item><description>Oracle</description><para>Example: "Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"</para>Sample: "Data Source=127.0.0.1:1521/xe;User Id=myUser;Password=myPassword"</item>
+        /// <item><description>SqlServer</description><para>Example: "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog={Service};User ID={User};Password={Pass}"</para>Alternative: "Data Source={Ip};Initial Catalog={Service};User ID={User};Password={Pass}"</item>
+        /// <item><description>Sqlite</description><para>Example: "Data Source=c:\mydb.db;Version=3;Password=myPassword;"</para>Alternative: "Data Source=c:\mydb.db;Version=3;"</item>
+        /// </list>        
+        /// </remarks>
         public Database(string stringConnection)
         {
             try

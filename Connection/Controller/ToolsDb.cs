@@ -9,41 +9,45 @@ namespace EH.Connection
     {
         public static bool MapDatabase(string connectionString, Database database)
         {
-            /// SqlServer:
-            /// Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog={Service};User ID={User};Password={Pass}"
-            /// "Data Source={Ip};Initial Catalog={Service};User ID={User};Password={Pass}"
+            /*
+             * Oracle:
+             * "Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"
+             * Data Source=127.0.0.1:1521/xe;User Id=myUser;Password=myPassword
 
-            /// Oracle:
-            /// "Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"
-            /// Data Source=127.0.0.1:1521/xe;User Id=myUser;Password=myPassword
+             * SqlServer:
+             * Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog={Service};User ID={User};Password={Pass}"
+             * "Data Source={Ip};Initial Catalog={Service};User ID={User};Password={Pass}"
 
-            /// Sqlite:
-            /// Data Source=c:\mydb.db;Version=3;Password=myPassword;
-            /// Data Source=c:\mydb.db;Version=3;
+             * Sqlite:
+             * Data Source=c:\mydb.db;Version=3;Password=myPassword;            
+             * Data Source =c:\mydb.db;Version=3;
+             */
 
             try
             {
                 connectionString += ";"; // Add ';' to the end of the string to facilitate the extraction of the last value'
                 database.Pass = ExtractValue(connectionString, "Password=");
                 database.User = ExtractValue(connectionString, "User ID=");
-                string dataSource = ExtractValue(connectionString, "Data Source=");
-                string inicialCatalog = ExtractValue(connectionString, "Initial Catalog=");
+                string? dataSource = ExtractValue(connectionString, "Data Source=");
+                string? inicialCatalog = ExtractValue(connectionString, "Initial Catalog=");
 
                 if (inicialCatalog != null) // SqlServer
                 {
                     database.Service = inicialCatalog;
                     database.Ip = dataSource;
                     database.Type = "sqlserver";
+                    return true;
                 }
-                else // Oracle
+                else if (dataSource is not null) // Oracle
                 {
                     database.Ip = dataSource.Split(':')[0];
                     database.Port = connectionString.Split(':')[1].Split('/')[0];
                     database.Service = dataSource.Split(':')[1].Split('/')[1];
                     database.Type = "oracle";
+                    return true;
                 }
 
-                return true;
+                return false;
             }
             catch (Exception)
             {
