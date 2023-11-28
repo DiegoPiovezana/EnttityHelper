@@ -201,7 +201,7 @@ namespace EH
                 //return isNonQuery ? 0 : null;
             }
 
-            using IDbConnection connection = DbContext.IDbConnection;
+            IDbConnection connection = DbContext.IDbConnection;
             connection.Open();
 
             using IDbCommand command = DbContext.CreateCommand(query);
@@ -209,7 +209,7 @@ namespace EH
             if (isNonQuery)
             {
                 int rowsAffected = command.ExecuteNonQuery();
-                //connection.Close();
+                connection.Close();
                 Console.WriteLine($"Rows Affected: {rowsAffected}");
                 return rowsAffected;
             }
@@ -219,7 +219,7 @@ namespace EH
                 if (reader != null)
                 {
                     List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
-                    //connection.Close();
+                    connection.Close();
                     Console.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
                     return entities;
                 }
