@@ -129,5 +129,25 @@ namespace EH
 
             return list;
         }
+
+        internal static string GetSqlType(object value)
+        {
+            if (value is null) { throw new ArgumentNullException(nameof(value)); }
+
+            string sqlType = value.GetType().Name switch
+            {
+                "String" => "VARCHAR2(255)",
+                "Int32" => "NUMBER(10)",
+                "Int64" => "NUMBER(19)",
+                "Int16" => "NUMBER(5)",
+                "Decimal" => "NUMBER(19,4)",
+                "Double" => "NUMBER(19,4)",
+                "DateTime" => "DATE",
+                "Boolean" => "NUMBER(1)",
+                _ => throw new ArgumentException("Invalid type!"),
+            };
+
+            return sqlType;
+        }   
     }
 }

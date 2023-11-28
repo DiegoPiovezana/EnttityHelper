@@ -46,7 +46,7 @@ namespace EH
         /// <returns>True, if one or more entities are inserted into the database.</returns>
         public bool Insert<TEntity>(TEntity entity, string? namePropUnique = null)
         {
-            string? insertQuery = Commands.Insert(this, entity, namePropUnique);
+            string? insertQuery = CommandsString.Insert(this, entity, namePropUnique);
 
             int rowsAffected = ExecuteNonQuery(insertQuery);
             Console.WriteLine($"Rows Affected: {rowsAffected}");
@@ -72,7 +72,7 @@ namespace EH
         /// <returns>Number of entities updated in the database.</returns>
         public int Update<TEntity>(TEntity entity, string? nameId = null) where TEntity : class
         {
-            string? updateQuery = Commands.Update(entity, nameId);
+            string? updateQuery = CommandsString.Update(entity, nameId);
 
             return ExecuteNonQuery(updateQuery);
         }
@@ -87,7 +87,7 @@ namespace EH
         /// <returns></returns>
         public TEntity? Search<TEntity>(TEntity entity, string? idPropName = null, bool includeAll = true) where TEntity : class
         {
-            string? selectQuery = Commands.Search(entity, idPropName, includeAll);
+            string? selectQuery = CommandsString.Search(entity, idPropName, includeAll);
             if (string.IsNullOrEmpty(selectQuery))
             //if (selectQuery is null)
             {
@@ -109,11 +109,13 @@ namespace EH
         /// <returns>Entities list.</returns>
         public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null)
         {
-            string? query = Commands.Get<TEntity>(includeAll, filter);
+            string? query = CommandsString.Get<TEntity>(includeAll, filter);
             if (string.IsNullOrEmpty(query))
             {
-                Console.WriteLine("Get command not exists!");
-                return new List<TEntity>();
+                //Console.WriteLine("Get command not exists!");
+                //return new List<TEntity>();
+
+                throw new ArgumentNullException(nameof(query), "Query Get cannot be null or empty.");
             }
 
             var entities = ExecuteSelect<TEntity>(query);
@@ -321,7 +323,6 @@ namespace EH
             return true;
         }
 
-
         /// <summary>
         /// Checks if table exists.
         /// </summary>
@@ -332,16 +333,17 @@ namespace EH
         {
             try
             {
-                IDbConnection connection = DbContext.IDbConnection;
-                connection.Open();
+                if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
+
+                DbContext.IDbConnection.Open();
 
                 using (IDbCommand command = DbContext.CreateCommand($"SELECT COUNT(*) FROM {nameTable} WHERE {filter ?? "1 = 1"}"))
                 {
                     object result = command.ExecuteScalar();
-                    if (result != null && result != DBNull.Value) { connection.Close(); return Convert.ToInt32(result) > 0; }
+                    if (result != null && result != DBNull.Value) { DbContext.IDbConnection.Close(); return Convert.ToInt32(result) > 0; }
                 }
 
-                connection.Close();
+                DbContext.IDbConnection.Close();
                 return false;
             }
             catch (Exception)
@@ -350,6 +352,40 @@ namespace EH
             }
         }
 
+        /// <summary>
+        /// Allows you to create a table in the database according to the provided objectEntity object.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="mandatory"></param>
+        /// <returns></returns>
+        public bool CreateTable<TEntity>(TEntity entity, bool mandatory = false)
+        {
+            if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
+
+            //string createTableQuery = @"CREATE TABLE Exemplo (Id INT PRIMARY KEY, Nome NVARCHAR(50), DataCadastro DATE)";
+            string createTableQuery = CommandsString.CreateTable(entity, mandatory);
+
+
+
+            IDbConnection connection = DbContext.IDbConnection;
+            connection.Open();
+
+            using (IDbCommand command = DbContext.CreateCommand(createTableQuery))
+            {
+                command.ExecuteNonQuery();
+                Console.WriteLine("Table created!");
+            }
+
+            Console.WriteLine("Table created!");
+
+            connection.Close();
+            return true;
+        }
+
+
+
     }
+
+
 
 }

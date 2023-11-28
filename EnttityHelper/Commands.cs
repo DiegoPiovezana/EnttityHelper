@@ -7,7 +7,7 @@ namespace EH
     /// <summary>
     /// Allows you to obtain the main commands to be executed on the database.
     /// </summary>
-    public static class Commands
+    public static class CommandsString
     {
         /// <summary>
         /// Gets the insert command.
@@ -141,6 +141,29 @@ namespace EH
 
             return $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE {nameId} = '{properties[nameId]}'";
         }
+
+        /// <summary>
+        /// Allows you to obtain the table creation query for <paramref name="entity"/>.
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="entity"></param>
+        /// <returns>Table creation query.</returns>
+        public static string? CreateTable<TEntity>(TEntity entity)
+        {
+            StringBuilder queryBuilder = new();
+            queryBuilder.Append($"CREATE TABLE {ToolsEH.GetTable<TEntity>()} (");
+
+            var properties = ToolsEH.GetProperties(entity,false,true, true);
+
+            foreach (KeyValuePair<string, object> pair in properties)
+            {
+                queryBuilder.Append($"{pair.Key} {ToolsEH.GetSqlType(pair.Value)}, ");
+            }
+
+            queryBuilder.Length -= 2; // Remove the last comma and space
+            queryBuilder.Append(")");
+            return queryBuilder.ToString();
+        }   
 
     }
 }
