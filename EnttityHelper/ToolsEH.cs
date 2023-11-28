@@ -4,7 +4,6 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 
 namespace EH
@@ -23,9 +22,6 @@ namespace EH
 
             foreach (PropertyInfo prop in properties)
             {
-                //Console.WriteLine($"Propriedade: {prop.Name}");
-                //Console.WriteLine($"Valor: {prop.GetValue(objectEntity, null)}");
-
                 if (!includeNotMapped && prop.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
                 if (ignoreVirtual && prop.GetGetMethod().IsVirtual) { continue; }
 
@@ -63,25 +59,13 @@ namespace EH
 
                 if (prop.GetGetMethod().IsVirtual)
                 {
-                    //var valueProp = prop.GetValue(objectEntity, null);
-
-                    //var objProp = objectEntity.GetType().GetProperty(prop.Name);
-                    //var objProp = typeof(T).GetProperty(prop.Name);
-                    //var objProp = propertyExpression.Compile()(objectEntity);
-                    //propertiesVirtual.Add(prop, valueProp);
-
-                    //T obj = Activator.CreateInstance<T>();
                     var obj = Activator.CreateInstance(prop.PropertyType);
-
-                    //prop.SetValue(obj, Convert.ChangeType(prop.GetValue(objectEntity, null), prop.PropertyType));
                     if (obj != null) propertiesVirtual.Add(prop.Name, obj);
                 }
             }
 
             foreach (var propFkKey in propertiesId.Keys.ToList())
             {
-                //propertiesObj.Add(propertiesVirtual[propFkKey], propertiesId[propFkKey]);
-
                 var propFk = propertiesVirtual[propFkKey];
                 propFk.GetType().GetProperty(GetPK(propFk).Name).SetValue(propFk, propertiesId[propFkKey]);
                 propertiesObj.Add(propFkKey, propFk);
@@ -91,32 +75,8 @@ namespace EH
         }
 
         public static PropertyInfo GetPK<T>(T obj) where T : class
-        {    
+        {
             return obj.GetType().GetProperties().FirstOrDefault(p => Attribute.IsDefined(p, typeof(KeyAttribute)));
-        }
-
-        internal static TProperty GetRelatedObject<T, TProperty>(T objectEntity, Expression<Func<T, TProperty>> propertyExpression) where T : class
-        {
-            TProperty relatedObject = propertyExpression.Compile()(objectEntity);
-            return relatedObject;
-        }
-
-        internal static TAttribute? GetAttributeByName<TAttribute>(Type type, string attributeName) where TAttribute : Attribute
-        {
-            var attributes = type.GetCustomAttributes(typeof(TAttribute), true);
-
-            return type.GetCustomAttributes(typeof(TAttribute), true)
-                .FirstOrDefault(attr => attr.GetType().Name == attributeName) as TAttribute;
-        }
-
-        public static TValue? GetAttributeValue<TAttribute, TValue>(this Type type, Func<TAttribute, TValue> valueSelector) where TAttribute : Attribute
-        {
-            if (type.GetCustomAttributes(typeof(TAttribute), true).FirstOrDefault() is TAttribute att)
-            {
-                return valueSelector(att);
-            }
-
-            return default;
         }
 
         public static TableAttribute? GetTableAttribute(Type type)
@@ -126,21 +86,9 @@ namespace EH
             return default;
         }
 
-        public static string GetPropertyName<T>(Expression<Func<T>> expression)
-        {
-            var memberExpression = (MemberExpression)expression.Body;
-            return memberExpression.Member.Name;
-        }
-
-        public static object GetPropertyValue(object obj, string propertyName)
-        {
-            PropertyInfo propertyInfo = obj.GetType().GetProperty(propertyName);
-            return propertyInfo.GetValue(obj);
-        }
-
         public static string GetTable<TEntity>()
         {
-            TableAttribute ta = GetTableAttribute(typeof(TEntity));
+            TableAttribute? ta = GetTableAttribute(typeof(TEntity));
 
             string schema = ta?.Schema != null ? $"{ta.Schema}." : "";
             string tableName = ta?.Name ?? typeof(TEntity).Name; // entity.GetType().Name;
@@ -160,21 +108,10 @@ namespace EH
                 {
                     if (propInfo == null || propInfo.GetGetMethod().IsVirtual || propInfo.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
 
-                    //var test = reader.GetOrdinal(propInfo.Name); // propInfo.Name == "Supervisor" => virtual
-
                     if (!reader.IsDBNull(reader.GetOrdinal(propInfo.Name)))
                     {
                         object value = reader[propInfo.Name];
                         Type propType = propInfo.PropertyType;
-
-                        //if (propType == typeof(DateTime))
-                        //{
-                        //    propInfo.SetValue(obj, Convert.ToDateTime(idFk));
-                        //}
-                        //else if (propType == typeof(DateTime?))
-                        //{
-                        //    if (idFk != null) { propInfo.SetValue(obj, (DateTime)idFk); }
-                        //    else { propInfo.SetValue(obj, null); }
 
                         if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
                         {

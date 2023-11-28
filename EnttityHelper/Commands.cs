@@ -71,38 +71,40 @@ namespace EH
         }
 
         /// <summary>
-        /// 
+        /// Generates a SQL SELECT query for a specified entity based on the ID property.
         /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <param name="entity"></param>
-        /// <param name="idPropName"></param>
-        /// <param name="includeAll"></param>
-        /// <returns></returns>
+        /// <typeparam name="TEntity">The type of entity.</typeparam>
+        /// <param name="entity">The entity object.</param>
+        /// <param name="idPropName">The name of the ID property.</param>
+        /// <param name="includeAll">Whether to include all related entities.</param>
+        /// <returns>A SELECT SQL query string.</returns>
         public static string? Search<TEntity>(TEntity entity, string? idPropName = null, bool includeAll = true) where TEntity : class
         {
-            //var propertiesFK = ToolsEH.GetProperties(entity);
-
-            //string nameProperty = ToolsEH.GetPropertyName(() => idProp);
-            //object valueProperty = ToolsEH.GetPropertyValue(entity, nameProperty);
-
             idPropName ??= ToolsEH.GetPK(entity)?.Name;
-
-            // $"SELECT * FROM {typeof(TEntity).Name} WHERE {idProp.name)} = {idProp.value}"
-            //string selectQuery = $"SELECT * FROM {tableName} WHERE {idProp.GetType().Name} = {idProp}"; 
+            if (idPropName is null) { return null; }
             return $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({idPropName} = {typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)})";
-
         }
 
+        /// <summary>
+        /// Generates a SQL SELECT query for a specified entity with optional filters.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of entity.</typeparam>
+        /// <param name="includeAll">Whether to include all related entities.</param>
+        /// <param name="filter">The filter criteria.</param>
+        /// <returns>A SELECT SQL query string.</returns>
         public static string? Get<TEntity>(bool includeAll = true, string? filter = null)
         {
-            //TableAttribute ta = ToolsEH.GetTableAttribute(typeof(TEntity));
-            ////string tableName = ta?.Name != null ? ta.Name : typeof(TEntity).Name;
-            //string tableName = ta?.Name ?? typeof(TEntity).Name;
-
             filter = string.IsNullOrEmpty(filter?.Trim()) ? "1 = 1" : filter;
             return $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({filter})";
         }
 
+        /// <summary>
+        /// Generates a SQL DELETE query for a specified entity based on the ID property.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of entity.</typeparam>
+        /// <param name="entity">The entity object.</param>
+        /// <param name="nameId">The name of the ID property.</param>
+        /// <returns>A DELETE SQL query string.</returns>
         public static string? Delete<TEntity>(TEntity entity, string? nameId = null) where TEntity : class
         {
             nameId ??= ToolsEH.GetPK(entity)?.Name;
@@ -118,6 +120,13 @@ namespace EH
             return $"DELETE FROM {ToolsEH.GetTable<TEntity>()} WHERE {nameId} = '{properties[nameId]}'";
         }
 
+        /// <summary>
+        /// Generates a SQL SELECT query for a specified entity based on the ID property.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of entity.</typeparam>
+        /// <param name="entity">The entity object.</param>
+        /// <param name="nameId">The name of the ID property.</param>
+        /// <returns>A SELECT SQL query string.</returns>
         public static string? Select<TEntity>(TEntity entity, string? nameId = null) where TEntity : class
         {
             nameId ??= ToolsEH.GetPK(entity)?.Name;
@@ -132,7 +141,6 @@ namespace EH
 
             return $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE {nameId} = '{properties[nameId]}'";
         }
-
 
     }
 }

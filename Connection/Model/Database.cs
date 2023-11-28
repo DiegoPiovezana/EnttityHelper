@@ -27,6 +27,11 @@ namespace EH.Connection
             }
         }
 
+        /// <summary>
+        /// Creates an object for the database informing the connection string.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public override IDbConnection CreateConnection()
         {
             IDbConnection = Type switch
@@ -38,11 +43,19 @@ namespace EH.Connection
             return IDbConnection;
         }
 
+        /// <summary>
+        /// Creates a command object.
+        /// </summary>
+        /// <returns></returns>
         public override IDbCommand CreateCommand()
         {
             return IDbConnection.CreateCommand();
         }
 
+        /// <summary>
+        /// Create and open a connection.
+        /// </summary>
+        /// <returns></returns>
         public override IDbConnection CreateOpenConnection()
         {
             IDbConnection = CreateConnection();
@@ -50,6 +63,12 @@ namespace EH.Connection
             return IDbConnection;
         }
 
+        /// <summary>
+        /// Creates a command object.
+        /// </summary>
+        /// <param name="commandText"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public override IDbCommand CreateCommand(string commandText)
         {
             return Type switch
@@ -60,6 +79,13 @@ namespace EH.Connection
             };
         }
 
+        /// <summary>
+        /// Create a stored procedure command object.
+        /// </summary>
+        /// <param name="procName"></param>
+        /// <param name="connection"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public override IDbCommand CreateStoredProcCommand(string procName, IDbConnection connection)
         {
             return Type switch
@@ -80,6 +106,13 @@ namespace EH.Connection
             };
         }
 
+        /// <summary>
+        /// Create a parameter object.
+        /// </summary>
+        /// <param name="parameterName"></param>
+        /// <param name="parameterValue"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public override IDataParameter CreateParameter(string parameterName, object parameterValue)
         {
             return Type switch
@@ -138,21 +171,29 @@ namespace EH.Connection
             try
             {
                 IDbConnection.Close();
-                GC.SuppressFinalize(this);             
+                GC.SuppressFinalize(this);
                 return true;
             }
             catch (Exception)
-            {                          
+            {
                 return false;
             }
         }
 
+        /// <summary>
+        /// Dispose of the connection object.
+        /// </summary>
+        /// <param name="disposing"></param>
         protected virtual void Dispose(bool disposing = true)
         {
             if (disposing) IDbConnection.Close();
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Clone the object.
+        /// </summary>
+        /// <returns></returns>
         public override object Clone()
         {
             return MemberwiseClone();

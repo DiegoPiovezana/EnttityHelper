@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace EH
 {
@@ -47,35 +46,8 @@ namespace EH
         /// <returns>True, if one or more entities are inserted into the database.</returns>
         public bool Insert<TEntity>(TEntity entity, string? namePropUnique = null)
         {
-            //var properties = ToolsEH.GetProperties(entity);
-            //string tableName = ToolsEH.GetTable<TEntity>();
-
-            //if (!string.IsNullOrEmpty(namePropUnique) && CheckIfExist(tableName, $"{namePropUnique} = {properties[namePropUnique]}"))
-            //{
-            //    Console.WriteLine("Entity already exists in table!");
-            //    return false;
-            //}
-
-            //string columns = string.Join(", ", properties.Keys);
-            //string values = string.Join("', '", properties.Values);
-
-            //string insertQuery = $"INSERT INTO {tableName} ({columns}) VALUES ('{values}')";
-
             string? insertQuery = Commands.Insert(this, entity, namePropUnique);
-            //if (string.IsNullOrEmpty(insertQuery))
-            //{
-            //    Console.WriteLine("Insert command not exists!");
-            //    return false;
-            //}
 
-            //DbContext.IDbConnection.Open();
-
-            //using var command = DbContext.CreateCommand(insertQuery);
-            ////command.Parameters.AddWithValue("@Nome", "John Doe");
-            ////command.Parameters.AddWithValue("@Email", "john.doe@example.com");
-
-            //int rowsAffected = command.ExecuteNonQuery();
-            //DbContext.IDbConnection.Close();
             int rowsAffected = ExecuteNonQuery(insertQuery);
             Console.WriteLine($"Rows Affected: {rowsAffected}");
 
@@ -100,55 +72,9 @@ namespace EH
         /// <returns>Number of entities updated in the database.</returns>
         public int Update<TEntity>(TEntity entity, string? nameId = null) where TEntity : class
         {
-            //StringBuilder queryBuilder = new();
-            //queryBuilder.Append($"UPDATE {ToolsEH.GetTable<TEntity>()} SET ");
-
-            //nameId ??= ToolsEH.GetPK(entity)?.Name;
-
-            //var properties = ToolsEH.GetProperties(entity);
-
-            //foreach (KeyValuePair<string, object> pair in properties)
-            //{
-            //    if (pair.Key != nameId)
-            //    {
-            //        queryBuilder.Append($"{pair.Key} = '{pair.Value}', ");
-            //    }
-            //}
-
-            //queryBuilder.Length -= 2; // Remove the last comma and space
-            //queryBuilder.Append($" WHERE {nameId} = '{properties[nameId]}'");
-            //string updateQuery = queryBuilder.ToString();
-
             string? updateQuery = Commands.Update(entity, nameId);
-            //if (string.IsNullOrEmpty(updateQuery))
-            //{
-            //    Console.WriteLine("Update command not exists!");
-            //    return 0;
-            //}
 
-            //IDbConnection connection = DbContext.IDbConnection;
-            //connection.Open();
-
-            //using var command = DbContext.CreateCommand(updateQuery);
-            //int rowsAffected = command.ExecuteNonQuery();
-            //connection.Close();
-
-            //Console.WriteLine($"Rows Affected: {rowsAffected}");
-
-            //return rowsAffected;
             return ExecuteNonQuery(updateQuery);
-
-            //if (rowsAffected > 0)
-            //{
-            //    Console.WriteLine("Successful update!");
-            //    return true;
-            //}
-            //else
-            //{
-            //    Console.WriteLine("No records updated!");
-            //    return false;
-            //}
-
         }
 
         /// <summary>
@@ -161,66 +87,17 @@ namespace EH
         /// <returns></returns>
         public TEntity? Search<TEntity>(TEntity entity, string? idPropName = null, bool includeAll = true) where TEntity : class
         {
-            //var propertiesFK = ToolsEH.GetProperties(entity);
-
-            //string nameProperty = ToolsEH.GetPropertyName(() => idProp);
-            //object valueProperty = ToolsEH.GetPropertyValue(entity, nameProperty);
-
-            //idPropName ??= ToolsEH.GetPK(entity)?.Name;
-
-            //// $"SELECT * FROM {typeof(TEntity).Name} WHERE {idProp.name)} = {idProp.value}"
-            ////string selectQuery = $"SELECT * FROM {tableName} WHERE {idProp.GetType().Name} = {idProp}"; 
-            //string selectQuery = $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({idPropName} = {typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)})";
-            ////string selectQuery = $"SELECT * FROM {tableName} WHERE {idPropName} = {typeof(TEntity).GetProperty(idPropName)}";
-
-            //selectQuery = "SELECT * FROM TB_SR_USERS__USUARIOS WHERE (1 = 1)";
-
-            //IDbConnection connection = DbContext.IDbConnection;
-            //connection.Open();
-
-            //using (IDbCommand command = DbContext.CreateCommand(selectQuery))
-            //{
-            //    //var idParameter = command.CreateParameter();
-            //idParameter.ParameterName = "@Id";
-            //idParameter.Value = idProp;
-            //command.Parameters.Add(idParameter);
-
-            // linha.Field<DateTime>("DT_ALTERACAO")
-
-            //using (var reader = command.ExecuteReader())
-            //{
-            //    if (reader.Read())
-            //    {
-            //TEntity entityBd = Activator.CreateInstance<TEntity>();
-
-            //foreach (PropertyInfo propInfo in typeof(TEntity).GetProperties())
-            //{
-            //    if (propInfo.Name != idPropName)
-            //    {
-            //        propInfo.SetValue(entityBd, Convert.ChangeType(reader[propInfo.Name], propInfo.PropertyType));
-            //    }
-            //}
-
-            //var entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
-
-            //connection.Close();
-
             string? selectQuery = Commands.Search(entity, idPropName, includeAll);
             if (string.IsNullOrEmpty(selectQuery))
+            //if (selectQuery is null)
             {
                 Console.WriteLine("Search command not exists!");
                 return default;
             }
 
             var entities = Select<TEntity>(selectQuery);
-            if (includeAll) { IncludeAll(entities.FirstOrDefault()); }
+            if (includeAll) { _ = IncludeAll(entities.FirstOrDefault()); }
             return entities.FirstOrDefault();
-            //}
-            //}
-            //}
-
-            //connection.Close();
-            //return default;
         }
 
         /// <summary>
@@ -232,26 +109,6 @@ namespace EH
         /// <returns>Entities list.</returns>
         public List<TEntity> Get<TEntity>(bool includeAll = true, string? filter = null)
         {
-            //TableAttribute ta = ToolsEH.GetTableAttribute(typeof(TEntity));
-            ////string tableName = ta?.Name != null ? ta.Name : typeof(TEntity).Name;
-            //string tableName = ta?.Name ?? typeof(TEntity).Name;
-
-            //filter = string.IsNullOrEmpty(filter?.Trim()) ? "1 = 1" : filter;
-            //string query = $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({filter})";
-
-            //IDbConnection connection = DbContext.IDbConnection;
-            //connection.Open();
-
-            //using (IDbCommand command = DbContext.CreateCommand(query))
-            //{
-            //    using (var reader = command.ExecuteReader())
-            //    {
-            //        List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
-            //        connection.Close();
-            //        return entities;
-            //    }
-            //}
-
             string? query = Commands.Get<TEntity>(includeAll, filter);
             if (string.IsNullOrEmpty(query))
             {
@@ -260,7 +117,7 @@ namespace EH
             }
 
             var entities = Select<TEntity>(query);
-            if (includeAll) { IncludeAll(entities); }
+            if (includeAll) { _ = IncludeAll(entities); }
             return entities;
         }
 
@@ -272,29 +129,22 @@ namespace EH
         public IDataReader? CustomCommand(string query)
         {
             if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return null; }
+            if (DbContext?.IDbConnection is null) { Console.WriteLine("Connection not exists!"); return null; }
 
             IDbConnection connection = DbContext.IDbConnection;
             connection.Open();
             using IDbCommand command = DbContext.CreateCommand(query);
-            IDataReader? result = command.ExecuteReader();
+            using var result = command.ExecuteReader();
             connection.Close();
             return result;
         }
 
-        private List<TEntity> Select<TEntity>(string query)
-        {
-            IDbConnection connection = DbContext.IDbConnection;
-            connection.Open();
-            using IDbCommand command = DbContext.CreateCommand(query);
-            using var reader = command.ExecuteReader();
-            //using var reader = CustomCommand(query);
-
-            List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
-            connection.Close();
-            return entities;
-        }
-
-        private int ExecuteNonQuery(string? query)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="query"></param>
+        /// <returns></returns>
+        public int ExecuteNonQuery(string? query)
         {
             if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return 0; }
 
@@ -305,7 +155,21 @@ namespace EH
             connection.Close();
             Console.WriteLine($"Rows Affected: {rowsAffected}");
             return rowsAffected;
-        }     
+        }
+
+        private List<TEntity>? Select<TEntity>(string query)
+        {
+            if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return null; }
+            if (DbContext?.IDbConnection is null) { Console.WriteLine("Connection not exists!"); return null; }
+
+            IDbConnection connection = DbContext.IDbConnection;
+            connection.Open();
+            using IDbCommand command = DbContext.CreateCommand(query);
+            using var reader = command.ExecuteReader();
+            List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
+            connection.Close();
+            return entities;
+        }   
 
         private void IncludeForeignKeyEntities<TEntity>(TEntity entity, string? fkOnly = null)
         {
@@ -330,61 +194,18 @@ namespace EH
                     var pk = ToolsEH.GetPK(pair.Value);
                     if (pk == null) continue;
 
-                    // !!!!
-                    //TEntity = applicable only to the type of entity being manipulated
-                    //pair.Value
-                    //pk.PropertyType
-
-                    //var entityFK = Get<TEntity>(true, $"{pk.Name}={pk.GetValue(pair.Value, null)}").FirstOrDefault();
-                    //var entityFK = Search(pair.Value, pk.Name, false);
-
-
-                    ////Type objectType = pair.Value.GetType();
-                    //MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(pair.Value.GetType());
-                    //var entityFK = genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}={pk.GetValue(pair.Value, null)}" });
-
-
-                    //if (entityFK != null)
-                    //{
-                    //    ////var objProp = pair.Key;
-                    //    ////objProp.GetType().GetProperty(pair.Key.GetType().Name)?.SetValue(objProp, entityFK);
-
-                    //    ////var propertyToUpdate = entity.GetType().GetProperty(pair.Key.ToString());
-                    //    ////propertyToUpdate?.SetValue(entity, entityFK);
-
-                    //    var propertyToUpdate = entity.GetType().GetProperty(pair.Key.ToString());                        
-                    //    propertyToUpdate?.SetValue(entity, entityFK);
-                    //}
-
-
-
-                    //var propertyToUpdate = entity?.GetType().GetProperty(pair.Key.ToString());                    
-
-                    //if (propertyToUpdate != null)
-                    //{
-                    //    MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(propertyToUpdate.PropertyType);
-
-                    //    var entityFK = genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}={pk.GetValue(pair.Value, null)}" });
-
-                    //    propertyToUpdate.SetValue(entity, entityFK);
-                    //}
-
-
                     var propertyToUpdate = entity.GetType().GetProperty(pair.Key.ToString());
 
                     MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(propertyToUpdate.PropertyType);
 
                     if (propertyToUpdate != null)
                     {
-                        var entityFKList = genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}='{pk.GetValue(pair.Value, null)}'" }) as IEnumerable<TEntity>;
-
-                        if (entityFKList != null)
+                        if (genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}='{pk.GetValue(pair.Value, null)}'" }) is IEnumerable<TEntity> entityFKList)
                         {
                             // Checks if the property is a collection before assigning
                             if (typeof(ICollection<TEntity>).IsAssignableFrom(propertyToUpdate.PropertyType))
-                            {                               
-                                var collection = propertyToUpdate.GetValue(entity) as ICollection<TEntity>;
-                                if (collection != null)
+                            {
+                                if (propertyToUpdate.GetValue(entity) is ICollection<TEntity> collection)
                                 {
                                     foreach (var entityFK in entityFKList)
                                     {
@@ -468,20 +289,9 @@ namespace EH
             }
             catch (Exception)
             {
-                //IDbConnection connection = DbContext.IDbConnection;
-                //connection.Close();
                 return false;
             }
         }
-
-
-
-
-
-
-
-
-
 
     }
 

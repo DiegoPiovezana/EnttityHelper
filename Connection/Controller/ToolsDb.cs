@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace EH.Connection
 {
@@ -11,17 +9,17 @@ namespace EH.Connection
     {
         public static bool MapDatabase(string connectionString, Database database)
         {
-            // SqlServer:
-            // Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog={Service};User ID={User};Password={Pass}"
-            // "Data Source={Ip};Initial Catalog={Service};User ID={User};Password={Pass}"
+            /// SqlServer:
+            /// Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog={Service};User ID={User};Password={Pass}"
+            /// "Data Source={Ip};Initial Catalog={Service};User ID={User};Password={Pass}"
 
-            // Oracle:
-            // "Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"
-            // Data Source=127.0.0.1:1521/xe;User Id=myUser;Password=myPassword
+            /// Oracle:
+            /// "Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"
+            /// Data Source=127.0.0.1:1521/xe;User Id=myUser;Password=myPassword
 
-            // Sqlite:
-            // Data Source=c:\mydb.db;Version=3;Password=myPassword;
-            // Data Source=c:\mydb.db;Version=3;
+            /// Sqlite:
+            /// Data Source=c:\mydb.db;Version=3;Password=myPassword;
+            /// Data Source=c:\mydb.db;Version=3;
 
             try
             {
@@ -38,12 +36,12 @@ namespace EH.Connection
                     database.Type = "sqlserver";
                 }
                 else // Oracle
-                {                    
+                {
                     database.Ip = dataSource.Split(':')[0];
                     database.Port = connectionString.Split(':')[1].Split('/')[0];
                     database.Service = dataSource.Split(':')[1].Split('/')[1];
                     database.Type = "oracle";
-                }   
+                }
 
                 return true;
             }
@@ -53,7 +51,7 @@ namespace EH.Connection
             }
         }
 
-        static string ExtractValue(string connectionString, string key, string delimiter = ";")
+        static string? ExtractValue(string connectionString, string key, string delimiter = ";")
         {
             int startIndex = connectionString.ToLower().IndexOf(key.ToLower()) + key.Length;
             int endIndex = connectionString.IndexOf(delimiter, startIndex);
@@ -65,7 +63,6 @@ namespace EH.Connection
 
             return null;
         }
-
 
     }
 }
