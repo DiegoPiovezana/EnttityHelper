@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
+using System.Security.Cryptography.X509Certificates;
 
 namespace EH
 {
@@ -14,12 +14,12 @@ namespace EH
     /// </summary>
     internal static class ToolsEH
     {
-        internal static Dictionary<string, object> GetProperties<T>(T objectEntity, bool includeNotMapped = false, bool ignoreVirtual = true, bool getFormat = false)
+        internal static Dictionary<string, Property> GetProperties<T>(T objectEntity, bool includeNotMapped = false, bool ignoreVirtual = true, bool getFormat = false)
         {
             if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
 
             PropertyInfo[] properties = objectEntity.GetType().GetProperties();
-            Dictionary<string, object> propsDictionary = new();
+            Dictionary<string, Property> propsDictionary = new();
 
             foreach (PropertyInfo prop in properties)
             {
@@ -27,38 +27,57 @@ namespace EH
                 if (!includeNotMapped && prop.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
                 if (ignoreVirtual && prop.GetGetMethod().IsVirtual) { continue; }
 
+                Property property = new(prop)
+                {
+                    IsPrimaryKey = prop.GetCustomAttribute<KeyAttribute>() != null,
+                    IsForeignKey = prop.GetCustomAttribute<ForeignKeyAttribute>() != null,
+                    IsNotMapped = prop.GetCustomAttribute<NotMappedAttribute>() != null,
+                    IsVirtual = prop.GetGetMethod().IsVirtual,
+                    IsRequired = prop.GetCustomAttribute<RequiredAttribute>() != null
+                };
+
                 //var value = prop.GetValue(objectEntity, null);
-                object? value;
+                //object? value;
 
                 if (getFormat)
                 {
+                    object? propType;
+
                     if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>)) // If Nullable
-                    {
-                        value = Nullable.GetUnderlyingType(prop.PropertyType);
+                    { 
+                        property.IsNullable = true;
+                        propType = Nullable.GetUnderlyingType(prop.PropertyType);
                         //value = prop.PropertyType.UnderlyingSystemType;
                     }
                     else
                     {
-                        value = prop.PropertyType;
+                        property.IsNullable = false;
+                        propType = prop.PropertyType;
                     }
 
-                    value = $"{((Type)value).Name}";
-                    var maxLengthProp = prop.GetCustomAttribute<MaxLengthAttribute>();
-                    if (maxLengthProp != null) { value += $" ({maxLengthProp.Length})"; }
+                    //value = $"{((Type)value).Name}";
+                    //var maxLengthProp = prop.GetCustomAttribute<MaxLengthAttribute>();
+                    //if (maxLengthProp != null) { value += $" ({maxLengthProp.Length})"; }
+                    property.MaxLength = prop.GetCustomAttribute<MaxLengthAttribute>()?.Length;
+                    property.Type = (Type)propType;                    
                 }
-                else
-                {
-                    value = prop.GetValue(objectEntity, null);
+                else // Value
+                {                     
+                    object? value = prop.GetValue(objectEntity, null);
+                    property.Value = value;
 
                     if (value != null)
                     {
                         if (prop.PropertyType == typeof(DateTime)) { value = ((DateTime)value).ToString(); } // !
-                        if (prop.PropertyType == typeof(decimal)) { value = ((decimal)value).ToString(); } // !
-                        if (prop.PropertyType == typeof(bool)) { value = (bool)value ? 1 : 0; }
+                        else if (prop.PropertyType == typeof(decimal)) { value = ((decimal)value).ToString(); } // !
+                        else if (prop.PropertyType == typeof(bool)) { value = (bool)value ? 1 : 0; }
                     }
-                }
 
-                propsDictionary.Add(prop.Name, value);
+                    property.ValueSql = value;
+                }
+               
+                property.Name = prop.Name;
+                propsDictionary.Add(prop.Name, property);
             }
 
             return propsDictionary;

@@ -60,11 +60,11 @@ namespace EH
 
             var properties = ToolsEH.GetProperties(entity);
 
-            foreach (KeyValuePair<string, object> pair in properties)
+            foreach (KeyValuePair<string, Property> pair in properties)
             {
                 if (pair.Key != nameId)
                 {
-                    queryBuilder.Append($"{pair.Key} = '{pair.Value}', ");
+                    queryBuilder.Append($"{pair.Key} = '{pair.Value.ValueSql}', ");
                 }
             }
 
@@ -159,17 +159,28 @@ namespace EH
             TEntity entity = Activator.CreateInstance<TEntity>() ?? throw new ArgumentNullException(nameof(entity));
             var properties = ToolsEH.GetProperties(entity, false,true, true);
 
-            foreach (KeyValuePair<string, object> pair in properties)
+            foreach (KeyValuePair<string, Property> pair in properties)
             {
-                int maxLengthProp = int.TryParse(Regex.Match(pair.Value.ToString(), @"\((\d+)\)").Groups[1].Value, out int result) ? result : -1;
-                string value = Regex.Replace(pair.Value.ToString(), @"\([^()]*\)", "");
-                typesSql.TryGetValue(value.Trim(), out value);
+                //int maxLengthProp = int.TryParse(Regex.Match(pair.Value.ToString(), @"\((\d+)\)").Groups[1].Value, out int result) ? result : -1;
+                //string value = Regex.Replace(pair.Value.ToString(), @"\([^()]*\)", "");
+                //typesSql.TryGetValue(value.Trim(), out value);
+
+                if(pair.Value?.Type is null) { throw new InvalidOperationException($"Error mapping entity '{nameof(entity)}' property types!"); }
+
+                typesSql.TryGetValue(pair.Value.Type.Name.Trim(), out string value);                
+
+                if (value is null)
+                {
+                    Console.WriteLine($"Type default not found for '{pair.Value}'!");
+                    //return null;
+                    throw new InvalidOperationException($"Type default not found for '{pair.Value}'!");
+                }
 
                 // MaxLength?
-                if(maxLengthProp > 0)
+                if (pair.Value.MaxLength > 0)
                 {
                     value = Regex.Replace(value, @"\([^()]*\)", "");
-                    value += $"({maxLengthProp})";
+                    value += $"({pair.Value.MaxLength})";
                 }
 
                 // PK?
