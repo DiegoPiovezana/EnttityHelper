@@ -18,6 +18,22 @@ namespace EH
         public Database DbContext { get; set; }
 
         /// <summary>
+        /// Common reserved type for database data. Example: "Boolean" => "NUMBER(1)".
+        /// </summary>
+        public Dictionary<string, string> TypeReserved { get; set; } = new Dictionary<string, string> {
+            { "String", "NVARCHAR2(100)" },
+            { "Boolean", "NUMBER(1)" },
+            { "DateTime", "TIMESTAMP" },
+            { "Decimal", "NUMBER" },
+            { "Double", "NUMBER" },
+            { "Int16", "NUMBER" },
+            { "Int32", "NUMBER" },
+            { "Int64", "NUMBER" },
+            { "Single", "NUMBER" },
+            { "TimeSpan", "DATE" }           
+            };                
+
+        /// <summary>
         /// Allows you to manipulate entities from a connection string.
         /// </summary>
         /// <param name="connectionString"></param>
@@ -189,45 +205,53 @@ namespace EH
         /// </returns>
         private object? ExecuteCommand<TEntity>(string? query, bool isNonQuery = false)
         {
-            if (string.IsNullOrWhiteSpace(query))
+            try
             {
-                //Console.WriteLine("Query does not exist!");
-                throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
-                //return isNonQuery ? 0 : null;
-            }
-
-            if (DbContext?.IDbConnection is null)
-            {
-                //Console.WriteLine("Connection does not exist!");
-                throw new InvalidOperationException("Connection does not exist.");
-                //return isNonQuery ? 0 : null;
-            }
-
-            IDbConnection connection = DbContext.IDbConnection;
-            connection.Open();
-
-            using IDbCommand command = DbContext.CreateCommand(query);
-
-            if (isNonQuery)
-            {
-                int rowsAffected = command.ExecuteNonQuery();
-                connection.Close();
-                Console.WriteLine($"Rows Affected: {rowsAffected}");
-                return rowsAffected;
-            }
-            else // isSelect
-            {
-                using var reader = command.ExecuteReader();
-                if (reader != null)
+                if (string.IsNullOrWhiteSpace(query))
                 {
-                    List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
-                    connection.Close();
-                    Console.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
-                    return entities;
+                    //Console.WriteLine("Query does not exist!");
+                    throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
+                    //return isNonQuery ? 0 : null;
                 }
 
-                return null;
+                if (DbContext?.IDbConnection is null)
+                {
+                    //Console.WriteLine("Connection does not exist!");
+                    throw new InvalidOperationException("Connection does not exist.");
+                    //return isNonQuery ? 0 : null;
+                }
+
+                IDbConnection connection = DbContext.IDbConnection;
+                connection.Open();
+
+                using IDbCommand command = DbContext.CreateCommand(query);
+
+                if (isNonQuery)
+                {
+                    int rowsAffected = command.ExecuteNonQuery();
+                    connection.Close();
+                    Console.WriteLine($"Rows Affected: {rowsAffected}");
+                    return rowsAffected;
+                }
+                else // isSelect
+                {
+                    using var reader = command.ExecuteReader();
+                    if (reader != null)
+                    {
+                        List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
+                        connection.Close();
+                        Console.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
+                        return entities;
+                    }
+
+                    return null;
+                }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                throw;
+            }            
         }
 
         private void IncludeForeignKeyEntities<TEntity>(TEntity entity, string? fkOnly = null)
@@ -355,31 +379,36 @@ namespace EH
         /// <summary>
         /// Allows you to create a table in the database according to the provided objectEntity object.
         /// </summary>
-        /// <param name="entity"></param>
-        /// <param name="mandatory"></param>
-        /// <returns></returns>
-        public bool CreateTable<TEntity>(TEntity entity, bool mandatory = false)
+        /// <param name="entity">Entity to create the table.</param>      
+        /// <returns>True, if table was created and false, if not created.</returns>
+        /// <exception cref="InvalidOperationException">Occurs if the table should have been created but was not.</exception>      
+        public bool CreateTable<TEntity>()
         {
             if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
             //string createTableQuery = @"CREATE TABLE Exemplo (Id INT PRIMARY KEY, Nome NVARCHAR(50), DataCadastro DATE)";
-            string createTableQuery = CommandsString.CreateTable(entity, mandatory);
+            string? createTableQuery = CommandsString.CreateTable<TEntity>(TypeReserved);
 
+            //IDbConnection connection = DbContext.IDbConnection;
+            //connection.Open();
 
-
-            IDbConnection connection = DbContext.IDbConnection;
-            connection.Open();
-
-            using (IDbCommand command = DbContext.CreateCommand(createTableQuery))
+            //using (IDbCommand command = DbContext.CreateCommand(createTableQuery))
+            //{
+            //    command.ExecuteNonQuery();
+            //    Console.WriteLine("Table created!");
+            //}
+            if (ExecuteNonQuery(createTableQuery) != 0)
             {
-                command.ExecuteNonQuery();
                 Console.WriteLine("Table created!");
+                return true;
             }
+            else
+            {
+                //throw new InvalidOperationException("Table not created!");
+                return false;
+            }
+            //connection.Close();
 
-            Console.WriteLine("Table created!");
-
-            connection.Close();
-            return true;
         }
 
 

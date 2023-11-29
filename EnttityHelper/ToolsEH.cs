@@ -13,7 +13,7 @@ namespace EH
     /// </summary>
     internal static class ToolsEH
     {
-        internal static Dictionary<string, object> GetProperties<T>(T objectEntity, bool includeNotMapped = false, bool ignoreVirtual = true, bool includeFormat = false)
+        internal static Dictionary<string, object> GetProperties<T>(T objectEntity, bool includeNotMapped = false, bool ignoreVirtual = true, bool getFormat = false)
         {
             if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
 
@@ -22,12 +22,37 @@ namespace EH
 
             foreach (PropertyInfo prop in properties)
             {
+                if (prop is null) { continue; }
                 if (!includeNotMapped && prop.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
                 if (ignoreVirtual && prop.GetGetMethod().IsVirtual) { continue; }
 
-                var value = prop.GetValue(objectEntity, null);
+                //var value = prop.GetValue(objectEntity, null);
+                object? value;
 
-                if (prop.PropertyType == typeof(bool)) { value = (bool)value ? 1 : 0; }
+                if (getFormat)
+                {
+                    if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>)) // If Nullable
+                    {                        
+                        value = Nullable.GetUnderlyingType(prop.PropertyType);
+                        //value = prop.PropertyType.UnderlyingSystemType;
+                    }
+                    else
+                    {
+                        value = prop.PropertyType;
+                    }
+                }
+                else
+                {
+                    value = prop.GetValue(objectEntity, null);
+
+                    if (value != null)
+                    {
+                        if (prop.PropertyType == typeof(DateTime)) { value = ((DateTime)value).ToString(); } // !
+                        if (prop.PropertyType == typeof(decimal)) { value = ((decimal)value).ToString(); } // !
+                        if (prop.PropertyType == typeof(bool)) { value = (bool)value ? 1 : 0; }
+                    }
+                }
+
                 propertiesDictionary.Add(prop.Name, value);
             }
 
@@ -148,6 +173,6 @@ namespace EH
             };
 
             return sqlType;
-        }   
+        }
     }
 }
