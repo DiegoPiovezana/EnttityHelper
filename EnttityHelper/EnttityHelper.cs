@@ -1,7 +1,9 @@
 ﻿using EH.Connection;
+using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
 
@@ -21,7 +23,7 @@ namespace EH
         /// Common reserved type for database data. Example: "Boolean" => "NUMBER(1)".
         /// <para>Note: the size of a string (informed in parentheses), for example, can be changed via the property attribute.</para>
         /// </summary>
-        public Dictionary<string, string>? TypesDefault { get; set; } 
+        public Dictionary<string, string>? TypesDefault { get; set; }
 
 
 
@@ -399,12 +401,13 @@ namespace EH
         }
 
         /// <summary>
-        /// Checks if table exists.
+        /// Checks if table exists (>= 0) and it is filled (> 0).
         /// </summary>
         /// <param name="nameTable">Name of the table to check if it exists.</param>
-        /// <param name="filter"></param>
-        /// <returns>Possible filter.</returns>
-        public bool CheckIfExist(string nameTable, string? filter = null)
+        /// <param name="filter">Possible filter.</param>
+        /// <param name="quantity">Minimum quantity to be checked if it exists. Enter 0 if you just want to check if the table exists.</param>
+        /// <returns></returns>
+        public bool CheckIfExist(string nameTable, string? filter = null, int quantity = 0)
         {
             try
             {
@@ -412,25 +415,47 @@ namespace EH
 
                 DbContext.IDbConnection.Open();
 
-                using (IDbCommand command = DbContext.CreateCommand($"SELECT COUNT(*) FROM {nameTable} WHERE {filter ?? "1 = 1"}"))
+                using IDbCommand command = DbContext.CreateCommand($"SELECT COUNT(*) FROM {nameTable} WHERE {filter ?? "1 = 1"}");
+                object result = command.ExecuteScalar(); // >= 0
+
+                if (result != null && result != DBNull.Value)
                 {
-                    object result = command.ExecuteScalar();
-                    if (result != null && result != DBNull.Value) { DbContext.IDbConnection.Close(); return Convert.ToInt32(result) > 0; }
+                    //DbContext.IDbConnection.Close();
+                    return Convert.ToInt32(result) >= quantity;
                 }
 
-                DbContext.IDbConnection.Close();
+                //DbContext.IDbConnection.Close();
                 return false;
             }
+            catch (OracleException ex)
+            {
+                if (ex.Number == 942) return false; // ORA-00942: table or view does not exist
+                else throw;
+            }
+            catch (SqlException ex)
+            {
+                if (ex.Number == 208) return false; // Invalid object name 'NameTable'.
+                else throw;
+            }
+            //catch (SQLiteException ex) when (ex.ErrorCode == SQLiteErrorCode.Table)
+            //{
+            //    return false;
+            //}
             catch (Exception)
             {
                 throw;
+            }
+            finally
+            {
+                if (DbContext?.IDbConnection is not null && DbContext.IDbConnection.State == ConnectionState.Open)
+                    DbContext.IDbConnection.Close();
             }
         }
 
         /// <summary>
         /// Allows you to create a table in the database according to the provided objectEntity object.
         /// </summary>
-        /// <param name="entity">Entity to create the table.</param>      
+        /// <typeparam name="TEntity">Type of entity to create the table.</typeparam>    
         /// <returns>True, if table was created and false, if not created.</returns>
         /// <exception cref="InvalidOperationException">Occurs if the table should have been created but was not.</exception>      
         public bool CreateTable<TEntity>()
@@ -459,7 +484,19 @@ namespace EH
                 return false;
             }
             //connection.Close();
+        }
 
+        /// <summary>
+        /// Allows you to create a table in the database according to the provided objectEntity object, if table does not exist.
+        /// </summary>
+        /// <typeparam name="TEntity">Type of entity to create the table.</typeparam>    
+        /// <returns>True, if table was created or already exists and false, if it was not created.</returns>
+        /// <exception cref="InvalidOperationException">Occurs if the table should have been created but was not.</exception>      
+        public bool CreateTableIfNotExist<TEntity>()
+        {
+            if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
+            if (CheckIfExist(ToolsEH.GetTable<TEntity>())) { return true; }
+            return CreateTable<TEntity>();
         }
 
 
