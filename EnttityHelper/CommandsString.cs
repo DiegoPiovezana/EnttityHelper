@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace EH
 {
@@ -145,10 +148,10 @@ namespace EH
         /// <summary>
         /// Allows you to obtain the table creation query for TEntity./>.
         /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <param name="types"></param>
+        /// <typeparam name="TEntity">The type of entity.</typeparam>
+        /// <param name="typesSql">Dictionary containing types related to C# code and database data.</param>
         /// <returns>Table creation query.</returns>
-        public static string? CreateTable<TEntity>(Dictionary<string, string> types)
+        public static string? CreateTable<TEntity>(Dictionary<string, string> typesSql)
         {
             StringBuilder queryBuilder = new();
             queryBuilder.Append($"CREATE TABLE {ToolsEH.GetTable<TEntity>()} (");
@@ -158,7 +161,27 @@ namespace EH
 
             foreach (KeyValuePair<string, object> pair in properties)
             {
-                queryBuilder.Append($"{pair.Key} {types[((Type)pair.Value).Name]}, ");
+                int maxLengthProp = int.TryParse(Regex.Match(pair.Value.ToString(), @"\((\d+)\)").Groups[1].Value, out int result) ? result : -1;
+                string value = Regex.Replace(pair.Value.ToString(), @"\([^()]*\)", "");
+                typesSql.TryGetValue(value.Trim(), out value);
+
+                // MaxLength?
+                if(maxLengthProp > 0)
+                {
+                    value = Regex.Replace(value, @"\([^()]*\)", "");
+                    value += $"({maxLengthProp})";
+                }
+
+                // PK?
+                if (pair.Key == ToolsEH.GetPK((object)entity)?.Name)
+                {
+                    queryBuilder.Append($"{pair.Key} {value} PRIMARY KEY, ");
+                    continue;
+                }
+                else
+                {
+                    queryBuilder.Append($"{pair.Key} {value}, ");
+                }                
             }
 
             queryBuilder.Length -= 2; // Remove the last comma and space

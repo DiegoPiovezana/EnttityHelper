@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace EH
 {
@@ -18,7 +19,7 @@ namespace EH
             if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
 
             PropertyInfo[] properties = objectEntity.GetType().GetProperties();
-            Dictionary<string, object> propertiesDictionary = new();
+            Dictionary<string, object> propsDictionary = new();
 
             foreach (PropertyInfo prop in properties)
             {
@@ -32,7 +33,7 @@ namespace EH
                 if (getFormat)
                 {
                     if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>)) // If Nullable
-                    {                        
+                    {
                         value = Nullable.GetUnderlyingType(prop.PropertyType);
                         //value = prop.PropertyType.UnderlyingSystemType;
                     }
@@ -40,6 +41,10 @@ namespace EH
                     {
                         value = prop.PropertyType;
                     }
+
+                    value = $"{((Type)value).Name}";
+                    var maxLengthProp = prop.GetCustomAttribute<MaxLengthAttribute>();
+                    if (maxLengthProp != null) { value += $" ({maxLengthProp.Length})"; }
                 }
                 else
                 {
@@ -53,10 +58,10 @@ namespace EH
                     }
                 }
 
-                propertiesDictionary.Add(prop.Name, value);
+                propsDictionary.Add(prop.Name, value);
             }
 
-            return propertiesDictionary;
+            return propsDictionary;
         }
 
         /// <summary>

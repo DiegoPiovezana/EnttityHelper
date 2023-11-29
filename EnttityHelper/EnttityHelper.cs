@@ -50,7 +50,7 @@ namespace EH
         {
             if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
 
-            if (dbContext.Type.Equals("Oracle"))
+            if (dbContext.Type.ToLower().Equals("oracle"))
             {
                 TypesDefault = new Dictionary<string, string> {
                 { "String", "NVARCHAR2(100)" },
@@ -65,7 +65,7 @@ namespace EH
                 { "TimeSpan", "DATE" }
                 };
             }
-            else if (dbContext.Type.Equals("SqlServer"))
+            else if (dbContext.Type.ToLower().Equals("SqlServer"))
             {
                 TypesDefault = new Dictionary<string, string>
                 {
@@ -81,7 +81,7 @@ namespace EH
                 { "TimeSpan", "TIME" }
                 };
             }
-            else if (dbContext.Type.Equals("Sqlite"))
+            else if (dbContext.Type.ToLower().Equals("Sqlite"))
             {
                 TypesDefault = new Dictionary<string, string>
                 {
@@ -423,7 +423,7 @@ namespace EH
             }
             catch (Exception)
             {
-                return false;
+                throw;
             }
         }
 
