@@ -6,6 +6,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
+using System.Xml;
 
 namespace EH
 {
@@ -117,19 +118,21 @@ namespace EH
         {
             string? insertQuery = CommandsString.Insert(this, entity, namePropUnique);
 
-            int rowsAffected = ExecuteNonQuery(insertQuery);
-            Console.WriteLine($"Rows Affected: {rowsAffected}");
+            //int rowsAffected = ExecuteNonQuery(insertQuery);
+            //Console.WriteLine($"Rows Affected: {rowsAffected}");
 
-            if (rowsAffected > 0)
-            {
-                Console.WriteLine("Insertion successful!");
-                return true;
-            }
-            else
-            {
-                Console.WriteLine("No records entered!");
-                return false;
-            }
+            //if (rowsAffected > 0)
+            //{
+            //    Console.WriteLine("Insertion successful!");
+            //    return true;
+            //}
+            //else
+            //{
+            //    Console.WriteLine("No records entered!");
+            //    return false;
+            //}
+
+            return ExecuteNonQuery(insertQuery) > 0;
         }
 
         /// <summary>
@@ -142,12 +145,11 @@ namespace EH
         public int Update<TEntity>(TEntity entity, string? nameId = null) where TEntity : class
         {
             string? updateQuery = CommandsString.Update(entity, nameId);
-
             return ExecuteNonQuery(updateQuery);
         }
 
         /// <summary>
-        /// Search the entity by <paramref name="idPropName"/>
+        /// Search the specific entity by <paramref name="idPropName"/>
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entity">Entity to be searched for in the bank.</param>
@@ -157,12 +159,12 @@ namespace EH
         public TEntity? Search<TEntity>(TEntity entity, string? idPropName = null, bool includeAll = true) where TEntity : class
         {
             string? selectQuery = CommandsString.Search(entity, idPropName, includeAll);
-            if (string.IsNullOrEmpty(selectQuery))
-            //if (selectQuery is null)
-            {
-                Console.WriteLine("Search command not exists!");
-                return default;
-            }
+            //if (string.IsNullOrEmpty(selectQuery))
+            ////if (selectQuery is null)
+            //{
+            //    Console.WriteLine("Search command not exists!");
+            //    return default;
+            //}
 
             var entities = ExecuteSelect<TEntity>(selectQuery);
             if (includeAll) { _ = IncludeAll(entities.FirstOrDefault()); }
@@ -178,16 +180,16 @@ namespace EH
         /// <returns>Entities list.</returns>
         public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null)
         {
-            string? query = CommandsString.Get<TEntity>(includeAll, filter);
-            if (string.IsNullOrEmpty(query))
-            {
-                //Console.WriteLine("Get command not exists!");
-                //return new List<TEntity>();
+            string? querySelect = CommandsString.Get<TEntity>(includeAll, filter);
+            //if (string.IsNullOrEmpty(query))
+            //{
+            //    //Console.WriteLine("Get command not exists!");
+            //    //return new List<TEntity>();
 
-                throw new ArgumentNullException(nameof(query), "Query Get cannot be null or empty.");
-            }
+            //    throw new ArgumentNullException(nameof(query), "Query Get cannot be null or empty.");
+            //}
 
-            var entities = ExecuteSelect<TEntity>(query);
+            var entities = ExecuteSelect<TEntity>(querySelect);
             if (includeAll) { _ = IncludeAll(entities); }
             return entities;
         }
@@ -210,156 +212,6 @@ namespace EH
             //return result;
 
             return ExecuteCommand<object>(query);
-        }
-
-        /// <summary>
-        /// Executes the non query (Create, Alter, Drop, Insert, Update or Delete) on the database.
-        /// </summary>    
-        private int ExecuteNonQuery(string? query)
-        {
-            //if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return 0; }
-
-            //IDbConnection connection = DbContext.IDbConnection;
-            //connection.Open();
-            //using IDbCommand command = DbContext.CreateCommand(query);
-            //int rowsAffected = command.ExecuteNonQuery();
-            //connection.Close();
-            //Console.WriteLine($"Rows Affected: {rowsAffected}");
-            //return rowsAffected;          
-
-            return (int?)ExecuteCommand<object>(query, true) ?? 0;
-        }
-
-        private List<TEntity>? ExecuteSelect<TEntity>(string query)
-        {
-            //if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return null; }
-            //if (DbContext?.IDbConnection is null) { Console.WriteLine("Connection not exists!"); return null; }
-
-            //IDbConnection connection = DbContext.IDbConnection;
-            //connection.Open();
-            //using IDbCommand command = DbContext.CreateCommand(query);
-            //using var reader = command.ExecuteReader();
-            //List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
-            //connection.Close();
-            //return entities;
-
-            return (List<TEntity>?)ExecuteCommand<TEntity>(query);
-        }
-
-        /// <summary>
-        /// Executes a SQL command, either non-query or select, based on the provided query.
-        /// </summary>
-        /// <typeparam name="TEntity">The type of entities to retrieve.</typeparam>
-        /// <param name="query">The SQL query to execute.</param>
-        /// <param name="isNonQuery">Flag indicating whether the command is a non-query (true) or select (false).</param>        
-        /// <returns>
-        /// - If the command is a non-query, returns the number of affected rows.
-        /// - If the command is a select, returns a list of entities retrieved from the database.
-        /// </returns>
-        private object? ExecuteCommand<TEntity>(string? query, bool isNonQuery = false)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(query))
-                {
-                    //Console.WriteLine("Query does not exist!");
-                    throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
-                    //return isNonQuery ? 0 : null;
-                }
-
-                if (DbContext?.IDbConnection is null)
-                {
-                    //Console.WriteLine("Connection does not exist!");
-                    throw new InvalidOperationException("Connection does not exist.");
-                    //return isNonQuery ? 0 : null;
-                }
-
-                IDbConnection connection = DbContext.IDbConnection;
-                connection.Open();
-
-                using IDbCommand command = DbContext.CreateCommand(query);
-
-                if (isNonQuery)
-                {
-                    int rowsAffected = command.ExecuteNonQuery();
-                    connection.Close();
-                    Console.WriteLine($"Rows Affected: {rowsAffected}");
-                    return rowsAffected;
-                }
-                else // isSelect
-                {
-                    using var reader = command.ExecuteReader();
-                    if (reader != null)
-                    {
-                        List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
-                        connection.Close();
-                        Console.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
-                        return entities;
-                    }
-
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw;
-            }
-        }
-
-        private void IncludeForeignKeyEntities<TEntity>(TEntity entity, string? fkOnly = null)
-        {
-            if (entity == null) return;
-
-            var propertiesFK = ToolsEH.GetFKProperties(entity);
-            if (propertiesFK == null || propertiesFK.Count == 0)
-            {
-                Console.WriteLine("No foreign key properties found!");
-                return;
-            }
-
-            if (!string.IsNullOrEmpty(fkOnly)) // If not all
-            {
-                propertiesFK = propertiesFK.Where(x => x.Key.ToString() == fkOnly).ToDictionary(x => x.Key, x => x.Value);
-            }
-
-            foreach (KeyValuePair<object, object> pair in propertiesFK)
-            {
-                if (pair.Value != null)
-                {
-                    var pk = ToolsEH.GetPK(pair.Value);
-                    if (pk == null) continue;
-
-                    var propertyToUpdate = entity.GetType().GetProperty(pair.Key.ToString());
-
-                    MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(propertyToUpdate.PropertyType);
-
-                    if (propertyToUpdate != null)
-                    {
-                        if (genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}='{pk.GetValue(pair.Value, null)}'" }) is IEnumerable<TEntity> entityFKList)
-                        {
-                            // Checks if the property is a collection before assigning
-                            if (typeof(ICollection<TEntity>).IsAssignableFrom(propertyToUpdate.PropertyType))
-                            {
-                                if (propertyToUpdate.GetValue(entity) is ICollection<TEntity> collection)
-                                {
-                                    foreach (var entityFK in entityFKList)
-                                    {
-                                        collection.Add(entityFK);
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                // If isnt a collection, assign the first entity
-                                var entityFK = entityFKList.FirstOrDefault();
-                                propertyToUpdate.SetValue(entity, entityFK);
-                            }
-
-                        }
-                    }
-                }
-            }
         }
 
         /// <summary>
@@ -498,6 +350,171 @@ namespace EH
             if (CheckIfExist(ToolsEH.GetTable<TEntity>())) { return true; }
             return CreateTable<TEntity>();
         }
+
+        /// <summary>
+        /// Allow to delete an entity in the database.
+        /// </summary>
+        /// <returns></returns>
+        public int Delete<TEntity>(TEntity entity, string? nameId = null) where TEntity : class
+        {
+            string? deleteQuery = CommandsString.Delete(entity, nameId);
+            return ExecuteNonQuery(deleteQuery);
+        }
+
+
+
+
+        /// <summary>
+        /// Executes the non query (Create, Alter, Drop, Insert, Update or Delete) on the database.
+        /// </summary>    
+        private int ExecuteNonQuery(string? query)
+        {
+            //if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return 0; }
+
+            //IDbConnection connection = DbContext.IDbConnection;
+            //connection.Open();
+            //using IDbCommand command = DbContext.CreateCommand(query);
+            //int rowsAffected = command.ExecuteNonQuery();
+            //connection.Close();
+            //Console.WriteLine($"Rows Affected: {rowsAffected}");
+            //return rowsAffected;          
+
+            return (int?)ExecuteCommand<object>(query, true) ?? 0;
+        }
+
+        private List<TEntity>? ExecuteSelect<TEntity>(string? query)
+        {
+            //if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return null; }
+            //if (DbContext?.IDbConnection is null) { Console.WriteLine("Connection not exists!"); return null; }
+
+            //IDbConnection connection = DbContext.IDbConnection;
+            //connection.Open();
+            //using IDbCommand command = DbContext.CreateCommand(query);
+            //using var reader = command.ExecuteReader();
+            //List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
+            //connection.Close();
+            //return entities;
+
+            return (List<TEntity>?)ExecuteCommand<TEntity>(query);
+        }
+
+        /// <summary>
+        /// Executes a SQL command, either non-query or select, based on the provided query.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of entities to retrieve.</typeparam>
+        /// <param name="query">The SQL query to execute.</param>
+        /// <param name="isNonQuery">Flag indicating whether the command is a non-query (true) or select (false).</param>        
+        /// <returns>
+        /// - If the command is a non-query, returns the number of affected rows.
+        /// - If the command is a select, returns a list of entities retrieved from the database.
+        /// </returns>
+        private object? ExecuteCommand<TEntity>(string? query, bool isNonQuery = false)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(query))
+                {
+                    //Console.WriteLine("Query does not exist!");
+                    throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
+                    //return isNonQuery ? 0 : null;
+                }
+
+                if (DbContext?.IDbConnection is null)
+                {
+                    //Console.WriteLine("Connection does not exist!");
+                    throw new InvalidOperationException("Connection does not exist.");
+                    //return isNonQuery ? 0 : null;
+                }
+
+                IDbConnection connection = DbContext.IDbConnection;
+                connection.Open();
+
+                using IDbCommand command = DbContext.CreateCommand(query);
+
+                if (isNonQuery)
+                {
+                    int rowsAffected = command.ExecuteNonQuery();
+                    connection.Close();
+                    Console.WriteLine($"Rows Affected: {rowsAffected}");
+                    return rowsAffected;
+                }
+                else // isSelect
+                {
+                    using var reader = command.ExecuteReader();
+                    if (reader != null)
+                    {
+                        List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
+                        connection.Close();
+                        Console.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
+                        return entities;
+                    }
+
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                throw;
+            }
+        }
+
+        private void IncludeForeignKeyEntities<TEntity>(TEntity entity, string? fkOnly = null)
+        {
+            if (entity == null) return;
+
+            var propertiesFK = ToolsEH.GetFKProperties(entity);
+            if (propertiesFK == null || propertiesFK.Count == 0)
+            {
+                Console.WriteLine("No foreign key properties found!");
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(fkOnly)) // If not all
+            {
+                propertiesFK = propertiesFK.Where(x => x.Key.ToString() == fkOnly).ToDictionary(x => x.Key, x => x.Value);
+            }
+
+            foreach (KeyValuePair<object, object> pair in propertiesFK)
+            {
+                if (pair.Value != null)
+                {
+                    var pk = ToolsEH.GetPK(pair.Value);
+                    if (pk == null) continue;
+
+                    var propertyToUpdate = entity.GetType().GetProperty(pair.Key.ToString());
+
+                    MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(propertyToUpdate.PropertyType);
+
+                    if (propertyToUpdate != null)
+                    {
+                        if (genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}='{pk.GetValue(pair.Value, null)}'" }) is IEnumerable<TEntity> entityFKList)
+                        {
+                            // Checks if the property is a collection before assigning
+                            if (typeof(ICollection<TEntity>).IsAssignableFrom(propertyToUpdate.PropertyType))
+                            {
+                                if (propertyToUpdate.GetValue(entity) is ICollection<TEntity> collection)
+                                {
+                                    foreach (var entityFK in entityFKList)
+                                    {
+                                        collection.Add(entityFK);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                // If isnt a collection, assign the first entity
+                                var entityFK = entityFKList.FirstOrDefault();
+                                propertyToUpdate.SetValue(entity, entityFK);
+                            }
+
+                        }
+                    }
+                }
+            }
+        }
+
+
 
 
 

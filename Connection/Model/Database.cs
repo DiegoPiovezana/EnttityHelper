@@ -81,6 +81,8 @@ namespace EH.Connection
         /// <exception cref="Exception"></exception>
         public override IDbCommand CreateCommand(string commandText)
         {
+            if(IDbConnection is null) throw new Exception("Connection is null!");
+
             return Type switch
             {
                 "sqlserver" => new SqlCommand(commandText, (SqlConnection)IDbConnection),
@@ -96,8 +98,10 @@ namespace EH.Connection
         /// <param name="connection"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public override IDbCommand CreateStoredProcCommand(string procName, IDbConnection connection)
+        public override IDbCommand CreateStoredProcCommand(string procName, IDbConnection? connection)
         {
+            if (connection is null) throw new Exception("Connection is null!");
+
             return Type switch
             {
                 "sqlserver" => new SqlCommand
@@ -190,15 +194,15 @@ namespace EH.Connection
             }
         }
 
-        /// <summary>
-        /// Dispose of the connection object.
-        /// </summary>
-        /// <param name="disposing"></param>
-        protected virtual void Dispose(bool disposing = true)
-        {
-            if (disposing) IDbConnection.Close();
-            GC.SuppressFinalize(this);
-        }
+        ///// <summary>
+        ///// Dispose of the connection object.
+        ///// </summary>
+        ///// <param name="disposing"></param>
+        //protected virtual void Dispose(bool disposing = true)
+        //{
+        //    if (disposing) IDbConnection.Close();
+        //    GC.SuppressFinalize(this);
+        //}
 
         /// <summary>
         /// Clone the object.
