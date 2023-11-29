@@ -19,19 +19,11 @@ namespace EH
 
         /// <summary>
         /// Common reserved type for database data. Example: "Boolean" => "NUMBER(1)".
+        /// <para>Note: the size of a string (informed in parentheses), for example, can be changed via the property attribute.</para>
         /// </summary>
-        public Dictionary<string, string> TypeReserved { get; set; } = new Dictionary<string, string> {
-            { "String", "NVARCHAR2(100)" },
-            { "Boolean", "NUMBER(1)" },
-            { "DateTime", "TIMESTAMP" },
-            { "Decimal", "NUMBER" },
-            { "Double", "NUMBER" },
-            { "Int16", "NUMBER" },
-            { "Int32", "NUMBER" },
-            { "Int64", "NUMBER" },
-            { "Single", "NUMBER" },
-            { "TimeSpan", "DATE" }           
-            };                
+        public Dictionary<string, string>? TypesDefault { get; set; } 
+
+
 
         /// <summary>
         /// Allows you to manipulate entities from a connection string.
@@ -40,6 +32,7 @@ namespace EH
         public EnttityHelper(string connectionString)
         {
             DbContext = new Database(connectionString);
+            DefineTypesDefaultDb(DbContext);
         }
 
         /// <summary>
@@ -49,8 +42,66 @@ namespace EH
         public EnttityHelper(Database db)
         {
             DbContext = db;
+            DefineTypesDefaultDb(DbContext);
         }
 
+
+        private void DefineTypesDefaultDb(Database? dbContext)
+        {
+            if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
+
+            if (dbContext.Type.Equals("Oracle"))
+            {
+                TypesDefault = new Dictionary<string, string> {
+                { "String", "NVARCHAR2(100)" },
+                { "Boolean", "NUMBER(1)" },
+                { "DateTime", "TIMESTAMP" },
+                { "Decimal", "NUMBER" },
+                { "Double", "NUMBER" },
+                { "Int16", "NUMBER" },
+                { "Int32", "NUMBER" },
+                { "Int64", "NUMBER" },
+                { "Single", "NUMBER" },
+                { "TimeSpan", "DATE" }
+                };
+            }
+            else if (dbContext.Type.Equals("SqlServer"))
+            {
+                TypesDefault = new Dictionary<string, string>
+                {
+                { "String", "NVARCHAR(100)" },
+                { "Boolean", "BIT" },
+                { "DateTime", "DATETIME" },
+                { "Decimal", "DECIMAL" },
+                { "Double", "FLOAT" },
+                { "Int16", "SMALLINT" },
+                { "Int32", "INT" },
+                { "Int64", "BIGINT" },
+                { "Single", "REAL" },
+                { "TimeSpan", "TIME" }
+                };
+            }
+            else if (dbContext.Type.Equals("Sqlite"))
+            {
+                TypesDefault = new Dictionary<string, string>
+                {
+                { "String", "TEXT" },
+                { "Boolean", "INTEGER" },
+                { "DateTime", "TEXT" },
+                { "Decimal", "REAL" },
+                { "Double", "REAL" },
+                { "Int16", "INTEGER" },
+                { "Int32", "INTEGER" },
+                { "Int64", "INTEGER" },
+                { "Single", "REAL" },
+                { "TimeSpan", "TEXT" }
+                };
+            }
+            else
+            {
+                throw new InvalidOperationException("Database type not supported.");
+            }
+        }
 
 
         /// <summary>
@@ -251,7 +302,7 @@ namespace EH
             {
                 Console.WriteLine(ex.Message);
                 throw;
-            }            
+            }
         }
 
         private void IncludeForeignKeyEntities<TEntity>(TEntity entity, string? fkOnly = null)
@@ -387,7 +438,7 @@ namespace EH
             if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
             //string createTableQuery = @"CREATE TABLE Exemplo (Id INT PRIMARY KEY, Nome NVARCHAR(50), DataCadastro DATE)";
-            string? createTableQuery = CommandsString.CreateTable<TEntity>(TypeReserved);
+            string? createTableQuery = CommandsString.CreateTable<TEntity>(TypesDefault);
 
             //IDbConnection connection = DbContext.IDbConnection;
             //connection.Open();
