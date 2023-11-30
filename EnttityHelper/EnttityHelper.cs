@@ -198,65 +198,7 @@ namespace EH
             var entities = ExecuteSelect<TEntity>(querySelect);
             if (includeAll) { _ = IncludeAll(entities); }
             return entities;
-        }
-
-        /// <summary>
-        /// Execute the query.
-        /// </summary>
-        /// <param name="query">Custom query to be executed.</param>
-        /// <returns>Object.</returns>
-        public object? CustomCommand(string query)
-        {
-            //if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return null; }
-            //if (DbContext?.IDbConnection is null) { Console.WriteLine("Connection not exists!"); return null; }
-
-            //IDbConnection connection = DbContext.IDbConnection;
-            //connection.Open();
-            //using IDbCommand command = DbContext.CreateCommand(query);
-            //using var result = command.ExecuteReader();
-            //connection.Close();
-            //return result;
-
-            return ExecuteCommand<object>(query);
-        }
-
-        /// <summary>
-        /// Include all FK entities.
-        /// </summary>
-        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
-        /// <param name="entity">Entity that will have its FK entities included.</param>
-        /// <returns></returns>
-        public bool IncludeAll<TEntity>(TEntity entity)
-        {
-            return IncludeAll(new List<TEntity> { entity });
-        }
-
-        /// <summary>
-        /// Include all FK entities.
-        /// </summary>
-        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
-        /// <param name="entities">Entities that will have their FK entities included.</param>
-        /// <returns></returns>
-        public bool IncludeAll<TEntity>(List<TEntity>? entities)
-        {
-            if (entities == null || entities.Count == 0) return false;
-            foreach (TEntity entity in entities) { IncludeForeignKeyEntities(entity); }
-            return true;
-        }
-
-        /// <summary>
-        /// Include FK entity.
-        /// </summary>
-        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
-        /// <param name="entity">Entity that will have their FK entity included.</param>
-        /// <param name="fkName">Name on the FK entity that will be included.</param>
-        /// <returns>True if success.</returns>
-        public bool IncludeEntityFK<TEntity>(TEntity entity, string fkName)
-        {
-            if (entity == null) return false;
-            IncludeForeignKeyEntities(entity, fkName);
-            return true;
-        }
+        }      
 
         /// <summary>
         /// Checks if table exists (>= 0) and it is filled (> 0).
@@ -360,7 +302,7 @@ namespace EH
         /// <summary>
         /// Allow to delete an entity in the database.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Number of exclusions made.</returns>
         public int Delete<TEntity>(TEntity entity, string? nameId = null) where TEntity : class
         {
             string? deleteQuery = CommandsString.Delete(entity, nameId);
@@ -368,12 +310,33 @@ namespace EH
         }
 
 
+        ///// <summary>
+        ///// Execute the query.
+        ///// </summary>
+        ///// <param name="query">Custom query to be executed.</param>
+        ///// <returns>Object.</returns>
+        //public object? CustomCommand(string query)
+        //{
+        //    //if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return null; }
+        //    //if (DbContext?.IDbConnection is null) { Console.WriteLine("Connection not exists!"); return null; }
 
+        //    //IDbConnection connection = DbContext.IDbConnection;
+        //    //connection.Open();
+        //    //using IDbCommand command = DbContext.CreateCommand(query);
+        //    //using var result = command.ExecuteReader();
+        //    //connection.Close();
+        //    //return result;
+
+        //    if (query is null) throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
+        //    return ExecuteCommand<object>(query, !query.Contains("SELECT"));
+        //}
 
         /// <summary>
         /// Executes the non query (Create, Alter, Drop, Insert, Update or Delete) on the database.
-        /// </summary>    
-        private int ExecuteNonQuery(string? query)
+        /// </summary>   
+        /// <param name="query">Query to be executed.</param>
+        /// <returns>Number of affected rows.</returns>
+        public int ExecuteNonQuery(string? query)
         {
             //if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return 0; }
 
@@ -388,7 +351,13 @@ namespace EH
             return (int?)ExecuteCommand<object>(query, true) ?? 0;
         }
 
-        private List<TEntity>? ExecuteSelect<TEntity>(string? query)
+        /// <summary>
+        /// Executes the section in the database and returns the list with the obtained entities.
+        /// </summary>
+        /// <typeparam name="TEntity">Type of entities to be obtained.</typeparam>
+        /// <param name="query">Query to be executed.</param>
+        /// <returns>List of entities retrieved from the database.</returns>
+        public List<TEntity>? ExecuteSelect<TEntity>(string? query)
         {
             //if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return null; }
             //if (DbContext?.IDbConnection is null) { Console.WriteLine("Connection not exists!"); return null; }
@@ -403,6 +372,48 @@ namespace EH
 
             return (List<TEntity>?)ExecuteCommand<TEntity>(query);
         }
+
+        /// <summary>
+        /// Include all FK entities.
+        /// </summary>
+        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
+        /// <param name="entity">Entity that will have its FK entities included.</param>
+        /// <returns>True, if it's ok.</returns>
+        public bool IncludeAll<TEntity>(TEntity entity)
+        {
+            return IncludeAll(new List<TEntity> { entity });
+        }
+
+        /// <summary>
+        /// Include all FK entities.
+        /// </summary>
+        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
+        /// <param name="entities">Entities that will have their FK entities included.</param>
+        /// <returns>True, if it's ok.</returns>
+        public bool IncludeAll<TEntity>(List<TEntity>? entities)
+        {
+            if (entities == null || entities.Count == 0) return false;
+            foreach (TEntity entity in entities) { IncludeForeignKeyEntities(entity); }
+            return true;
+        }
+
+        /// <summary>
+        /// Include FK entity.
+        /// </summary>
+        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
+        /// <param name="entity">Entity that will have their FK entity included.</param>
+        /// <param name="fkName">Name on the FK entity that will be included.</param>
+        /// <returns>True if success.</returns>
+        public bool IncludeEntityFK<TEntity>(TEntity entity, string fkName)
+        {
+            if (entity == null) return false;
+            IncludeForeignKeyEntities(entity, fkName);
+            return true;
+        }
+
+
+        ///////////////////////////////// PRIVATE METHODS ///////////////////////////////// 
+        
 
         /// <summary>
         /// Executes a SQL command, either non-query or select, based on the provided query.
