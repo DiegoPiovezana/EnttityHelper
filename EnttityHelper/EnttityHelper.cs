@@ -111,12 +111,18 @@ namespace EH
         /// Allow to insert an entity in the database.
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
-        /// <param name="entity">Entity to be inserted into the database.</param>
+        /// <param name="entity">Entity to be inserted into the database.</param>      
         /// <param name="namePropUnique">Name of the property to be considered as a uniqueness criterion (optional).</param>
-        /// <returns>True, if one or more entities are inserted into the database.</returns>
-        public bool Insert<TEntity>(TEntity entity, string? namePropUnique = null)
+        /// <returns>
+        /// True, if one or more entities are inserted into the database.
+        /// <para></para>
+        /// </returns>
+        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null)
         {
             string? insertQuery = CommandsString.Insert(this, entity, namePropUnique);
+
+            if (insertQuery is not null && insertQuery.Equals("EH-101")) { return -101; }
+
 
             //int rowsAffected = ExecuteNonQuery(insertQuery);
             //Console.WriteLine($"Rows Affected: {rowsAffected}");
@@ -132,7 +138,7 @@ namespace EH
             //    return false;
             //}
 
-            return ExecuteNonQuery(insertQuery) > 0;
+            return ExecuteNonQuery(insertQuery);
         }
 
         /// <summary>
@@ -180,7 +186,7 @@ namespace EH
         /// <returns>Entities list.</returns>
         public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null)
         {
-            string? querySelect = CommandsString.Get<TEntity>(includeAll, filter);
+            string? querySelect = CommandsString.Get<TEntity>(filter);
             //if (string.IsNullOrEmpty(query))
             //{
             //    //Console.WriteLine("Get command not exists!");

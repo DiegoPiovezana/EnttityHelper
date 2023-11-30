@@ -17,7 +17,7 @@ namespace EH
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="eh">EnttityHelper object.</param>
-        /// <param name="entity">Entity to be inserted into the database.</param>
+        /// <param name="entity">Entity to be inserted into the database.</param>    
         /// <param name="namePropUnique">Name of the property to be considered as a uniqueness criterion (optional).</param>
         /// <returns>String command.</returns>
         public static string? Insert<TEntity>(EnttityHelper eh, TEntity entity, string? namePropUnique = null)
@@ -25,15 +25,16 @@ namespace EH
             var properties = ToolsEH.GetProperties(entity);
             string tableName = ToolsEH.GetTable<TEntity>();
 
-            if (!string.IsNullOrEmpty(namePropUnique) && eh.CheckIfExist(tableName, $"{namePropUnique} = {properties[namePropUnique]}"))
-            {
-                Console.WriteLine("Entity already exists in table!");
-                return null;
+            if (!string.IsNullOrEmpty(namePropUnique)
+                && eh.CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'",1))
+            {                
+                Console.WriteLine($"EH-101: Entity '{namePropUnique}' already exists in table!");
+                return "EH-101";
             }
 
             string columns = string.Join(", ", properties.Keys);
             string values = string.Join("', '", properties.Values);
-
+        
             return $"INSERT INTO {tableName} ({columns}) VALUES ('{values}')";
 
         }
@@ -76,11 +77,10 @@ namespace EH
         /// <summary>
         /// Generates a SQL SELECT query for a specified entity with optional filters.
         /// </summary>
-        /// <typeparam name="TEntity">The type of entity.</typeparam>
-        /// <param name="includeAll">Whether to include all related entities.</param>
+        /// <typeparam name="TEntity">The type of entity.</typeparam>     
         /// <param name="filter">The filter criteria.</param>
         /// <returns>A SELECT SQL query string.</returns>
-        public static string? Get<TEntity>(bool includeAll = true, string? filter = null)
+        public static string? Get<TEntity>(string? filter = null)
         {
             filter = string.IsNullOrEmpty(filter?.Trim()) ? "1 = 1" : filter;
             return $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({filter})";
