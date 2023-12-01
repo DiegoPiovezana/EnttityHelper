@@ -59,12 +59,12 @@ namespace EH
                 { "String", "NVARCHAR2(1000)" },
                 { "Boolean", "NUMBER(1)" },
                 { "DateTime", "TIMESTAMP" },
-                { "Decimal", "NUMBER(10)" },
-                { "Double", "NUMBER(10)" },
-                { "Int16", "NUMBER(10)" },
-                { "Int32", "NUMBER(10)" },
-                { "Int64", "NUMBER(10)" },
-                { "Single", "NUMBER(10)" },
+                { "Decimal", "NUMBER" },
+                { "Double", "NUMBER" },
+                { "Int16", "NUMBER" },
+                { "Int32", "NUMBER" },
+                { "Int64", "NUMBER" },
+                { "Single", "NUMBER" },
                 { "TimeSpan", "DATE" }
                 };
             }
@@ -213,7 +213,7 @@ namespace EH
             {
                 if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
-                DbContext.IDbConnection.Open();
+                if (DbContext.IDbConnection.State != ConnectionState.Open) DbContext.IDbConnection.Open();
 
                 using IDbCommand command = DbContext.CreateCommand($"SELECT COUNT(*) FROM {nameTable} WHERE {filter ?? "1 = 1"}");
                 object result = command.ExecuteScalar(); // >= 0
