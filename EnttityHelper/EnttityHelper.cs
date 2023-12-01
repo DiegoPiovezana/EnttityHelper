@@ -56,15 +56,15 @@ namespace EH
             if (dbContext.Type.ToLower().Equals("oracle"))
             {
                 TypesDefault = new Dictionary<string, string> {
-                { "String", "NVARCHAR2(100)" },
+                { "String", "NVARCHAR2(1000)" },
                 { "Boolean", "NUMBER(1)" },
                 { "DateTime", "TIMESTAMP" },
-                { "Decimal", "NUMBER" },
-                { "Double", "NUMBER" },
-                { "Int16", "NUMBER" },
-                { "Int32", "NUMBER" },
-                { "Int64", "NUMBER" },
-                { "Single", "NUMBER" },
+                { "Decimal", "NUMBER(10)" },
+                { "Double", "NUMBER(10)" },
+                { "Int16", "NUMBER(10)" },
+                { "Int32", "NUMBER(10)" },
+                { "Int64", "NUMBER(10)" },
+                { "Single", "NUMBER(10)" },
                 { "TimeSpan", "DATE" }
                 };
             }
@@ -72,7 +72,7 @@ namespace EH
             {
                 TypesDefault = new Dictionary<string, string>
                 {
-                { "String", "NVARCHAR(100)" },
+                { "String", "NVARCHAR(1000)" },
                 { "Boolean", "BIT" },
                 { "DateTime", "DATETIME" },
                 { "Decimal", "DECIMAL" },
@@ -115,7 +115,7 @@ namespace EH
         /// <param name="namePropUnique">Name of the property to be considered as a uniqueness criterion (optional).</param>
         /// <returns>
         /// True, if one or more entities are inserted into the database.
-        /// <para></para>
+        /// <para>If the return is negative, it indicates that the insertion did not happen due to some established criteria.</para>
         /// </returns>
         public int Insert<TEntity>(TEntity entity, string? namePropUnique = null)
         {
@@ -198,7 +198,7 @@ namespace EH
             var entities = ExecuteSelect<TEntity>(querySelect);
             if (includeAll) { _ = IncludeAll(entities); }
             return entities;
-        }      
+        }
 
         /// <summary>
         /// Checks if table exists (>= 0) and it is filled (> 0).
@@ -413,7 +413,7 @@ namespace EH
 
 
         ///////////////////////////////// PRIVATE METHODS ///////////////////////////////// 
-        
+
 
         /// <summary>
         /// Executes a SQL command, either non-query or select, based on the provided query.
