@@ -503,8 +503,14 @@ namespace EH
 
                     if (propertyToUpdate != null)
                     {
+                        var pkValue = pk.GetValue(pair.Value, null);
+                        if (pkValue == null || string.IsNullOrEmpty(pkValue.ToString().Trim())
+                            || (pk.PropertyType.IsPrimitive && pkValue.Equals(Convert.ChangeType(0, pkValue.GetType())))
+                            )
+                            continue;
+
                         // Get the property type of the foreign key
-                        Type fkEntityType = propertyToUpdate.PropertyType;
+                        Type? fkEntityType = propertyToUpdate.PropertyType;
 
                         // Check if it is a generic collection type
                         bool isCollection = typeof(ICollection<>).IsAssignableFrom(fkEntityType);
@@ -516,7 +522,7 @@ namespace EH
                         MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(elementType);
 
                         // Retrieve the foreign key entities
-                        IEnumerable<object> entityFKList = (IEnumerable<object>)genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}='{pk.GetValue(pair.Value, null)}'" });
+                        IEnumerable<object> entityFKList = (IEnumerable<object>)genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}='{pkValue}'" });
 
                         // Cast each entity to the actual type
                         IEnumerable<object> castEntityFKList = entityFKList.Cast<object>();
