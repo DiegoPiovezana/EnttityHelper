@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -26,15 +24,15 @@ namespace EH
             string tableName = ToolsEH.GetTable<TEntity>();
 
             if (!string.IsNullOrEmpty(namePropUnique)
-                && eh.CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'",1))
-            {                
+                && eh.CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))
+            {
                 Console.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
                 return "EH-101";
             }
 
             string columns = string.Join(", ", properties.Keys);
             string values = string.Join("', '", properties.Values);
-        
+
             return $"INSERT INTO {tableName} ({columns}) VALUES ('{values}')";
 
         }
@@ -72,7 +70,7 @@ namespace EH
             queryBuilder.Length -= 2; // Remove the last comma and space
             queryBuilder.Append($" WHERE {nameId} = '{properties[nameId]}'");
             return queryBuilder.ToString();
-        }        
+        }
 
         /// <summary>
         /// Generates a SQL SELECT query for a specified entity with optional filters.
@@ -101,28 +99,6 @@ namespace EH
             return $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({idPropName} = {typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)})";
         }
 
-        ///// <summary>
-        ///// Generates a SQL SELECT query for a specified entity based on the ID property.
-        ///// </summary>
-        ///// <typeparam name="TEntity">The type of entity.</typeparam>
-        ///// <param name="entity">The entity object.</param>
-        ///// <param name="nameId">The name of the ID property.</param>
-        ///// <returns>A SELECT SQL query string.</returns>
-        //public static string? Select<TEntity>(TEntity entity, string? nameId = null) where TEntity : class
-        //{
-        //    nameId ??= ToolsEH.GetPK(entity)?.Name;
-
-        //    if (nameId is null)
-        //    {
-        //        Console.WriteLine("No primary key found!");
-        //        return null;
-        //    }
-
-        //    var properties = ToolsEH.GetProperties(entity);
-
-        //    return $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE {nameId} = '{properties[nameId]}'";
-        //}
-
         /// <summary>
         /// Generates a SQL DELETE query for a specified entity based on the ID property.
         /// </summary>
@@ -140,10 +116,8 @@ namespace EH
                 return null;
             }
 
-            //var properties = ToolsEH.GetProperties(entity);
-
             return $"DELETE FROM {ToolsEH.GetTable<TEntity>()} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')";
-        }        
+        }
 
         /// <summary>
         /// Allows you to obtain the table creation query for TEntity./>.
@@ -151,28 +125,25 @@ namespace EH
         /// <typeparam name="TEntity">The type of entity.</typeparam>
         /// <param name="typesSql">Dictionary containing types related to C# code and database data.</param>
         /// <returns>Table creation query.</returns>
-        public static string? CreateTable<TEntity>(Dictionary<string, string> typesSql)
+        public static string? CreateTable<TEntity>(Dictionary<string, string>? typesSql)
         {
+            if(typesSql is null) { throw new ArgumentNullException(nameof(typesSql)); } 
+
             StringBuilder queryBuilder = new();
             queryBuilder.Append($"CREATE TABLE {ToolsEH.GetTable<TEntity>()} (");
 
             TEntity entity = Activator.CreateInstance<TEntity>() ?? throw new ArgumentNullException(nameof(entity));
-            var properties = ToolsEH.GetProperties(entity, false,true, true);
+            var properties = ToolsEH.GetProperties(entity, false, true, true);
 
             foreach (KeyValuePair<string, Property> pair in properties)
             {
-                //int maxLengthProp = int.TryParse(Regex.Match(pair.Value.ToString(), @"\((\d+)\)").Groups[1].Value, out int result) ? result : -1;
-                //string value = Regex.Replace(pair.Value.ToString(), @"\([^()]*\)", "");
-                //typesSql.TryGetValue(value.Trim(), out value);
+                if (pair.Value?.Type is null) { throw new InvalidOperationException($"Error mapping entity '{nameof(entity)}' property types!"); }
 
-                if(pair.Value?.Type is null) { throw new InvalidOperationException($"Error mapping entity '{nameof(entity)}' property types!"); }
-
-                typesSql.TryGetValue(pair.Value.Type.Name.Trim(), out string value);                
+                typesSql.TryGetValue(pair.Value.Type.Name.Trim(), out string value);
 
                 if (value is null)
                 {
                     Console.WriteLine($"Type default not found for '{pair.Value}'!");
-                    //return null;
                     throw new InvalidOperationException($"Type default not found for '{pair.Value}'!");
                 }
 
@@ -192,13 +163,13 @@ namespace EH
                 else
                 {
                     queryBuilder.Append($"{pair.Key} {value}, ");
-                }                
+                }
             }
 
             queryBuilder.Length -= 2; // Remove the last comma and space
             queryBuilder.Append(")");
             return queryBuilder.ToString();
-        }   
+        }
 
     }
 }

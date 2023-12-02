@@ -5,13 +5,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Linq;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 
 namespace EH
-{
-    /// <summary>
-    /// Secondary functionality for manipulating list.
-    /// </summary>
+{   
     internal static class ToolsEH
     {
         internal static Dictionary<string, Property> GetProperties<T>(T objectEntity, bool includeNotMapped = false, bool ignoreVirtual = true, bool getFormat = false)
@@ -27,17 +23,7 @@ namespace EH
                 if (!includeNotMapped && prop.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
                 if (ignoreVirtual && prop.GetGetMethod().IsVirtual) { continue; }
 
-                Property property = new(prop)
-                {
-                    IsPrimaryKey = prop.GetCustomAttribute<KeyAttribute>() != null,
-                    IsForeignKey = prop.GetCustomAttribute<ForeignKeyAttribute>() != null,
-                    IsNotMapped = prop.GetCustomAttribute<NotMappedAttribute>() != null,
-                    IsVirtual = prop.GetGetMethod().IsVirtual,
-                    IsRequired = prop.GetCustomAttribute<RequiredAttribute>() != null
-                };
-
-                //var value = prop.GetValue(objectEntity, null);
-                //object? value;
+                Property property = new(prop);
 
                 if (getFormat)
                 {
@@ -47,7 +33,6 @@ namespace EH
                     {
                         property.IsNullable = true;
                         propType = Nullable.GetUnderlyingType(prop.PropertyType);
-                        //value = prop.PropertyType.UnderlyingSystemType;
                     }
                     else
                     {
@@ -55,9 +40,6 @@ namespace EH
                         propType = prop.PropertyType;
                     }
 
-                    //value = $"{((Type)value).Name}";
-                    //var maxLengthProp = prop.GetCustomAttribute<MaxLengthAttribute>();
-                    //if (maxLengthProp != null) { value += $" ({maxLengthProp.Length})"; }
                     property.MaxLength = prop.GetCustomAttribute<MaxLengthAttribute>()?.Length;
                     property.Type = (Type)propType;
                 }
@@ -138,10 +120,8 @@ namespace EH
         public static string GetTable<TEntity>()
         {
             TableAttribute? ta = GetTableAttribute(typeof(TEntity));
-
             string schema = ta?.Schema != null ? $"{ta.Schema}." : "";
-            string tableName = ta?.Name ?? typeof(TEntity).Name; // entity.GetType().Name;
-
+            string tableName = ta?.Name ?? typeof(TEntity).Name;
             return $"{schema}{tableName}";
         }
 
@@ -199,24 +179,6 @@ namespace EH
             }
         }
 
-        //internal static string GetSqlType(object value)
-        //{
-        //    if (value is null) { throw new ArgumentNullException(nameof(value)); }
 
-        //    string sqlType = value.GetType().Name switch
-        //    {
-        //        "String" => "VARCHAR2(255)",
-        //        "Int32" => "NUMBER(10)",
-        //        "Int64" => "NUMBER(19)",
-        //        "Int16" => "NUMBER(5)",
-        //        "Decimal" => "NUMBER(19,4)",
-        //        "Double" => "NUMBER(19,4)",
-        //        "DateTime" => "DATE",
-        //        "Boolean" => "NUMBER(1)",
-        //        _ => throw new ArgumentException("Invalid type!"),
-        //    };
-
-        //    return sqlType;
-        //}
     }
 }

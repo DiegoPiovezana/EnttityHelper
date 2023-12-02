@@ -1,4 +1,6 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 
 namespace EH
@@ -29,7 +31,7 @@ namespace EH
         /// Gets or sets the type of the property.
         /// </summary>
         public Type? Type { get; set; }
-              
+
         /// <summary>
         /// Indicates whether the property is nullable.
         /// </summary>
@@ -139,6 +141,11 @@ namespace EH
         public Property(PropertyInfo propertyInfo)
         {
             PropertyInfo = propertyInfo;
+            IsPrimaryKey = propertyInfo.GetCustomAttribute<KeyAttribute>() != null;
+            IsForeignKey = propertyInfo.GetCustomAttribute<ForeignKeyAttribute>() != null;
+            IsNotMapped = propertyInfo.GetCustomAttribute<NotMappedAttribute>() != null;
+            IsVirtual = propertyInfo.GetGetMethod().IsVirtual;
+            IsRequired = propertyInfo.GetCustomAttribute<RequiredAttribute>() != null;
         }
 
         override public string? ToString()
@@ -149,6 +156,6 @@ namespace EH
 
     }
 
-    
+
 
 }

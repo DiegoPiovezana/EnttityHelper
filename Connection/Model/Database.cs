@@ -81,7 +81,7 @@ namespace EH.Connection
         /// <exception cref="Exception"></exception>
         public override IDbCommand CreateCommand(string commandText)
         {
-            if(IDbConnection is null) throw new Exception("Connection is null!");
+            if (IDbConnection is null) throw new Exception("Connection is null!");
 
             return Type switch
             {
@@ -160,7 +160,6 @@ namespace EH.Connection
             }
         }
 
-
         /// <summary>
         /// Opens the database connection.
         /// </summary>   
@@ -168,6 +167,7 @@ namespace EH.Connection
         {
             try
             {
+                if (IDbConnection is null) throw new Exception("Connection is null!");
                 if (IDbConnection.State != ConnectionState.Open) { IDbConnection.Open(); }
                 return true;
             }
@@ -184,6 +184,7 @@ namespace EH.Connection
         {
             try
             {
+                if (IDbConnection is null) throw new Exception("Connection is null!");
                 IDbConnection.Close();
                 GC.SuppressFinalize(this);
                 return true;
@@ -193,16 +194,6 @@ namespace EH.Connection
                 return false;
             }
         }
-
-        ///// <summary>
-        ///// Dispose of the connection object.
-        ///// </summary>
-        ///// <param name="disposing"></param>
-        //protected virtual void Dispose(bool disposing = true)
-        //{
-        //    if (disposing) IDbConnection.Close();
-        //    GC.SuppressFinalize(this);
-        //}
 
         /// <summary>
         /// Clone the object.

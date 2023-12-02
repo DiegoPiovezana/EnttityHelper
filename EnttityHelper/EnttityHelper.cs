@@ -6,7 +6,6 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
-using System.Xml;
 
 namespace EH
 {
@@ -120,24 +119,7 @@ namespace EH
         public int Insert<TEntity>(TEntity entity, string? namePropUnique = null)
         {
             string? insertQuery = CommandsString.Insert(this, entity, namePropUnique);
-
             if (insertQuery is not null && insertQuery.Equals("EH-101")) { return -101; }
-
-
-            //int rowsAffected = ExecuteNonQuery(insertQuery);
-            //Console.WriteLine($"Rows Affected: {rowsAffected}");
-
-            //if (rowsAffected > 0)
-            //{
-            //    Console.WriteLine("Insertion successful!");
-            //    return true;
-            //}
-            //else
-            //{
-            //    Console.WriteLine("No records entered!");
-            //    return false;
-            //}
-
             return ExecuteNonQuery(insertQuery);
         }
 
@@ -155,6 +137,21 @@ namespace EH
         }
 
         /// <summary>
+        /// Gets one or more entities from the database.
+        /// </summary>
+        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
+        /// <param name="includeAll">If true, all entities that are properties of the parent property will be included.</param>
+        /// <param name="filter">Entity search criteria (optional).</param>
+        /// <returns>Entities list.</returns>
+        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null)
+        {
+            string? querySelect = CommandsString.Get<TEntity>(filter);
+            var entities = ExecuteSelect<TEntity>(querySelect);
+            if (includeAll) { _ = IncludeAll(entities); }
+            return entities;
+        }
+
+        /// <summary>
         /// Search the specific entity by <paramref name="idPropName"/>
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
@@ -165,39 +162,9 @@ namespace EH
         public TEntity? Search<TEntity>(TEntity entity, string? idPropName = null, bool includeAll = true) where TEntity : class
         {
             string? selectQuery = CommandsString.Search(entity, idPropName, includeAll);
-            //if (string.IsNullOrEmpty(selectQuery))
-            ////if (selectQuery is null)
-            //{
-            //    Console.WriteLine("Search command not exists!");
-            //    return default;
-            //}
-
             var entities = ExecuteSelect<TEntity>(selectQuery);
             if (includeAll) { _ = IncludeAll(entities.FirstOrDefault()); }
             return entities.FirstOrDefault();
-        }
-
-        /// <summary>
-        /// Gets one or more entities from the database.
-        /// </summary>
-        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
-        /// <param name="includeAll">If true, all entities that are properties of the parent property will be included.</param>
-        /// <param name="filter">Entity search criteria (optional).</param>
-        /// <returns>Entities list.</returns>
-        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null)
-        {
-            string? querySelect = CommandsString.Get<TEntity>(filter);
-            //if (string.IsNullOrEmpty(query))
-            //{
-            //    //Console.WriteLine("Get command not exists!");
-            //    //return new List<TEntity>();
-
-            //    throw new ArgumentNullException(nameof(query), "Query Get cannot be null or empty.");
-            //}
-
-            var entities = ExecuteSelect<TEntity>(querySelect);
-            if (includeAll) { _ = IncludeAll(entities); }
-            return entities;
         }
 
         /// <summary>
@@ -213,7 +180,6 @@ namespace EH
             {
                 if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
-                //if (DbContext.IDbConnection.State != ConnectionState.Open) 
                 DbContext.IDbConnection.Open();
 
                 using IDbCommand command = DbContext.CreateCommand($"SELECT COUNT(*) FROM {nameTable} WHERE {filter ?? "1 = 1"}");
@@ -221,11 +187,9 @@ namespace EH
 
                 if (result != null && result != DBNull.Value)
                 {
-                    //DbContext.IDbConnection.Close();
                     return Convert.ToInt32(result) >= quantity;
                 }
 
-                //DbContext.IDbConnection.Close();
                 return false;
             }
             catch (OracleException ex)
@@ -263,17 +227,8 @@ namespace EH
         {
             if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
-            //string createTableQuery = @"CREATE TABLE Exemplo (Id INT PRIMARY KEY, Nome NVARCHAR(50), DataCadastro DATE)";
             string? createTableQuery = CommandsString.CreateTable<TEntity>(TypesDefault);
 
-            //IDbConnection connection = DbContext.IDbConnection;
-            //connection.Open();
-
-            //using (IDbCommand command = DbContext.CreateCommand(createTableQuery))
-            //{
-            //    command.ExecuteNonQuery();
-            //    Console.WriteLine("Table created!");
-            //}
             if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
             {
                 Console.WriteLine("Table created!");
@@ -281,10 +236,9 @@ namespace EH
             }
             else
             {
-                //throw new InvalidOperationException("Table not created!");
+                Console.WriteLine("Table not created!");
                 return false;
             }
-            //connection.Close();
         }
 
         /// <summary>
@@ -310,28 +264,6 @@ namespace EH
             return ExecuteNonQuery(deleteQuery);
         }
 
-
-        ///// <summary>
-        ///// Execute the query.
-        ///// </summary>
-        ///// <param name="query">Custom query to be executed.</param>
-        ///// <returns>Object.</returns>
-        //public object? CustomCommand(string query)
-        //{
-        //    //if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return null; }
-        //    //if (DbContext?.IDbConnection is null) { Console.WriteLine("Connection not exists!"); return null; }
-
-        //    //IDbConnection connection = DbContext.IDbConnection;
-        //    //connection.Open();
-        //    //using IDbCommand command = DbContext.CreateCommand(query);
-        //    //using var result = command.ExecuteReader();
-        //    //connection.Close();
-        //    //return result;
-
-        //    if (query is null) throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
-        //    return ExecuteCommand<object>(query, !query.Contains("SELECT"));
-        //}
-
         /// <summary>
         /// Executes the non query (Create, Alter, Drop, Insert, Update or Delete) on the database.
         /// </summary>   
@@ -339,16 +271,6 @@ namespace EH
         /// <returns>Number of affected rows.</returns>
         public int ExecuteNonQuery(string? query)
         {
-            //if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return 0; }
-
-            //IDbConnection connection = DbContext.IDbConnection;
-            //connection.Open();
-            //using IDbCommand command = DbContext.CreateCommand(query);
-            //int rowsAffected = command.ExecuteNonQuery();
-            //connection.Close();
-            //Console.WriteLine($"Rows Affected: {rowsAffected}");
-            //return rowsAffected;          
-
             return (int?)ExecuteCommand<object>(query, true) ?? 0;
         }
 
@@ -360,17 +282,6 @@ namespace EH
         /// <returns>List of entities retrieved from the database.</returns>
         public List<TEntity>? ExecuteSelect<TEntity>(string? query)
         {
-            //if (string.IsNullOrEmpty(query)) { Console.WriteLine("Query not exists!"); return null; }
-            //if (DbContext?.IDbConnection is null) { Console.WriteLine("Connection not exists!"); return null; }
-
-            //IDbConnection connection = DbContext.IDbConnection;
-            //connection.Open();
-            //using IDbCommand command = DbContext.CreateCommand(query);
-            //using var reader = command.ExecuteReader();
-            //List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
-            //connection.Close();
-            //return entities;
-
             return (List<TEntity>?)ExecuteCommand<TEntity>(query);
         }
 
@@ -432,16 +343,12 @@ namespace EH
             {
                 if (string.IsNullOrWhiteSpace(query))
                 {
-                    //Console.WriteLine("Query does not exist!");
                     throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
-                    //return isNonQuery ? 0 : null;
                 }
 
                 if (DbContext?.IDbConnection is null)
                 {
-                    //Console.WriteLine("Connection does not exist!");
                     throw new InvalidOperationException("Connection does not exist.");
-                    //return isNonQuery ? 0 : null;
                 }
 
                 IDbConnection connection = DbContext.IDbConnection;
@@ -548,12 +455,5 @@ namespace EH
             }
         }
 
-
-
-
-
     }
-
-
-
 }
