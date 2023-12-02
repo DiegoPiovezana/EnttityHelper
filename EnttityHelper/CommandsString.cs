@@ -127,13 +127,13 @@ namespace EH
         /// <returns>Table creation query.</returns>
         public static string? CreateTable<TEntity>(Dictionary<string, string>? typesSql)
         {
-            if(typesSql is null) { throw new ArgumentNullException(nameof(typesSql)); } 
+            if (typesSql is null) { throw new ArgumentNullException(nameof(typesSql)); }
 
             StringBuilder queryBuilder = new();
             queryBuilder.Append($"CREATE TABLE {ToolsEH.GetTable<TEntity>()} (");
 
             TEntity entity = Activator.CreateInstance<TEntity>() ?? throw new ArgumentNullException(nameof(entity));
-            var properties = ToolsEH.GetProperties(entity, false, true, true);
+            var properties = ToolsEH.GetProperties(entity);
 
             foreach (KeyValuePair<string, Property> pair in properties)
             {

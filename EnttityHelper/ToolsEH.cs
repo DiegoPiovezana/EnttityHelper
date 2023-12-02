@@ -7,10 +7,10 @@ using System.Linq;
 using System.Reflection;
 
 namespace EH
-{   
+{
     internal static class ToolsEH
     {
-        internal static Dictionary<string, Property> GetProperties<T>(T objectEntity, bool includeNotMapped = false, bool ignoreVirtual = true, bool getFormat = false)
+        internal static Dictionary<string, Property> GetProperties<T>(T objectEntity, bool includeNotMapped = false, bool ignoreVirtual = true)
         {
             if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
 
@@ -23,42 +23,43 @@ namespace EH
                 if (!includeNotMapped && prop.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
                 if (ignoreVirtual && prop.GetGetMethod().IsVirtual) { continue; }
 
-                Property property = new(prop);
+                Property property = new(prop, objectEntity);
 
-                if (getFormat)
-                {
-                    object? propType;
+                //if (getFormat)
+                //{
+                //    object? propType;
 
-                    if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>)) // If Nullable
-                    {
-                        property.IsNullable = true;
-                        propType = Nullable.GetUnderlyingType(prop.PropertyType);
-                    }
-                    else
-                    {
-                        property.IsNullable = false;
-                        propType = prop.PropertyType;
-                    }
+                //    if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>)) // If Nullable
+                //    {
+                //        property.IsNullable = true;
+                //        propType = Nullable.GetUnderlyingType(prop.PropertyType);
+                //    }
+                //    else
+                //    {
+                //        property.IsNullable = false;
+                //        propType = prop.PropertyType;
+                //    }
 
-                    property.MaxLength = prop.GetCustomAttribute<MaxLengthAttribute>()?.Length;
-                    property.Type = (Type)propType;
-                }
-                else // Value
-                {
-                    object? value = prop.GetValue(objectEntity, null);
-                    property.Value = value;
+                //    property.MaxLength = prop.GetCustomAttribute<MaxLengthAttribute>()?.Length;
+                //    property.Type = (Type)propType;
+                //}
+                //else // Value
+                //{
+                //    object? value = prop.GetValue(objectEntity, null);
+                //    property.Value = value;
 
-                    if (value != null)
-                    {
-                        if (prop.PropertyType == typeof(DateTime)) { value = ((DateTime)value).ToString(); } // !
-                        else if (prop.PropertyType == typeof(decimal)) { value = ((decimal)value).ToString(); } // !
-                        else if (prop.PropertyType == typeof(bool)) { value = (bool)value ? 1 : 0; }
-                    }
+                //    if (value != null)
+                //    {
+                //        if (prop.PropertyType == typeof(DateTime)) { value = ((DateTime)value).ToString(); } // !
+                //        else if (prop.PropertyType == typeof(decimal)) { value = ((decimal)value).ToString(); } // !
+                //        else if (prop.PropertyType == typeof(bool)) { value = (bool)value ? 1 : 0; }
+                //    }
 
-                    property.ValueSql = value;
-                }
+                //    property.ValueSql = value;
+                //}
 
-                property.Name = prop.Name;
+                //property.Name = prop.Name;
+
                 propsDictionary.Add(prop.Name, property);
             }
 

@@ -1,6 +1,6 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 
 namespace EH
@@ -13,12 +13,12 @@ namespace EH
         public PropertyInfo PropertyInfo { get; set; }
 
         /// <summary>
-        /// Gets or sets the name of the property.
+        /// Gets or sets the name of the 
         /// </summary>
         public string? Name { get; set; }
 
         /// <summary>
-        /// Gets or sets the value of the property.
+        /// Gets or sets the value of the 
         /// </summary>
         public object? Value { get; set; }
 
@@ -28,7 +28,7 @@ namespace EH
         public object? ValueSql { get; set; }
 
         /// <summary>
-        /// Gets or sets the type of the property.
+        /// Gets or sets the type of the 
         /// </summary>
         public Type? Type { get; set; }
 
@@ -63,12 +63,12 @@ namespace EH
         public bool? IsForeignKey { get; set; }
 
         /// <summary>
-        /// Gets or sets the maximum length of the property.
+        /// Gets or sets the maximum length of the 
         /// </summary>
         public int? MaxLength { get; set; }
 
         /// <summary>
-        /// Gets or sets the minimum length of the property.
+        /// Gets or sets the minimum length of the 
         /// </summary>
         public int? MinLength { get; set; }
 
@@ -78,37 +78,37 @@ namespace EH
         public string? ColumnName { get; set; }
 
         /// <summary>
-        /// Gets or sets the regular expression associated with the property.
+        /// Gets or sets the regular expression associated with the 
         /// </summary>
         public string? Regex { get; set; }
 
         /// <summary>
-        /// Gets or sets the maximum value allowed for the property.
+        /// Gets or sets the maximum value allowed for the 
         /// </summary>
         public int? Max { get; set; }
 
         /// <summary>
-        /// Gets or sets the minimum value allowed for the property.
+        /// Gets or sets the minimum value allowed for the 
         /// </summary>
         public int? Min { get; set; }
 
         /// <summary>
-        /// Gets or sets the display of the property.
+        /// Gets or sets the display of the 
         /// </summary>
         public string? Display { get; set; }
 
         /// <summary>
-        /// Gets or sets the data type of the property.
+        /// Gets or sets the data type of the 
         /// </summary>
         public string? DataType { get; set; }
 
         /// <summary>
-        /// Gets or sets the display name of the property.
+        /// Gets or sets the display name of the 
         /// </summary>
         public string? DisplayName { get; set; }
 
         /// <summary>
-        /// Gets or sets the default value for the property.
+        /// Gets or sets the default value for the 
         /// </summary>
         public object? DefaultValue { get; set; }
 
@@ -118,35 +118,57 @@ namespace EH
         public bool? JsonIgnore { get; set; }
 
         /// <summary>
-        /// Gets or sets the error message associated with the property.
+        /// Gets or sets the error message associated with the 
         /// </summary>
         public string? ErrorMessage { get; set; }
 
         /// <summary>
-        /// Gets or sets the error type associated with the property.
+        /// Gets or sets the error type associated with the 
         /// </summary>
         public string? ErrorType { get; set; }
 
         /// <summary>
-        /// Gets or sets the error value associated with the property.
+        /// Gets or sets the error value associated with the 
         /// </summary>
         public string? ErrorValue { get; set; }
 
         /// <summary>
-        /// Gets or sets the error length associated with the property.
+        /// Gets or sets the error length associated with the 
         /// </summary>
         public string? ErrorLength { get; set; }
 
 
-        public Property(PropertyInfo propertyInfo)
+        public Property(PropertyInfo propertyInfo, object? objectEntity)
         {
-            PropertyInfo = propertyInfo;
+            PropertyInfo = propertyInfo ?? throw new ArgumentNullException(nameof(propertyInfo));
+
+            Name = propertyInfo.Name;
             IsPrimaryKey = propertyInfo.GetCustomAttribute<KeyAttribute>() != null;
             IsForeignKey = propertyInfo.GetCustomAttribute<ForeignKeyAttribute>() != null;
             IsNotMapped = propertyInfo.GetCustomAttribute<NotMappedAttribute>() != null;
-            IsVirtual = propertyInfo.GetGetMethod().IsVirtual;
+            IsVirtual = propertyInfo.GetGetMethod()?.IsVirtual ?? false;
             IsRequired = propertyInfo.GetCustomAttribute<RequiredAttribute>() != null;
+            MaxLength = propertyInfo.GetCustomAttribute<MaxLengthAttribute>()?.Length;
+
+            Type = Nullable.GetUnderlyingType(propertyInfo.PropertyType) ?? propertyInfo.PropertyType;
+            IsNullable = Nullable.GetUnderlyingType(propertyInfo.PropertyType) != null;
+
+            Value = objectEntity != null ? propertyInfo.GetValue(objectEntity) : null;
+            ValueSql = ConvertValueToSqlFormat(Value, propertyInfo.PropertyType);
+
+            static object? ConvertValueToSqlFormat(object? value, Type propertyType)
+            {
+                if (value != null)
+                {
+                    if (propertyType == typeof(DateTime)) { value = ((DateTime)value).ToString(); }
+                    else if (propertyType == typeof(decimal)) { value = ((decimal)value).ToString(); }
+                    else if (propertyType == typeof(bool)) { value = (bool)value ? 1 : 0; }
+                }
+                return value;
+            }
         }
+
+
 
         override public string? ToString()
         {
