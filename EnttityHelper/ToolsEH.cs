@@ -44,7 +44,7 @@ namespace EH
                     object? propType;
 
                     if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>)) // If Nullable
-                    { 
+                    {
                         property.IsNullable = true;
                         propType = Nullable.GetUnderlyingType(prop.PropertyType);
                         //value = prop.PropertyType.UnderlyingSystemType;
@@ -59,10 +59,10 @@ namespace EH
                     //var maxLengthProp = prop.GetCustomAttribute<MaxLengthAttribute>();
                     //if (maxLengthProp != null) { value += $" ({maxLengthProp.Length})"; }
                     property.MaxLength = prop.GetCustomAttribute<MaxLengthAttribute>()?.Length;
-                    property.Type = (Type)propType;                    
+                    property.Type = (Type)propType;
                 }
                 else // Value
-                {                     
+                {
                     object? value = prop.GetValue(objectEntity, null);
                     property.Value = value;
 
@@ -75,7 +75,7 @@ namespace EH
 
                     property.ValueSql = value;
                 }
-               
+
                 property.Name = prop.Name;
                 propsDictionary.Add(prop.Name, property);
             }
@@ -145,38 +145,58 @@ namespace EH
             return $"{schema}{tableName}";
         }
 
-        internal static List<T> MapDataReaderToList<T>(IDataReader reader)
+        internal static List<T> MapDataReaderToList<T>(IDataReader reader, bool matchDb = false)
         {
-            List<T> list = new();
-
-            while (reader.Read())
+            try
             {
-                T obj = Activator.CreateInstance<T>();
+                List<T> list = new();
 
-                foreach (PropertyInfo propInfo in typeof(T).GetProperties())
+                while (reader.Read())
                 {
-                    if (propInfo == null || propInfo.GetGetMethod().IsVirtual || propInfo.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
+                    T obj = Activator.CreateInstance<T>();
 
-                    if (!reader.IsDBNull(reader.GetOrdinal(propInfo.Name)))
+                    foreach (PropertyInfo propInfo in typeof(T).GetProperties())
                     {
-                        object value = reader[propInfo.Name];
-                        Type propType = propInfo.PropertyType;
+                        if (propInfo == null || propInfo.GetGetMethod().IsVirtual || propInfo.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
 
-                        if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                        int ordinal;
+                        try
                         {
-                            if (value != null) { propInfo.SetValue(obj, Convert.ChangeType(value, Nullable.GetUnderlyingType(propType))); }
+                            ordinal = reader.GetOrdinal(propInfo.Name);
                         }
-                        else
+                        catch (IndexOutOfRangeException)
                         {
-                            propInfo.SetValue(obj, Convert.ChangeType(value, propType));
+                            Console.WriteLine($"Column {propInfo.Name} not found!");
+
+                            if (matchDb) { throw; }
+                            else { continue; }
+                        }
+
+                        if (!reader.IsDBNull(reader.GetOrdinal(propInfo.Name)))
+                        {
+                            object value = reader[propInfo.Name];
+                            Type propType = propInfo.PropertyType;
+
+                            if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                            {
+                                if (value != null) { propInfo.SetValue(obj, Convert.ChangeType(value, Nullable.GetUnderlyingType(propType))); }
+                            }
+                            else
+                            {
+                                propInfo.SetValue(obj, Convert.ChangeType(value, propType));
+                            }
                         }
                     }
+
+                    list.Add(obj);
                 }
 
-                list.Add(obj);
+                return list;
             }
-
-            return list;
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
         //internal static string GetSqlType(object value)
