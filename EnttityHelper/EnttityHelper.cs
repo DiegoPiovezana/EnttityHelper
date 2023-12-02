@@ -501,30 +501,43 @@ namespace EH
 
                     var propertyToUpdate = entity.GetType().GetProperty(pair.Key.ToString());
 
-                    MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(propertyToUpdate.PropertyType);
-
                     if (propertyToUpdate != null)
                     {
-                        if (genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}='{pk.GetValue(pair.Value, null)}'" }) is IEnumerable<TEntity> entityFKList)
+                        // Get the property type of the foreign key
+                        Type fkEntityType = propertyToUpdate.PropertyType;
+
+                        // Check if it is a generic collection type
+                        bool isCollection = typeof(ICollection<>).IsAssignableFrom(fkEntityType);
+
+                        // Get the actual type of the elements in the collection (if applicable)
+                        Type elementType = isCollection ? fkEntityType.GetGenericArguments()[0] : fkEntityType;
+
+                        // Use the correct generic type for the Get method
+                        MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(elementType);
+
+                        // Retrieve the foreign key entities
+                        IEnumerable<object> entityFKList = (IEnumerable<object>)genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}='{pk.GetValue(pair.Value, null)}'" });
+
+                        // Cast each entity to the actual type
+                        IEnumerable<object> castEntityFKList = entityFKList.Cast<object>();
+
+                        // Handle collections and single entities
+                        if (isCollection)
                         {
-                            // Checks if the property is a collection before assigning
-                            if (typeof(ICollection<TEntity>).IsAssignableFrom(propertyToUpdate.PropertyType))
+                            // Iterate through the casted entity list and add each entity to the collection
+                            foreach (var entityFK in castEntityFKList)
                             {
-                                if (propertyToUpdate.GetValue(entity) is ICollection<TEntity> collection)
+                                if (propertyToUpdate.GetValue(entity) is ICollection<object> collection)
                                 {
-                                    foreach (var entityFK in entityFKList)
-                                    {
-                                        collection.Add(entityFK);
-                                    }
+                                    collection.Add(entityFK);
                                 }
                             }
-                            else
-                            {
-                                // If isnt a collection, assign the first entity
-                                var entityFK = entityFKList.FirstOrDefault();
-                                propertyToUpdate.SetValue(entity, entityFK);
-                            }
-
+                        }
+                        else
+                        {
+                            // Assign the first element of the casted entity list to the property
+                            var entityFK = castEntityFKList.FirstOrDefault();
+                            propertyToUpdate.SetValue(entity, entityFK);
                         }
                     }
                 }
