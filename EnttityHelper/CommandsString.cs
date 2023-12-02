@@ -28,7 +28,7 @@ namespace EH
             if (!string.IsNullOrEmpty(namePropUnique)
                 && eh.CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'",1))
             {                
-                Console.WriteLine($"EH-101: Entity '{namePropUnique}' already exists in table!");
+                Console.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
                 return "EH-101";
             }
 

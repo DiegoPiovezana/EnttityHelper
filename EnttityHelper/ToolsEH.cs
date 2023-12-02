@@ -145,7 +145,7 @@ namespace EH
             return $"{schema}{tableName}";
         }
 
-        internal static List<T> MapDataReaderToList<T>(IDataReader reader, bool matchDb = false)
+        internal static List<T> MapDataReaderToList<T>(IDataReader reader, bool matchDb = true)
         {
             try
             {
@@ -166,9 +166,9 @@ namespace EH
                         }
                         catch (IndexOutOfRangeException)
                         {
-                            Console.WriteLine($"Column {propInfo.Name} not found!");
+                            Console.WriteLine($"Column '{propInfo.Name}' not found in table!");
 
-                            if (matchDb) { throw; }
+                            if (matchDb) { throw new IndexOutOfRangeException($"Column '{propInfo.Name}' of '{propInfo.DeclaringType}' not found in table in database!"); }
                             else { continue; }
                         }
 
