@@ -205,7 +205,7 @@ namespace EH
         /// </summary>
         /// <param name="nameTable">Name of the table to check if it exists.</param>
         /// <param name="filter">Possible filter.</param>
-        /// <param name="quantity">Minimum quantity to be checked if it exists. Enter 0 if you just want to check if the table exists.</param>
+        /// <param name="quantity">The minimum number of records to check for existence in the table. Enter 0 if you just want to check if the table exists.</param>
         /// <returns></returns>
         public bool CheckIfExist(string nameTable, string? filter = null, int quantity = 0)
         {
@@ -213,7 +213,8 @@ namespace EH
             {
                 if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
-                if (DbContext.IDbConnection.State != ConnectionState.Open) DbContext.IDbConnection.Open();
+                //if (DbContext.IDbConnection.State != ConnectionState.Open) 
+                DbContext.IDbConnection.Open();
 
                 using IDbCommand command = DbContext.CreateCommand($"SELECT COUNT(*) FROM {nameTable} WHERE {filter ?? "1 = 1"}");
                 object result = command.ExecuteScalar(); // >= 0
@@ -273,7 +274,7 @@ namespace EH
             //    command.ExecuteNonQuery();
             //    Console.WriteLine("Table created!");
             //}
-            if (ExecuteNonQuery(createTableQuery) != 0)
+            if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
             {
                 Console.WriteLine("Table created!");
                 return true;
@@ -504,10 +505,7 @@ namespace EH
                     if (propertyToUpdate != null)
                     {
                         var pkValue = pk.GetValue(pair.Value, null);
-                        if (pkValue == null || string.IsNullOrEmpty(pkValue.ToString().Trim())
-                            || (pk.PropertyType.IsPrimitive && pkValue.Equals(Convert.ChangeType(0, pkValue.GetType())))
-                            )
-                            continue;
+                        if (pkValue == null || string.IsNullOrEmpty(pkValue.ToString().Trim()) || (pk.PropertyType.IsPrimitive && pkValue.Equals(Convert.ChangeType(0, pkValue.GetType())))) continue;
 
                         // Get the property type of the foreign key
                         Type? fkEntityType = propertyToUpdate.PropertyType;
