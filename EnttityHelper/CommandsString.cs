@@ -96,7 +96,7 @@ namespace EH
         {
             idPropName ??= ToolsEH.GetPK(entity)?.Name;
             if (idPropName is null) { return null; }
-            return $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({idPropName} = {typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)})";
+            return $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')";
         }
 
         /// <summary>
