@@ -158,7 +158,7 @@ namespace EH
         /// <param name="entity">Entity to be searched for in the bank.</param>
         /// <param name="idPropName">Entity identifier name.</param>
         /// <param name="includeAll">Defines whether it will include all other FK entities.</param>
-        /// <returns></returns>
+        /// <returns>Specific entity from database.</returns>
         public TEntity? Search<TEntity>(TEntity entity, string? idPropName = null, bool includeAll = true) where TEntity : class
         {
             string? selectQuery = CommandsString.Search(entity, idPropName, includeAll);

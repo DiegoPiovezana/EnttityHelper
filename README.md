@@ -1,7 +1,7 @@
 [![NuGet](https://img.shields.io/nuget/v/EnttityHelper.svg)](https://www.nuget.org/packages/EnttityHelper/)
 
 
-# EnttityHelper
+# EnttityHelper [Beta]
 Allows easy manipulation of entities in different databases.<br/>
 
 
@@ -22,7 +22,7 @@ Allows easy manipulation of entities in different databases.<br/>
 
 ## INSTALLATION:
 ```
- dotnet add package EnttityHelper --version 0.2.0
+ dotnet add package EnttityHelper --version 0.3.0
 ```
 
 <br/><br/>
