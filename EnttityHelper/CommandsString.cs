@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -14,21 +16,13 @@ namespace EH
         /// Gets the insert command.
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
-        /// <param name="eh">EnttityHelper object.</param>
-        /// <param name="entity">Entity to be inserted into the database.</param>    
-        /// <param name="namePropUnique">Name of the property to be considered as a uniqueness criterion (optional).</param>
+        /// <param name="entity">Entity to be inserted into the database.</param>  
+        /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>
         /// <returns>String command.</returns>
-        public static string? Insert<TEntity>(EnttityHelper eh, TEntity entity, string? namePropUnique = null)
+        public static string? Insert<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName = null)
         {
             var properties = ToolsEH.GetProperties(entity);
-            string tableName = ToolsEH.GetTable<TEntity>();
-
-            if (!string.IsNullOrEmpty(namePropUnique)
-                && eh.CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))
-            {
-                Console.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
-                return "EH-101";
-            }
+            string tableName = ToolsEH.GetNameTable<TEntity>(replacesTableName);
 
             string columns = string.Join(", ", properties.Keys);
             string values = string.Join("', '", properties.Values);
@@ -42,12 +36,13 @@ namespace EH
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entity">Entity to be updated in the database.</param>
-        /// <param name="nameId">Entity Id column name.</param>
+        /// <param name="nameId">(Optional) Entity Id column name.</param>
+        /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>
         /// <returns>String command.</returns>
-        public static string? Update<TEntity>(TEntity entity, string? nameId = null) where TEntity : class
+        public static string? Update<TEntity>(TEntity entity, string? nameId = null, Dictionary<string, string>? replacesTableName = null) where TEntity : class
         {
             StringBuilder queryBuilder = new();
-            queryBuilder.Append($"UPDATE {ToolsEH.GetTable<TEntity>()} SET ");
+            queryBuilder.Append($"UPDATE {ToolsEH.GetNameTable<TEntity>(replacesTableName)} SET ");
 
             nameId ??= ToolsEH.GetPK(entity)?.Name;
 
@@ -76,27 +71,28 @@ namespace EH
         /// Generates a SQL SELECT query for a specified entity with optional filters.
         /// </summary>
         /// <typeparam name="TEntity">The type of entity.</typeparam>     
-        /// <param name="filter">The filter criteria.</param>
+        /// <param name="filter">(Optional) The filter criteria.</param>
+        /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>
         /// <returns>A SELECT SQL query string.</returns>
-        public static string? Get<TEntity>(string? filter = null)
+        public static string? Get<TEntity>(string? filter = null, Dictionary<string, string>? replacesTableName = null)
         {
             filter = string.IsNullOrEmpty(filter?.Trim()) ? "1 = 1" : filter;
-            return $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({filter})";
+            return $"SELECT * FROM {ToolsEH.GetNameTable<TEntity>(replacesTableName)} WHERE ({filter})";
         }
 
         /// <summary>
         /// Generates a SQL SELECT query for a specified entity based on the ID property.
         /// </summary>
         /// <typeparam name="TEntity">The type of entity.</typeparam>
-        /// <param name="entity">The entity object.</param>
-        /// <param name="idPropName">The name of the ID property.</param>
-        /// <param name="includeAll">Whether to include all related entities.</param>
+        /// <param name="entity">The entity object.</param>    
+        /// <param name="idPropName">(Optional) The name of the ID property.</param>
+        /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>       
         /// <returns>A SELECT SQL query string.</returns>
-        public static string? Search<TEntity>(TEntity entity, string? idPropName = null, bool includeAll = true) where TEntity : class
+        public static string? Search<TEntity>(TEntity entity, string? idPropName = null, Dictionary<string, string>? replacesTableName = null) where TEntity : class
         {
             idPropName ??= ToolsEH.GetPK(entity)?.Name;
             if (idPropName is null) { return null; }
-            return $"SELECT * FROM {ToolsEH.GetTable<TEntity>()} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')";
+            return $"SELECT * FROM {ToolsEH.GetNameTable<TEntity>(replacesTableName)} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')";
         }
 
         /// <summary>
@@ -104,9 +100,10 @@ namespace EH
         /// </summary>
         /// <typeparam name="TEntity">The type of entity.</typeparam>
         /// <param name="entity">The entity object.</param>
-        /// <param name="idPropName">The name of the ID property.</param>
+        /// <param name="idPropName">(Optional) The name of the ID property.</param>
+        /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>      
         /// <returns>A DELETE SQL query string.</returns>
-        public static string? Delete<TEntity>(TEntity entity, string? idPropName = null) where TEntity : class
+        public static string? Delete<TEntity>(TEntity entity, string? idPropName = null, Dictionary<string, string>? replacesTableName = null) where TEntity : class
         {
             idPropName ??= ToolsEH.GetPK(entity)?.Name;
 
@@ -116,7 +113,7 @@ namespace EH
                 return null;
             }
 
-            return $"DELETE FROM {ToolsEH.GetTable<TEntity>()} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')";
+            return $"DELETE FROM {ToolsEH.GetNameTable<TEntity>(replacesTableName)} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')";
         }
 
         /// <summary>
@@ -124,13 +121,14 @@ namespace EH
         /// </summary>
         /// <typeparam name="TEntity">The type of entity.</typeparam>
         /// <param name="typesSql">Dictionary containing types related to C# code and database data.</param>
+        /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>      
         /// <returns>Table creation query.</returns>
-        public static string? CreateTable<TEntity>(Dictionary<string, string>? typesSql)
+        public static string? CreateTable<TEntity>(Dictionary<string, string>? typesSql, Dictionary<string, string>? replacesTableName = null)
         {
             if (typesSql is null) { throw new ArgumentNullException(nameof(typesSql)); }
 
             StringBuilder queryBuilder = new();
-            queryBuilder.Append($"CREATE TABLE {ToolsEH.GetTable<TEntity>()} (");
+            queryBuilder.Append($"CREATE TABLE {ToolsEH.GetNameTable<TEntity>(replacesTableName)} (");
 
             TEntity entity = Activator.CreateInstance<TEntity>() ?? throw new ArgumentNullException(nameof(entity));
             var properties = ToolsEH.GetProperties(entity);
@@ -143,8 +141,8 @@ namespace EH
 
                 if (value is null)
                 {
-                    Console.WriteLine($"Type default not found for '{pair.Value}'!");
-                    throw new InvalidOperationException($"Type default not found for '{pair.Value}'!");
+                    Console.WriteLine($"Type default not found in Dictionary TypesDefault for '{pair.Value.Type.Name}'!");
+                    throw new InvalidOperationException($"Type default not found in Dictionary TypesDefault for '{pair.Value.Type.Name}'! Please enter it into the dictionary or consider changing the type.");
                 }
 
                 // MaxLength?
@@ -155,7 +153,8 @@ namespace EH
                 }
 
                 // PK?
-                if (pair.Key == ToolsEH.GetPK((object)entity)?.Name)
+                var pk = ToolsEH.GetPK((object)entity);
+                if (pair.Key == pk?.Name || pair.Key == pk?.GetCustomAttribute<ColumnAttribute>()?.Name)
                 {
                     queryBuilder.Append($"{pair.Key} {value} PRIMARY KEY, ");
                     continue;
