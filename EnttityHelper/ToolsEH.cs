@@ -110,7 +110,28 @@ namespace EH
 
         public static PropertyInfo GetPK<T>(T obj) where T : class
         {
-            return obj.GetType().GetProperties().FirstOrDefault(p => Attribute.IsDefined(p, typeof(KeyAttribute)));
+            try
+            {
+                var propPk = obj.GetType().GetProperties().FirstOrDefault(p => Attribute.IsDefined(p, typeof(KeyAttribute)));
+
+                if (propPk is null)
+                {
+                    if (false) // TODO: Custom Exception List
+                    {
+                        throw new InvalidOperationException($"No primary key found in '{obj.GetType().Name}'!");
+                    }
+                    else
+                    {
+                        propPk = obj.GetType().GetProperties().FirstOrDefault();
+                    }
+                }
+
+                return propPk;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
         public static TableAttribute? GetTableAttribute(Type type)
