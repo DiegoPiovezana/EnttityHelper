@@ -25,6 +25,7 @@ namespace EH
 
                 Property property = new(prop, objectEntity);
 
+
                 //if (getFormat)
                 //{
                 //    object? propType;
@@ -60,7 +61,8 @@ namespace EH
 
                 //property.Name = prop.Name;
 
-                propsDictionary.Add(prop.Name, property);
+                if (string.IsNullOrEmpty(property?.Name)) throw new InvalidOperationException($"Error mapping entity '{nameof(objectEntity)}' property types!");
+                propsDictionary.Add(property.ColumnName ?? property.Name, property);
             }
 
             return propsDictionary;
@@ -118,11 +120,12 @@ namespace EH
             return default;
         }
 
-        public static string GetTable<TEntity>()
+        public static string GetNameTable<TEntity>(Dictionary<string, string>? replacesTableName = null)
         {
             TableAttribute? ta = GetTableAttribute(typeof(TEntity));
             string schema = ta?.Schema != null ? $"{ta.Schema}." : "";
             string tableName = ta?.Name ?? typeof(TEntity).Name;
+            if (replacesTableName is not null) tableName = replacesTableName.Aggregate(tableName, (text, replace) => text.Replace(replace.Key, replace.Value));
             return $"{schema}{tableName}";
         }
 
@@ -140,22 +143,24 @@ namespace EH
                     {
                         if (propInfo == null || propInfo.GetGetMethod().IsVirtual || propInfo.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
 
+                        string nameColumn = propInfo.GetCustomAttribute<ColumnAttribute>()?.Name ?? propInfo.Name;
+
                         int ordinal;
                         try
                         {
-                            ordinal = reader.GetOrdinal(propInfo.Name);
+                            ordinal = reader.GetOrdinal(nameColumn);
                         }
                         catch (IndexOutOfRangeException)
                         {
-                            Console.WriteLine($"Column '{propInfo.Name}' not found in table!");
+                            Console.WriteLine($"Column '{nameColumn}' not found in table!");
 
-                            if (matchDb) { throw new IndexOutOfRangeException($"Column '{propInfo.Name}' of '{propInfo.DeclaringType}' not found in table in database!"); }
+                            if (matchDb) { throw new IndexOutOfRangeException($"Column '{nameColumn}' of '{propInfo.DeclaringType}' not found in table in database!"); }
                             else { continue; }
                         }
 
-                        if (!reader.IsDBNull(reader.GetOrdinal(propInfo.Name)))
+                        if (!reader.IsDBNull(reader.GetOrdinal(nameColumn)))
                         {
-                            object value = reader[propInfo.Name];
+                            object value = reader[nameColumn];
                             Type propType = propInfo.PropertyType;
 
                             if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))

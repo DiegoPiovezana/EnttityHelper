@@ -143,6 +143,7 @@ namespace EH
             PropertyInfo = propertyInfo ?? throw new ArgumentNullException(nameof(propertyInfo));
 
             Name = propertyInfo.Name;
+            ColumnName = propertyInfo.GetCustomAttribute<ColumnAttribute>()?.Name;
             IsPrimaryKey = propertyInfo.GetCustomAttribute<KeyAttribute>() != null;
             IsForeignKey = propertyInfo.GetCustomAttribute<ForeignKeyAttribute>() != null;
             IsNotMapped = propertyInfo.GetCustomAttribute<NotMappedAttribute>() != null;
@@ -158,13 +159,13 @@ namespace EH
 
             static object? ConvertValueToSqlFormat(object? value, Type propertyType)
             {
-                if (value != null)
+                return value != null ? propertyType switch
                 {
-                    if (propertyType == typeof(DateTime)) { value = ((DateTime)value).ToString(); }
-                    else if (propertyType == typeof(decimal)) { value = ((decimal)value).ToString(); }
-                    else if (propertyType == typeof(bool)) { value = (bool)value ? 1 : 0; }
-                }
-                return value;
+                    Type t when t == typeof(DateTime) => ((DateTime)value).ToString(),
+                    Type t when t == typeof(decimal) => ((decimal)value).ToString(),
+                    Type t when t == typeof(bool) => (bool)value ? 1 : 0,
+                    _ => value
+                } : null;
             }
         }
 
