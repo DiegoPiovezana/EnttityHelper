@@ -149,7 +149,11 @@ namespace EH
             IsNotMapped = propertyInfo.GetCustomAttribute<NotMappedAttribute>() != null;
             IsVirtual = propertyInfo.GetGetMethod()?.IsVirtual ?? false;
             IsRequired = propertyInfo.GetCustomAttribute<RequiredAttribute>() != null;
+
             MaxLength = propertyInfo.GetCustomAttribute<MaxLengthAttribute>()?.Length;
+            MinLength = propertyInfo.GetCustomAttribute<MinLengthAttribute>()?.Length;
+            MaxLength = propertyInfo.GetCustomAttribute<StringLengthAttribute>()?.MaximumLength;
+            MinLength = propertyInfo.GetCustomAttribute<StringLengthAttribute>()?.MinimumLength;
 
             Type = Nullable.GetUnderlyingType(propertyInfo.PropertyType) ?? propertyInfo.PropertyType;
             IsNullable = Nullable.GetUnderlyingType(propertyInfo.PropertyType) != null;

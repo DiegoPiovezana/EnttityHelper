@@ -157,11 +157,16 @@ namespace EH
                 if (pair.Key == pk?.Name || pair.Key == pk?.GetCustomAttribute<ColumnAttribute>()?.Name)
                 {
                     queryBuilder.Append($"{pair.Key} {value} PRIMARY KEY, ");
-                    continue;
                 }
                 else
                 {
                     queryBuilder.Append($"{pair.Key} {value}, ");
+                }
+
+                // MinimumLength?
+                if (pair.Value.MinLength > 0)
+                {
+                    queryBuilder.Append($"CHECK(LENGTH({pair.Key}) >= {pair.Value.MinLength}), ");
                 }
             }
 
