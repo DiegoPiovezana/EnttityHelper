@@ -1,3 +1,11 @@
+## [Version 0.4.0] - 01/15/2024
+
+- Possibility to customize table name using replaces;
+- If entity lacks a primary key, the first property can be considered as the identifier;
+- Considered the Column attribute of a property as the column name of the table;
+- Allow defining a minimum size for columns.
+
+
 ## [Version 0.3.0] - 12/03/2023
 
 - Fixed and optimized inclusion of Foreign Key entities;
