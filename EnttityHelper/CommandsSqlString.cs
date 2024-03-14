@@ -10,7 +10,7 @@ namespace EH
     /// <summary>
     /// Allows you to obtain the main commands to be executed on the database.
     /// </summary>
-    public static class CommandsString
+    public static class CommandsSqlString
     {
         /// <summary>
         /// Gets the insert command.

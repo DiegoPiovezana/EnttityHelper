@@ -135,7 +135,7 @@ namespace EH
                 }
             }
 
-            string? insertQuery = CommandsString.Insert(entity, ReplacesTableName);
+            string? insertQuery = CommandsSqlString.Insert(entity, ReplacesTableName);
             return insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery);
         }
 
@@ -148,7 +148,7 @@ namespace EH
         /// <returns>Number of entities updated in the database.</returns>
         public int Update<TEntity>(TEntity entity, string? nameId = null) where TEntity : class
         {
-            string? updateQuery = CommandsString.Update(entity, nameId, ReplacesTableName);
+            string? updateQuery = CommandsSqlString.Update(entity, nameId, ReplacesTableName);
             return ExecuteNonQuery(updateQuery);
         }
 
@@ -161,7 +161,7 @@ namespace EH
         /// <returns>Entities list.</returns>
         public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null)
         {
-            string? querySelect = CommandsString.Get<TEntity>(filter, ReplacesTableName);
+            string? querySelect = CommandsSqlString.Get<TEntity>(filter, ReplacesTableName);
             var entities = ExecuteSelect<TEntity>(querySelect);
             if (includeAll) { _ = IncludeAll(entities); }
             return entities;
@@ -177,7 +177,7 @@ namespace EH
         /// <returns>Specific entity from database.</returns>
         public TEntity? Search<TEntity>(TEntity entity, bool includeAll = true, string? idPropName = null) where TEntity : class
         {
-            string? selectQuery = CommandsString.Search(entity, idPropName, ReplacesTableName);
+            string? selectQuery = CommandsSqlString.Search(entity, idPropName, ReplacesTableName);
             var entities = ExecuteSelect<TEntity>(selectQuery);
             if (includeAll) { _ = IncludeAll(entities.FirstOrDefault()); }
             return entities.FirstOrDefault();
@@ -243,7 +243,7 @@ namespace EH
         {
             if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
-            string? createTableQuery = CommandsString.CreateTable<TEntity>(TypesDefault, ReplacesTableName);
+            string? createTableQuery = CommandsSqlString.CreateTable<TEntity>(TypesDefault, ReplacesTableName);
 
             if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
             {
@@ -279,7 +279,7 @@ namespace EH
         /// <returns>Number of exclusions made.</returns>
         public int Delete<TEntity>(TEntity entity, string? nameId = null) where TEntity : class
         {
-            string? deleteQuery = CommandsString.Delete(entity, nameId, ReplacesTableName);
+            string? deleteQuery = CommandsSqlString.Delete(entity, nameId, ReplacesTableName);
             return ExecuteNonQuery(deleteQuery);
         }
 
