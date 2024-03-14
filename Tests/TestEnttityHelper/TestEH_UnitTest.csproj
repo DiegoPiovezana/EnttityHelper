@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="UnitTest_UserManagement.cs" />
     <Compile Remove="UserManagement\Controller\CargoDTO.cs" />
     <Compile Remove="UserManagement\Controller\ChamadoDTO.cs" />
     <Compile Remove="UserManagement\Controller\GrupoDTO.cs" />

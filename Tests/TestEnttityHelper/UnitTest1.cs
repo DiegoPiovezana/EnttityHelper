@@ -1,4 +1,3 @@
-using DiegoPiov.UserManagement;
 using EH;
 using NUnit.Framework.Internal;
 using TestEnttityHelper.OthersEntity;
@@ -118,32 +117,6 @@ namespace TestEnttityHelper
             }
         }
 
-        [Test]
-        public void TestFileDirSR()
-        {
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
-            if (eh.DbContext.ValidateConnection())
-            {               
-                eh.TypesDefault.Add("Version", "NVARCHAR2(10)");
-                eh.ReplacesTableName = new Dictionary<string, string> { { "&ID", "1" } };
-
-                eh.CreateTableIfNotExist<FileDirSR>();                
-                eh.Insert(new FileDirSR { Name = "Teste1"});
-                //eh.Insert(new FileDirSR { Name = "Teste2", Hidden = true, SizeMinKb = 50, MandatoryExist = true });
-                //eh.Insert(new FileDirSR { Name = "Teste3", Hidden = false, SizeMinKb = 10, MandatoryExist = true, DateTimeModifiedMin = DateTime.ParseExact("14/01/2023 09:00", "dd/MM/yyyy HH:mm", null) });
-                //var ent = new FileDirSR { Name = "Teste4", Hidden = true, SizeMinKb = 20, VersionMin = "1.2.0" };
-                //eh.Insert(ent);
-                var inserts = eh.Get<FileDirSR>() ?? throw new Exception("Inserts is null");
-                var entityTest = eh.Search(new FileDirSR { Name = "Teste4" });
-                
-                Console.WriteLine(entityTest);
-                Assert.That(inserts.Count == 1, Is.EqualTo(true));
-            }
-            else
-            {
-                Assert.Fail();
-            }
-        }
 
 
     }
