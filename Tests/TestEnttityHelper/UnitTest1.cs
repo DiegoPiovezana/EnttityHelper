@@ -1,5 +1,6 @@
 using EH;
 using NUnit.Framework.Internal;
+using Oracle.ManagedDataAccess.Client;
 using TestEnttityHelper.OthersEntity;
 
 namespace TestEnttityHelper
@@ -12,7 +13,7 @@ namespace TestEnttityHelper
         }
 
         [Test]
-        public void Test1()
+        public void TestPass()
         {
             Assert.Pass();
         }
@@ -26,6 +27,36 @@ namespace TestEnttityHelper
         }
 
         [Test]
+        public void TestCreateTableIfNotExist()
+        {
+            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            if (eh.DbContext.ValidateConnection())
+            {
+                bool result = eh.CreateTableIfNotExist<EntityTest>();
+                Assert.That(result, Is.EqualTo(true));
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
+
+        [Test]
+        public void TestCreateTable()
+        {
+            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            if (eh.DbContext.ValidateConnection())
+            {
+                // Oracle.ManagedDataAccess.Client.OracleException : ORA-00955: name is already used by an existing object
+                Assert.Throws<OracleException>(() => { eh.CreateTable<EntityTest>(); });
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
+
+        [Test]
         public void TestInsertEntity()
         {
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
@@ -33,7 +64,7 @@ namespace TestEnttityHelper
             {
                 //bool result = eh.Insert(new { Id = 1, Name = "Test" }, null);
 
-                EntityTest entityTest = new() { Id = 80, Name = "Testando entidade 80 via C#", StartDate = DateTime.Now };
+                EntityTest entityTest = new() { Id = 90, Name = "Testando entidade 90 via C#", StartDate = DateTime.Now };
                 //bool result = eh.Insert(entityTest);
                 bool result = eh.Insert(entityTest, nameof(entityTest.Id)) == 1;
 
@@ -51,8 +82,8 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
-                EntityTest entityTest = new() { Id = 1, Name = "Testando entidade 1 atualizando hora via C#", StartDate = DateTime.Now };
-                bool result = eh.Update(entityTest, nameof(entityTest.Id)) > 0;
+                EntityTest entityTest = new() { Id = 90, Name = "Testing entity 90 updating start time via C#", StartDate = DateTime.Now };
+                bool result = eh.Update(entityTest, nameof(entityTest.Id)) == 1;
 
                 Assert.That(result, Is.EqualTo(true));
             }
@@ -68,10 +99,10 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
-                EntityTest entityTest = new() { Id = 1 };
+                EntityTest entityTest = new() { Id = 90 };
                 var result = eh.Search(entityTest, true, nameof(entityTest.Id));
 
-                Assert.That(result?.Name.Equals("Teste 1 via banco"), Is.EqualTo(true));
+                Assert.That(result?.Name.Equals("Testing entity 90 updating start time via C#"), Is.EqualTo(true));
             }
             else
             {
@@ -86,8 +117,25 @@ namespace TestEnttityHelper
             if (eh.DbContext.ValidateConnection())
             {
                 var result = eh.Get<EntityTest>();
+                if (result is null) { Assert.Fail(); }
+                //else { Assert.That(result[0].StartDate.Date.Equals(DateTime.Now.AddMinutes(-10)), Is.EqualTo(true)); }
+                //else { Assert.That(result[0].StartDate, Is.LessThanOrEqualTo(DateTime.Now.AddMinutes(-10))); }
+                else { Assert.That(result[0].StartDate, Is.GreaterThanOrEqualTo(DateTime.Now.AddMinutes(-15))); }
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
 
-                Assert.That(result[5].StartDate.Date.Equals(DateTime.Today), Is.EqualTo(true));
+        [Test]
+        public void TestNonQuery()
+        {
+            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            if (eh.DbContext.ValidateConnection())
+            {
+                bool result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 90") == 1;
+                Assert.That(result, Is.EqualTo(true));
             }
             else
             {
