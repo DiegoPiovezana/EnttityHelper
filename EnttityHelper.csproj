@@ -51,21 +51,20 @@
 
 	<ItemGroup>
 		<PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
-		<PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
-		<PackageReference Include="System.Text.Json" Version="6.0.1" />
+		<PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
-		<PackageReference Include="Oracle.ManagedDataAccess" Version="21.11.0" />
+		<PackageReference Include="Oracle.ManagedDataAccess" Version="21.13.0" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-		<PackageReference Include="Oracle.ManagedDataAccess" Version="21.11.0" />
+		<PackageReference Include="Oracle.ManagedDataAccess" Version="21.13.0" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
 		<PackageReference Include="Oracle.ManagedDataAccess.Core">
-			<Version>3.21.110</Version>
+			<Version>3.21.130</Version>
 		</PackageReference>
 	</ItemGroup>
 

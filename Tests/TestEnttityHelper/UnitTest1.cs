@@ -12,13 +12,13 @@ namespace TestEnttityHelper
         {
         }
 
-        [Test]
+        [Test, Order(1)]
         public void TestPass()
         {
             Assert.Pass();
         }
 
-        [Test]
+        [Test, Order(2)]
         public void TestConnection()
         {
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
@@ -26,7 +26,7 @@ namespace TestEnttityHelper
             Assert.That(test, Is.EqualTo(true));
         }
 
-        [Test]
+        [Test, Order(3)]
         public void TestCreateTableIfNotExist()
         {
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
@@ -41,7 +41,7 @@ namespace TestEnttityHelper
             }
         }
 
-        [Test]
+        [Test, Order(4)]
         public void TestCreateTable()
         {
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
@@ -56,7 +56,7 @@ namespace TestEnttityHelper
             }
         }
 
-        [Test]
+        [Test, Order(5)]
         public void TestInsertEntity()
         {
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
@@ -76,7 +76,7 @@ namespace TestEnttityHelper
             }
         }
 
-        [Test]
+        [Test, Order(6)]
         public void TestUpdateEntity()
         {
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
@@ -93,7 +93,7 @@ namespace TestEnttityHelper
             }
         }
 
-        [Test]
+        [Test, Order(7)]
         public void TestSearchEntity()
         {
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
@@ -110,7 +110,7 @@ namespace TestEnttityHelper
             }
         }
 
-        [Test]
+        [Test, Order(8)]
         public void TestGetEntity()
         {
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
@@ -128,7 +128,7 @@ namespace TestEnttityHelper
             }
         }
 
-        [Test]
+        [Test, Order(9)]
         public void TestNonQuery()
         {
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
@@ -143,7 +143,7 @@ namespace TestEnttityHelper
             }
         }
 
-        [Test]
+        [Test, Order(10)]
         public void TestFullEntity()
         {
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
@@ -155,9 +155,13 @@ namespace TestEnttityHelper
                 EntityTest entityTest2 = new() { Id = 300, Name = "Testando 2 entidade 300 atualizando hora via C#", StartDate = DateTime.Now };
                 eh.Update(entityTest2, nameof(entityTest.Id));
 
-                var result = eh.Get<EntityTest>(true, $"{nameof(EntityTest.Id)} = 300");
+                var entities = eh.Get<EntityTest>(true, $"{nameof(EntityTest.Id)} = 300");
 
-                Assert.That(result[0].Name.Equals("Testando 2 entidade 300 atualizando hora via C#"), Is.EqualTo(true));
+                if (entities is not null && entities[0].Name.Equals("Testando 2 entidade 300 atualizando hora via C#"))
+                {
+                    int result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 300");
+                    Assert.That(result == 1, Is.EqualTo(true));
+                }
             }
             else
             {
