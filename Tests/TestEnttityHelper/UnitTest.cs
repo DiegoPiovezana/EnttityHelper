@@ -169,6 +169,40 @@ namespace TestEnttityHelper
             }
         }
 
+        [Test, Order(11)]
+        public void TestFullEntityREADME()
+        {
+            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            if (eh.DbContext.ValidateConnection())
+            {
+                // Create table - Object User     
+                eh.CreateTableIfNotExist<User>();
+
+                // Create new entity
+                User userD = new() { Id = 0, Name = "Diêgo Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now };
+
+                // Insert in database
+                eh.Insert(userD);
+
+                // Update in database
+                eh.Update(userD);
+
+                // Search in database
+                User? userDSearched = eh.Search(userD);
+
+                // Gets all users registered in the last week
+                List<User>? usersWeek = eh.Get<User>()?.Where(u=> u.DtCreation> DateTime.Now.AddDays(-7)).ToList();
+
+                // Deletes user D from the database
+                eh.Delete(userD);
+            }
+            else
+            {
+                Console.WriteLine("Unable to establish a connection to the database!");
+                Assert.Fail();
+            }
+        }
+
 
 
     }
