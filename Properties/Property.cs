@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 
-namespace EH
+namespace EH.Properties
 {
     internal class Property
     {
@@ -173,16 +173,9 @@ namespace EH
             }
         }
 
-
-
         override public string? ToString()
         {
             return ValueSql?.ToString();
         }
-
-
     }
-
-
-
 }

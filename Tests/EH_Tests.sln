@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestEH_UnitTest", "TestEntt
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestEH_WindowsFormsApp", "TestNetFramework\EH_WindowsFormsApp\TestEH_WindowsFormsApp.csproj", "{59472131-5B3E-4E4E-9EBC-CFAB70F38BB4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EnttityHelper", "..\EnttityHelper.csproj", "{2439D2EF-D9CC-4496-B80D-1C0BADD48029}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EH", "..\EH.csproj", "{2439D2EF-D9CC-4496-B80D-1C0BADD48029}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

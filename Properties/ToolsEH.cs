@@ -6,7 +6,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 
-namespace EH
+namespace EH.Properties
 {
     internal static class ToolsEH
     {
@@ -150,7 +150,7 @@ namespace EH
             return $"{schema}{tableName}";
         }
 
-        internal static List<T> MapDataReaderToList<T>(IDataReader reader, bool matchDb = true)
+        public static List<T> MapDataReaderToList<T>(IDataReader reader, bool matchDb = true)
         {
             try
             {
@@ -205,7 +205,6 @@ namespace EH
                 throw;
             }
         }
-
 
     }
 }
