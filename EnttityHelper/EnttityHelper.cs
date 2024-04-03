@@ -1,4 +1,5 @@
 ﻿using EH.Connection;
+using EH.Properties;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
@@ -58,7 +59,7 @@ namespace EH
             if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
             if (dbContext.Type is null) throw new InvalidOperationException("DbContext Type cannot be null.");
 
-            if (dbContext.Type.ToLower().Equals("oracle"))
+            if (dbContext.Type.Equals(Enums.DatabaseType.Oracle))
             {
                 TypesDefault = new Dictionary<string, string> {
                 { "String", "NVARCHAR2(1000)" },
@@ -73,7 +74,7 @@ namespace EH
                 { "TimeSpan", "DATE" }
                 };
             }
-            else if (dbContext.Type.ToLower().Equals("SqlServer"))
+            else if (dbContext.Type.Equals(Enums.DatabaseType.SqlServer))
             {
                 TypesDefault = new Dictionary<string, string>
                 {
@@ -89,7 +90,7 @@ namespace EH
                 { "TimeSpan", "TIME" }
                 };
             }
-            else if (dbContext.Type.ToLower().Equals("Sqlite"))
+            else if (dbContext.Type.Equals(Enums.DatabaseType.Sqlite))
             {
                 TypesDefault = new Dictionary<string, string>
                 {
@@ -172,7 +173,7 @@ namespace EH
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entity">Entity to be searched for in the bank.</param>
-        /// <param name="includeAll">(Optional) Defines whether it will include all other FK entities  (by default it will include all entities).</param>
+        /// <param name="includeAll">(Optional) Defines whether it will include all other FK entities (by default it will include all entities).</param>
         /// <param name="idPropName">(Optional) Entity identifier name.</param> 
         /// <returns>Specific entity from database.</returns>
         public TEntity? Search<TEntity>(TEntity entity, bool includeAll = true, string? idPropName = null) where TEntity : class
@@ -196,8 +197,7 @@ namespace EH
             {
                 if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
-                DbContext.IDbConnection.Open();
-
+                using IDbConnection dbConnection = DbContext.CreateOpenConnection();  
                 using IDbCommand command = DbContext.CreateCommand($"SELECT COUNT(*) FROM {nameTable} WHERE {filter ?? "1 = 1"}");
                 object result = command.ExecuteScalar(); // >= 0
 
@@ -304,6 +304,11 @@ namespace EH
             return (List<TEntity>?)ExecuteCommand<TEntity>(query);
         }
 
+        //public IDataReader? ExecuteSelect<TEntity>(string? query)
+        //{
+        //    return (IDataReader)ExecuteCommand<TEntity>(query);
+        //}
+
         /// <summary>
         /// Include all FK entities.
         /// </summary>
@@ -352,12 +357,13 @@ namespace EH
         /// </summary>
         /// <typeparam name="TEntity">The type of entities to retrieve.</typeparam>
         /// <param name="query">The SQL query to execute.</param>
-        /// <param name="isNonQuery">Flag indicating whether the command is a non-query (true) or select (false).</param>        
+        /// <param name="isNonQuery">Flag indicating whether the command is a non-query (true) or select (false).</param>  
+        /// <param name="getDataReader">If true and it is a select, it will return a dataReader filled with the result obtained.</param> 
         /// <returns>
         /// - If the command is a non-query, returns the number of affected rows.
         /// - If the command is a select, returns a list of entities retrieved from the database.
         /// </returns>
-        private object? ExecuteCommand<TEntity>(string? query, bool isNonQuery = false)
+        private object? ExecuteCommand<TEntity>(string? query, bool isNonQuery = false, bool getDataReader = false)
         {
             try
             {
@@ -371,7 +377,7 @@ namespace EH
                     throw new InvalidOperationException("Connection does not exist.");
                 }
 
-                IDbConnection connection = DbContext.IDbConnection;
+                IDbConnection connection = DbContext.CreateConnection();
                 connection.Open();
 
                 using IDbCommand command = DbContext.CreateCommand(query);
@@ -386,6 +392,7 @@ namespace EH
                 else // isSelect
                 {
                     using var reader = command.ExecuteReader();
+                    if (getDataReader) return reader;
                     if (reader != null)
                     {
                         List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);

@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using static EH.Connection.Enums;
 
 namespace EH.Connection
 {
@@ -20,7 +21,7 @@ namespace EH.Connection
         /// <summary>
         /// Gets or sets the port number.
         /// </summary>
-        public string? Port { get; set; }
+        public int? Port { get; set; }
 
         /// <summary>
         /// Gets or sets the service name.
@@ -40,7 +41,7 @@ namespace EH.Connection
         /// <summary>
         /// Gets or sets the type of database (e.g., Oracle or SqlServer).
         /// </summary>
-        public string? Type { get; set; }
+        public DatabaseType? Type { get; set; }
 
         /// <summary>
         /// Gets or sets the database name.
@@ -67,6 +68,8 @@ namespace EH.Connection
         /// </summary>
         public string? PathClient { get; set; }
 
+
+
         #region Abstract Functions
 
         /// <summary>
@@ -78,6 +81,12 @@ namespace EH.Connection
         /// Creates a new IDbCommand instance.
         /// </summary>
         public abstract IDbCommand CreateCommand();
+
+        /// <summary>
+        /// Creates a new IDbTransaction instance.
+        /// </summary>
+        /// <returns></returns>
+        public abstract IDbTransaction CreateTransaction();
 
         /// <summary>
         /// Creates and opens a new IDbConnection instance.
