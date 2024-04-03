@@ -35,15 +35,15 @@ namespace EH.Connection
                 {
                     database.Service = inicialCatalog;
                     database.Ip = dataSource;
-                    database.Type = "sqlserver";
+                    database.Type = Enums.DatabaseType.SqlServer;
                     return true;
                 }
                 else if (dataSource is not null) // Oracle
                 {
                     database.Ip = dataSource.Split(':')[0];
-                    database.Port = connectionString.Split(':')[1].Split('/')[0];
+                    database.Port = Convert.ToInt32(connectionString.Split(':')[1].Split('/')[0]);
                     database.Service = dataSource.Split(':')[1].Split('/')[1];
-                    database.Type = "oracle";
+                    database.Type = Enums.DatabaseType.Oracle;
                     return true;
                 }
 
@@ -67,6 +67,8 @@ namespace EH.Connection
 
             return null;
         }
+
+
 
     }
 }

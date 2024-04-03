@@ -46,8 +46,8 @@ namespace EH.Connection
         {
             IDbConnection = Type switch
             {
-                "sqlserver" => new SqlConnection($"Data Source={Ip};Initial Catalog={Service};User ID={User};Password={Pass}"),
-                "oracle" => new OracleConnection($"Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"),
+                Enums.DatabaseType.SqlServer => new SqlConnection($"Data Source={Ip};Initial Catalog={Service};User ID={User};Password={Pass}"),
+                Enums.DatabaseType.Oracle => new OracleConnection($"Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"),
                 _ => throw new Exception("Invalid database type!"),
             };
             return IDbConnection;
@@ -57,9 +57,18 @@ namespace EH.Connection
         /// Creates a command object.
         /// </summary>
         /// <returns></returns>
-        public override IDbCommand CreateCommand()
+        public override IDbCommand? CreateCommand()
         {
-            return IDbConnection.CreateCommand();
+            return IDbConnection?.CreateCommand();
+        }
+
+        /// <summary>
+        /// Creates a command object.
+        /// </summary>
+        /// <returns></returns>
+        public override IDbTransaction? CreateTransaction()
+        {
+            return IDbConnection?.BeginTransaction();
         }
 
         /// <summary>
@@ -85,8 +94,8 @@ namespace EH.Connection
 
             return Type switch
             {
-                "sqlserver" => new SqlCommand(commandText, (SqlConnection)IDbConnection),
-                "oracle" => new OracleCommand(commandText, (OracleConnection)IDbConnection),
+                Enums.DatabaseType.SqlServer => new SqlCommand(commandText, (SqlConnection)IDbConnection),
+                Enums.DatabaseType.Oracle => new OracleCommand(commandText, (OracleConnection)IDbConnection),
                 _ => throw new Exception("Invalid database type!"),
             };
         }
@@ -104,13 +113,13 @@ namespace EH.Connection
 
             return Type switch
             {
-                "sqlserver" => new SqlCommand
+                Enums.DatabaseType.SqlServer => new SqlCommand
                 {
                     CommandType = CommandType.StoredProcedure,
                     CommandText = procName,
                     Connection = (SqlConnection)connection
                 },
-                "oracle" => new OracleCommand
+                Enums.DatabaseType.Oracle => new OracleCommand
                 {
                     CommandType = CommandType.StoredProcedure,
                     CommandText = procName,
@@ -131,8 +140,8 @@ namespace EH.Connection
         {
             return Type switch
             {
-                "sqlserver" => new SqlParameter(parameterName, parameterValue),
-                "oracle" => new OracleParameter(parameterName, parameterValue),
+                Enums.DatabaseType.SqlServer => new SqlParameter(parameterName, parameterValue),
+                Enums.DatabaseType.Oracle => new OracleParameter(parameterName, parameterValue),
                 _ => throw new Exception("Invalid database type!"),
             };
         }

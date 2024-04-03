@@ -25,7 +25,8 @@
 - Considered the Column attribute of a property as the column name of the table;
 - Allow defining a minimum size for columns.</PackageReleaseNotes>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>		
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<AppDesignerFolder>Properties</AppDesignerFolder>		
 	</PropertyGroup>
 
 	<ItemGroup>
