@@ -1,6 +1,6 @@
 [![NuGet](https://img.shields.io/nuget/v/EnttityHelper.svg)](https://www.nuget.org/packages/EnttityHelper/)
 
-<img src="Globalization\br.png" width=2.0% height=2.0%> Veja a documentação em português [clicando aqui](EnttityHelper/Globalization/Readme_pt-br.md).<br/>
+<img src="Globalization\br.png" width=2.0% height=2.0%> Veja a documentação em português [clicando aqui](Globalization/Readme_pt-br.md).<br/>
 
 # EnttityHelper [Beta]
 Allows easy manipulation of entities in different databases.<br/>
