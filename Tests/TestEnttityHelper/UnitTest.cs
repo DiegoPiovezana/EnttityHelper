@@ -172,29 +172,34 @@ namespace TestEnttityHelper
         [Test, Order(11)]
         public void TestFullEntityREADME()
         {
+            // Create a connection with the database using the connection string
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+
             if (eh.DbContext.ValidateConnection())
             {
                 // Create table - Object User     
                 eh.CreateTableIfNotExist<User>();
 
                 // Create new entity
-                User userD = new() { Id = 0, Name = "Diêgo Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now };
+                User userD = new() { Id = 0, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now };
 
                 // Insert in database
                 eh.Insert(userD);
+
+                // Modify entity
+                userD.Name = "Diego Piovezana";
 
                 // Update in database
                 eh.Update(userD);
 
                 // Search in database
-                User? userDSearched = eh.Search(userD);
-
-                // Gets all users registered in the last week
-                List<User>? usersWeek = eh.Get<User>()?.Where(u=> u.DtCreation> DateTime.Now.AddDays(-7)).ToList();
+                User? userDSearched = eh.Search(userD);                               
 
                 // Deletes user D from the database
                 eh.Delete(userD);
+
+                // Gets all users registered in the last week
+                List<User>? usersWeek = eh.Get<User>()?.Where(u => u.DtCreation > DateTime.Now.AddDays(-7)).ToList();
             }
             else
             {
