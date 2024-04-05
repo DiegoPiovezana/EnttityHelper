@@ -1,6 +1,6 @@
 [![NuGet](https://img.shields.io/nuget/v/EnttityHelper.svg)](https://www.nuget.org/packages/EnttityHelper/)
 
-<img src="https://github.com/DiegoPiovezana/DiegoPiovezana/blob/main/Images/us.png?raw=true" width=2.0% height=2.0%> See the documentation in English by [clicking here](../../Readme.md).<br/>
+<img src="https://raw.githubusercontent.com/DiegoPiovezana/DiegoPiovezana/main/Images/us.png" width=2.0% height=2.0%> See the documentation in English by [clicking here](../../Readme.md).<br/>
 
 # EnttityHelper [Beta]
 Possibilita a fácil manipulação de entidades em diferentes bancos de dados.<br/>
