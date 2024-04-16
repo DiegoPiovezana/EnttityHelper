@@ -338,7 +338,7 @@ namespace EH
         public bool IncludeAll<TEntity>(List<TEntity>? entities)
         {
             if (entities == null || entities.Count == 0) return false;
-            foreach (TEntity entity in entities) { Entities.Inclusions.IncludeForeignKeyEntities(entity); }
+            foreach (TEntity entity in entities) { Entities.Inclusions.IncludeForeignKeyEntities(entity); }            
             return true;
         }
 

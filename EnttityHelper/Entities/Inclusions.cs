@@ -36,7 +36,7 @@ namespace EH.Entities
                     if (propertyToUpdate != null)
                     {
                         var pkValue = pk.GetValue(pair.Value, null);
-                        if (pkValue == null || string.IsNullOrEmpty(pkValue.ToString().Trim()) || (pk.PropertyType.IsPrimitive && pkValue.Equals(Convert.ChangeType(0, pkValue.GetType())))) continue;
+                        if (pkValue == null || string.IsNullOrEmpty(pkValue.ToString().Trim()) || pk.PropertyType.IsPrimitive && pkValue.Equals(Convert.ChangeType(0, pkValue.GetType()))) continue;
 
                         // Get the property type of the foreign key
                         Type? fkEntityType = propertyToUpdate.PropertyType;

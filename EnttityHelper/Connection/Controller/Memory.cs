@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace EH.Connection.Controller
+namespace EH.Connection
 {
     internal class Memory
     {
@@ -57,7 +57,7 @@ namespace EH.Connection.Controller
 
             IEnumerator IEnumerable.GetEnumerator()
             {
-                return this.GetEnumerator();
+                return GetEnumerator();
             }
         }
 

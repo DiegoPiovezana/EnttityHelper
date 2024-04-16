@@ -18,7 +18,7 @@
 		<Copyright>GNU General Public License v3.0</Copyright>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-		<ApplicationIcon>Images\EnttityHelper_icon.ico</ApplicationIcon>
+		<ApplicationIcon>EnttityHelper\Images\EnttityHelper_icon.ico</ApplicationIcon>
 		<PackageIcon>EnttityHelper_icon.png</PackageIcon>
 		<PackageReleaseNotes>- Possibility to customize table name using replaces;
 - If entity lacks a primary key, the first property can be considered as the identifier;
@@ -36,15 +36,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="Images\EnttityHelper_icon.png" />
+	  <None Remove="EnttityHelper\Images\EnttityHelper_icon.png" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Content Include="Images\EnttityHelper_icon.ico" />
+	  <Content Include="EnttityHelper\Images\EnttityHelper_icon.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Resource Include="Images\EnttityHelper_icon.png">
+	  <Resource Include="EnttityHelper\Images\EnttityHelper_icon.png">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
 	  </Resource>
