@@ -168,6 +168,15 @@ namespace EH
             return entities;
         }
 
+        //public IQueryable Get<TEntity>(bool includeAll = true)
+        //{
+        //    string? querySelect = CommandsSqlString.Get<TEntity>(null, ReplacesTableName);
+        //    var entities = ExecuteSelect<TEntity>(querySelect);
+            
+        //    if (includeAll) { IncludeAll(entities); }
+        //    return entities;
+        //}
+
         /// <summary>
         /// Search the specific entity by <paramref name="idPropName"/>
         /// </summary>
@@ -290,7 +299,7 @@ namespace EH
         /// <returns>Number of affected rows.</returns>
         public int ExecuteNonQuery(string? query)
         {
-            return (int?)ExecuteCommand<object>(query, true) ?? 0;
+            return (int?)Commands.Execute.ExecuteCommand<object>(DbContext, query, true) ?? 0;
         }
 
         /// <summary>
@@ -301,7 +310,7 @@ namespace EH
         /// <returns>List of entities retrieved from the database.</returns>
         public List<TEntity>? ExecuteSelect<TEntity>(string? query)
         {
-            return (List<TEntity>?)ExecuteCommand<TEntity>(query);
+            return (List<TEntity>?)Commands.Execute.ExecuteCommand<TEntity>(DbContext, query);
         }
 
         //public IDataReader? ExecuteSelect<TEntity>(string? query)
@@ -329,7 +338,7 @@ namespace EH
         public bool IncludeAll<TEntity>(List<TEntity>? entities)
         {
             if (entities == null || entities.Count == 0) return false;
-            foreach (TEntity entity in entities) { IncludeForeignKeyEntities(entity); }
+            foreach (TEntity entity in entities) { Entities.Inclusions.IncludeForeignKeyEntities(entity); }
             return true;
         }
 
@@ -343,144 +352,13 @@ namespace EH
         public bool IncludeEntityFK<TEntity>(TEntity entity, string fkName)
         {
             if (entity == null) return false;
-            IncludeForeignKeyEntities(entity, fkName);
+            Entities.Inclusions.IncludeForeignKeyEntities(entity, fkName);
             return true;
         }
 
 
 
-        ///////////////////////////////// PRIVATE METHODS ///////////////////////////////// 
 
-
-        /// <summary>
-        /// Executes a SQL command, either non-query or select, based on the provided query.
-        /// </summary>
-        /// <typeparam name="TEntity">The type of entities to retrieve.</typeparam>
-        /// <param name="query">The SQL query to execute.</param>
-        /// <param name="isNonQuery">Flag indicating whether the command is a non-query (true) or select (false).</param>  
-        /// <param name="getDataReader">If true and it is a select, it will return a dataReader filled with the result obtained.</param> 
-        /// <returns>
-        /// - If the command is a non-query, returns the number of affected rows.
-        /// - If the command is a select, returns a list of entities retrieved from the database.
-        /// </returns>
-        private object? ExecuteCommand<TEntity>(string? query, bool isNonQuery = false, bool getDataReader = false)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(query))
-                {
-                    throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
-                }
-
-                if (DbContext?.IDbConnection is null)
-                {
-                    throw new InvalidOperationException("Connection does not exist.");
-                }
-
-                IDbConnection connection = DbContext.CreateConnection();
-                connection.Open();
-
-                using IDbCommand command = DbContext.CreateCommand(query);
-
-                if (isNonQuery)
-                {
-                    int rowsAffected = command.ExecuteNonQuery();
-                    connection.Close();
-                    Console.WriteLine($"Rows Affected: {rowsAffected}");
-                    return rowsAffected;
-                }
-                else // isSelect
-                {
-                    using var reader = command.ExecuteReader();
-                    if (getDataReader) return reader;
-                    if (reader != null)
-                    {
-                        List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
-                        connection.Close();
-                        Console.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
-                        return entities;
-                    }
-
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw;
-            }
-        }
-
-        private void IncludeForeignKeyEntities<TEntity>(TEntity entity, string? fkOnly = null)
-        {
-            if (entity == null) return;
-
-            var propertiesFK = ToolsEH.GetFKProperties(entity);
-            if (propertiesFK == null || propertiesFK.Count == 0)
-            {
-                Console.WriteLine("No foreign key properties found!");
-                return;
-            }
-
-            if (!string.IsNullOrEmpty(fkOnly)) // If not all
-            {
-                propertiesFK = propertiesFK.Where(x => x.Key.ToString() == fkOnly).ToDictionary(x => x.Key, x => x.Value);
-            }
-
-            foreach (KeyValuePair<object, object> pair in propertiesFK)
-            {
-                if (pair.Value != null)
-                {
-                    var pk = ToolsEH.GetPK(pair.Value);
-                    if (pk == null) continue;
-
-                    var propertyToUpdate = entity.GetType().GetProperty(pair.Key.ToString());
-
-                    if (propertyToUpdate != null)
-                    {
-                        var pkValue = pk.GetValue(pair.Value, null);
-                        if (pkValue == null || string.IsNullOrEmpty(pkValue.ToString().Trim()) || (pk.PropertyType.IsPrimitive && pkValue.Equals(Convert.ChangeType(0, pkValue.GetType())))) continue;
-
-                        // Get the property type of the foreign key
-                        Type? fkEntityType = propertyToUpdate.PropertyType;
-
-                        // Check if it is a generic collection type
-                        bool isCollection = typeof(ICollection<>).IsAssignableFrom(fkEntityType);
-
-                        // Get the actual type of the elements in the collection (if applicable)
-                        Type elementType = isCollection ? fkEntityType.GetGenericArguments()[0] : fkEntityType;
-
-                        // Use the correct generic type for the Get method
-                        MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(elementType);
-
-                        // Retrieve the foreign key entities
-                        IEnumerable<object> entityFKList = (IEnumerable<object>)genericGetMethod.Invoke(this, new object[] { true, $"{pk.Name}='{pkValue}'" });
-
-                        // Cast each entity to the actual type
-                        IEnumerable<object> castEntityFKList = entityFKList.Cast<object>();
-
-                        // Handle collections and single entities
-                        if (isCollection)
-                        {
-                            // Iterate through the casted entity list and add each entity to the collection
-                            foreach (var entityFK in castEntityFKList)
-                            {
-                                if (propertyToUpdate.GetValue(entity) is ICollection<object> collection)
-                                {
-                                    collection.Add(entityFK);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // Assign the first element of the casted entity list to the property
-                            var entityFK = castEntityFKList.FirstOrDefault();
-                            propertyToUpdate.SetValue(entity, entityFK);
-                        }
-                    }
-                }
-            }
-        }
 
     }
 }
