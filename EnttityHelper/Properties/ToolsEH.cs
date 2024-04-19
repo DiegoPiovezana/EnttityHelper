@@ -141,7 +141,7 @@ namespace EH.Properties
             return default;
         }
 
-        public static string GetNameTable<TEntity>(Dictionary<string, string>? replacesTableName = null)
+        public static string GetTableName<TEntity>(Dictionary<string, string>? replacesTableName = null)
         {
             TableAttribute? ta = GetTableAttribute(typeof(TEntity));
             string schema = ta?.Schema != null ? $"{ta.Schema}." : "";
