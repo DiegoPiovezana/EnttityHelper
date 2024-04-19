@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Reflection;
 
 namespace EH
 {
@@ -34,7 +33,7 @@ namespace EH
         /// <summary>
         /// Allows you to obtain the main commands to be executed on the database.
         /// </summary>
-        public QuerySqlString GetQuery = new();
+        public SqlQueryString GetQuery = new();
 
 
         /// <summary>
@@ -143,7 +142,7 @@ namespace EH
             }
 
             string? insertQuery = GetQuery.Insert(entity, ReplacesTableName, tableName);
-            return insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery);
+            return insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1);
         }
 
         /// <summary>
@@ -157,7 +156,7 @@ namespace EH
         public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class
         {
             string? updateQuery = GetQuery.Update(entity, nameId, ReplacesTableName);
-            return ExecuteNonQuery(updateQuery);
+            return ExecuteNonQuery(updateQuery, 1);
         }
 
         /// <summary>
@@ -292,17 +291,18 @@ namespace EH
         public int Delete<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class
         {
             string? deleteQuery = GetQuery.Delete(entity, nameId, ReplacesTableName, tableName);
-            return ExecuteNonQuery(deleteQuery);
+            return ExecuteNonQuery(deleteQuery,1);
         }
 
         /// <summary>
         /// Executes the non query (Create, Alter, Drop, Insert, Update or Delete) on the database.
         /// </summary>   
         /// <param name="query">Query to be executed.</param>
+        /// <param name="expectedChanges">(Optional) Expected amount of changes to the database. If the amount of changes is not expected, the change will be rolled back and an exception will be thrown.</param> 
         /// <returns>Number of affected rows.</returns>
-        public int ExecuteNonQuery(string? query)
+        public int ExecuteNonQuery(string? query, int expectedChanges = -1)
         {
-            return (int?)Commands.Execute.ExecuteCommand<object>(DbContext, query, true) ?? 0;
+            return (int?)Commands.Execute.ExecuteCommand<object>(DbContext, query, true, false, expectedChanges) ?? 0;
         }
 
         /// <summary>

@@ -11,7 +11,7 @@ namespace EH.Connection
     /// <summary>
     /// Allows you to obtain the main commands to be executed on the database.
     /// </summary>
-    public class QuerySqlString
+    public class SqlQueryString
     {
         /// <summary>
         /// Gets the insert command.
