@@ -24,7 +24,7 @@ namespace EH.Commands
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(query))
+                if (string.IsNullOrEmpty(query?.Trim()))
                 {
                     throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
                 }
@@ -34,32 +34,51 @@ namespace EH.Commands
                     throw new InvalidOperationException("Connection does not exist.");
                 }
 
-                IDbConnection connection = DbContext.CreateConnection();
-                connection.Open();
+                using IDbConnection connection = DbContext.CreateConnection();
+                DbContext.OpenConnection();
 
-                using IDbCommand command = DbContext.CreateCommand(query);
+                IDbTransaction? transaction = DbContext.CreateTransaction() ?? throw new InvalidOperationException("Transaction is null.");
 
-                if (isNonQuery)
+                try
                 {
-                    int rowsAffected = command.ExecuteNonQuery();
-                    connection.Close();
-                    Console.WriteLine($"Rows Affected: {rowsAffected}");
-                    return rowsAffected;
-                }
-                else // isSelect
-                {
-                    using var reader = command.ExecuteReader();
-                    if (getDataReader) return reader;
-                    if (reader != null)
+                    using IDbCommand command = DbContext.CreateCommand(query);
+                    command.Transaction = transaction;
+
+                    if (isNonQuery)
                     {
-                        List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
+                        int rowsAffected = command.ExecuteNonQuery();
+                        transaction.Commit();
                         connection.Close();
-                        Console.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
-                        return entities;
+                        Console.WriteLine($"Rows Affected: {rowsAffected}");
+                        return rowsAffected;
                     }
+                    else // isSelect
+                    {
+                        using var reader = command.ExecuteReader();
+                        transaction.Commit();
 
-                    return null;
+                        if (getDataReader)
+                        {
+                            return reader;
+                        }
+
+                        if (reader != null)
+                        {
+                            List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
+                            reader.Close();
+                            connection.Close();
+                            Console.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
+                            return entities;
+                        }
+
+                        return null;
+                    }
                 }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    throw;
+                }                
             }
             catch (Exception ex)
             {

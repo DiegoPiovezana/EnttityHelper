@@ -46,8 +46,8 @@ namespace EH.Connection
         {
             IDbConnection = Type switch
             {
-                Enums.DatabaseType.SqlServer => new SqlConnection($"Data Source={Ip};Initial Catalog={Service};User ID={User};Password={Pass}"),
-                Enums.DatabaseType.Oracle => new OracleConnection($"Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"),
+                Enums.DbType.SqlServer => new SqlConnection($"Data Source={Ip};Initial Catalog={Service};User ID={User};Password={Pass}"),
+                Enums.DbType.Oracle => new OracleConnection($"Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"),
                 _ => throw new Exception("Invalid database type!"),
             };
             return IDbConnection;
@@ -94,8 +94,8 @@ namespace EH.Connection
 
             return Type switch
             {
-                Enums.DatabaseType.SqlServer => new SqlCommand(commandText, (SqlConnection)IDbConnection),
-                Enums.DatabaseType.Oracle => new OracleCommand(commandText, (OracleConnection)IDbConnection),
+                Enums.DbType.SqlServer => new SqlCommand(commandText, (SqlConnection)IDbConnection),
+                Enums.DbType.Oracle => new OracleCommand(commandText, (OracleConnection)IDbConnection),
                 _ => throw new Exception("Invalid database type!"),
             };
         }
@@ -113,13 +113,13 @@ namespace EH.Connection
 
             return Type switch
             {
-                Enums.DatabaseType.SqlServer => new SqlCommand
+                Enums.DbType.SqlServer => new SqlCommand
                 {
                     CommandType = CommandType.StoredProcedure,
                     CommandText = procName,
                     Connection = (SqlConnection)connection
                 },
-                Enums.DatabaseType.Oracle => new OracleCommand
+                Enums.DbType.Oracle => new OracleCommand
                 {
                     CommandType = CommandType.StoredProcedure,
                     CommandText = procName,
@@ -140,8 +140,8 @@ namespace EH.Connection
         {
             return Type switch
             {
-                Enums.DatabaseType.SqlServer => new SqlParameter(parameterName, parameterValue),
-                Enums.DatabaseType.Oracle => new OracleParameter(parameterName, parameterValue),
+                Enums.DbType.SqlServer => new SqlParameter(parameterName, parameterValue),
+                Enums.DbType.Oracle => new OracleParameter(parameterName, parameterValue),
                 _ => throw new Exception("Invalid database type!"),
             };
         }

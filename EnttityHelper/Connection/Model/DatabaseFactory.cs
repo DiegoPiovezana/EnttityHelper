@@ -41,7 +41,7 @@ namespace EH.Connection
         /// <summary>
         /// Gets or sets the type of database (e.g., Oracle or SqlServer).
         /// </summary>
-        public DatabaseType? Type { get; set; }
+        public Enums.DbType? Type { get; set; }
 
         /// <summary>
         /// Gets or sets the database name.

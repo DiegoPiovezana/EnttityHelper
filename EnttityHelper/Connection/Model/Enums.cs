@@ -5,7 +5,7 @@
     /// </summary>
     public class Enums
     {
-        public enum DatabaseType
+        public enum DbType
         {
             Oracle,
             SqlServer,

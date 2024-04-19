@@ -59,7 +59,7 @@ namespace EH
             if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
             if (dbContext.Type is null) throw new InvalidOperationException("DbContext Type cannot be null.");
 
-            if (dbContext.Type.Equals(Enums.DatabaseType.Oracle))
+            if (dbContext.Type.Equals(Enums.DbType.Oracle))
             {
                 TypesDefault = new Dictionary<string, string> {
                 { "String", "NVARCHAR2(1000)" },
@@ -74,7 +74,7 @@ namespace EH
                 { "TimeSpan", "DATE" }
                 };
             }
-            else if (dbContext.Type.Equals(Enums.DatabaseType.SqlServer))
+            else if (dbContext.Type.Equals(Enums.DbType.SqlServer))
             {
                 TypesDefault = new Dictionary<string, string>
                 {
@@ -90,7 +90,7 @@ namespace EH
                 { "TimeSpan", "TIME" }
                 };
             }
-            else if (dbContext.Type.Equals(Enums.DatabaseType.Sqlite))
+            else if (dbContext.Type.Equals(Enums.DbType.Sqlite))
             {
                 TypesDefault = new Dictionary<string, string>
                 {
@@ -167,15 +167,6 @@ namespace EH
             if (includeAll) { _ = IncludeAll(entities); }
             return entities;
         }
-
-        //public IQueryable Get<TEntity>(bool includeAll = true)
-        //{
-        //    string? querySelect = CommandsSqlString.Get<TEntity>(null, ReplacesTableName);
-        //    var entities = ExecuteSelect<TEntity>(querySelect);
-            
-        //    if (includeAll) { IncludeAll(entities); }
-        //    return entities;
-        //}
 
         /// <summary>
         /// Search the specific entity by <paramref name="idPropName"/>
