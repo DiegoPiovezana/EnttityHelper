@@ -27,7 +27,7 @@ https://bit.ly/FeedbackHappyHelper
 
 ## INSTALAÇÃO:
 ```
- dotnet add package EnttityHelper --version 0.4.0
+ dotnet add package EnttityHelper --version 0.5.0
 ```	
 
 <br/>

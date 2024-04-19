@@ -31,6 +31,10 @@ namespace EH
         /// </summary>
         public Dictionary<string, string>? ReplacesTableName { get; set; }
 
+        /// <summary>
+        /// Allows you to obtain the main commands to be executed on the database.
+        /// </summary>
+        public QuerySqlString GetQuery = new();
 
 
         /// <summary>
@@ -118,12 +122,13 @@ namespace EH
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entity">Entity to be inserted into the database.</param>      
-        /// <param name="namePropUnique">Name of the property to be considered as a uniqueness criterion (optional).</param>        
+        /// <param name="namePropUnique">(Optional) Name of the property to be considered as a uniqueness criterion.</param>  
+        /// <param name="nameTable">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>
         /// True, if one or more entities are inserted into the database.
         /// <para>If the return is negative, it indicates that the insertion did not happen due to some established criteria.</para>
         /// </returns>
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null)
+        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, string? nameTable = null)
         {            
             if (!string.IsNullOrEmpty(namePropUnique))
             {
@@ -136,7 +141,7 @@ namespace EH
                 }
             }
 
-            string? insertQuery = CommandsSqlString.Insert(entity, ReplacesTableName);
+            string? insertQuery = GetQuery.Insert(entity, ReplacesTableName, nameTable);
             return insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery);
         }
 
@@ -145,11 +150,12 @@ namespace EH
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entity">Entity to be updated in the database.</param>
-        /// <param name="nameId">Entity Id column name.</param>      
+        /// <param name="nameId">(Optional) Entity Id column name.</param>      
+        /// <param name="nameTable">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>Number of entities updated in the database.</returns>
-        public int Update<TEntity>(TEntity entity, string? nameId = null) where TEntity : class
+        public int Update<TEntity>(TEntity entity, string? nameId = null, string? nameTable = null) where TEntity : class
         {
-            string? updateQuery = CommandsSqlString.Update(entity, nameId, ReplacesTableName);
+            string? updateQuery = GetQuery.Update(entity, nameId, ReplacesTableName);
             return ExecuteNonQuery(updateQuery);
         }
 
@@ -157,12 +163,13 @@ namespace EH
         /// Gets one or more entities from the database.
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
-        /// <param name="includeAll">If true, all entities that are properties of the parent property will be included.</param>
-        /// <param name="filter">Entity search criteria (optional).</param>       
+        /// <param name="includeAll">(Optional) If true, all entities that are properties of the parent property will be included (this is the default behavior).</param>
+        /// <param name="filter">(Optional) Entity search criteria.</param>     
+        /// <param name="nameTable">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>Entities list.</returns>
-        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null)
+        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? nameTable = null)
         {
-            string? querySelect = CommandsSqlString.Get<TEntity>(filter, ReplacesTableName);
+            string? querySelect = GetQuery.Get<TEntity>(filter, ReplacesTableName, nameTable);
             var entities = ExecuteSelect<TEntity>(querySelect);
             if (includeAll) { _ = IncludeAll(entities); }
             return entities;
@@ -174,11 +181,12 @@ namespace EH
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entity">Entity to be searched for in the bank.</param>
         /// <param name="includeAll">(Optional) Defines whether it will include all other FK entities (by default it will include all entities).</param>
-        /// <param name="idPropName">(Optional) Entity identifier name.</param> 
+        /// <param name="idPropName">(Optional) Entity identifier name.</param>
+        /// <param name="nameTable">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>Specific entity from database.</returns>
-        public TEntity? Search<TEntity>(TEntity entity, bool includeAll = true, string? idPropName = null) where TEntity : class
+        public TEntity? Search<TEntity>(TEntity entity, bool includeAll = true, string? idPropName = null, string? nameTable = null) where TEntity : class
         {
-            string? selectQuery = CommandsSqlString.Search(entity, idPropName, ReplacesTableName);
+            string? selectQuery = GetQuery.Search(entity, idPropName, ReplacesTableName, nameTable);
             var entities = ExecuteSelect<TEntity>(selectQuery);
             if (includeAll) { _ = IncludeAll(entities.FirstOrDefault()); }
             return entities.FirstOrDefault();
@@ -188,9 +196,9 @@ namespace EH
         /// Checks if table exists (>= 0) and it is filled (> 0).
         /// </summary>
         /// <param name="nameTable">Name of the table to check if it exists.</param>
-        /// <param name="filter">Possible filter.</param>
-        /// <param name="quantity">The minimum number of records to check for existence in the table. Enter 0 if you just want to check if the table exists.</param>
-        /// <returns></returns>
+        /// <param name="filter">(Optional) Possible filter.</param>
+        /// <param name="quantity">(Optional) The minimum number of records to check for existence in the table. Enter 0 if you just want to check if the table exists.</param>
+        /// <returns>True, if table exists and (optionally) it is filled</returns>
         public bool CheckIfExist(string nameTable, string? filter = null, int quantity = 0)
         {
             try
@@ -236,14 +244,15 @@ namespace EH
         /// <summary>
         /// Allows you to create a table in the database according to the provided objectEntity object.
         /// </summary>
-        /// <typeparam name="TEntity">Type of entity to create the table.</typeparam>    
+        /// <typeparam name="TEntity">Type of entity to create the table.</typeparam>
+        /// <param name="nameTable">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>True, if table was created and false, if not created.</returns>
         /// <exception cref="InvalidOperationException">Occurs if the table should have been created but was not.</exception>      
-        public bool CreateTable<TEntity>()
+        public bool CreateTable<TEntity>(string? nameTable = null)
         {
             if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
-            string? createTableQuery = CommandsSqlString.CreateTable<TEntity>(TypesDefault, ReplacesTableName);
+            string? createTableQuery = GetQuery.CreateTable<TEntity>(TypesDefault, ReplacesTableName, nameTable);
 
             if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
             {
@@ -260,10 +269,11 @@ namespace EH
         /// <summary>
         /// Allows you to create a table in the database according to the provided objectEntity object, if table does not exist.
         /// </summary>
-        /// <typeparam name="TEntity">Type of entity to create the table.</typeparam>    
+        /// <typeparam name="TEntity">Type of entity to create the table.</typeparam>  
+        /// <param name="nameTable">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>True, if table was created or already exists and false, if it was not created.</returns>
         /// <exception cref="InvalidOperationException">Occurs if the table should have been created but was not.</exception>      
-        public bool CreateTableIfNotExist<TEntity>()
+        public bool CreateTableIfNotExist<TEntity>(string? nameTable = null)
         {
             if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
             string table = ToolsEH.GetNameTable<TEntity>(ReplacesTableName);
@@ -275,11 +285,12 @@ namespace EH
         /// Allow to delete an entity in the database.
         /// </summary>
         /// <param name="entity">Entity that will have its FK entities included.</param>
-        /// <param name="nameId">Entity Id column name.</param>
+        /// <param name="nameId">(Optional) Entity Id column name. By default, PK will be used.</param>
+        /// <param name="nameTable">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>Number of exclusions made.</returns>
-        public int Delete<TEntity>(TEntity entity, string? nameId = null) where TEntity : class
+        public int Delete<TEntity>(TEntity entity, string? nameId = null, string? nameTable = null) where TEntity : class
         {
-            string? deleteQuery = CommandsSqlString.Delete(entity, nameId, ReplacesTableName);
+            string? deleteQuery = GetQuery.Delete(entity, nameId, ReplacesTableName, nameTable);
             return ExecuteNonQuery(deleteQuery);
         }
 
@@ -334,7 +345,7 @@ namespace EH
         }
 
         /// <summary>
-        /// Include FK entity.
+        /// Includes a specific FK entity only.
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entity">Entity that will have their FK entity included.</param>

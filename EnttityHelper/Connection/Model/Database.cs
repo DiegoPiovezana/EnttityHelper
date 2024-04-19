@@ -40,14 +40,14 @@ namespace EH.Connection
         /// <summary>
         /// Creates an object for the database informing the connection string.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Connection</returns>
         /// <exception cref="Exception"></exception>
         public override IDbConnection CreateConnection()
         {
             IDbConnection = Type switch
             {
-                Enums.DbType.SqlServer => new SqlConnection($"Data Source={Ip};Initial Catalog={Service};User ID={User};Password={Pass}"),
                 Enums.DbType.Oracle => new OracleConnection($"Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"),
+                Enums.DbType.SqlServer => new SqlConnection($"Data Source={Ip};Initial Catalog={Service};User ID={User};Password={Pass}"),
                 _ => throw new Exception("Invalid database type!"),
             };
             return IDbConnection;
@@ -56,7 +56,7 @@ namespace EH.Connection
         /// <summary>
         /// Creates a command object.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Command</returns>
         public override IDbCommand? CreateCommand()
         {
             return IDbConnection?.CreateCommand();
@@ -65,7 +65,7 @@ namespace EH.Connection
         /// <summary>
         /// Creates a command object.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Transactio</returns>
         public override IDbTransaction? CreateTransaction()
         {
             return IDbConnection?.BeginTransaction();
@@ -74,7 +74,7 @@ namespace EH.Connection
         /// <summary>
         /// Create and open a connection.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Connection</returns>
         public override IDbConnection CreateOpenConnection()
         {
             IDbConnection = CreateConnection();
