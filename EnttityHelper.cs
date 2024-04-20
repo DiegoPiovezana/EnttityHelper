@@ -77,7 +77,7 @@ namespace EH
                 { "TimeSpan", "DATE" }
                 };
             }
-            else if (dbContext.Type.Equals(Enums.DbType.SqlServer))
+            else if (dbContext.Type.Equals(Enums.DbType.SQLServer))
             {
                 TypesDefault = new Dictionary<string, string>
                 {
@@ -93,7 +93,7 @@ namespace EH
                 { "TimeSpan", "TIME" }
                 };
             }
-            else if (dbContext.Type.Equals(Enums.DbType.Sqlite))
+            else if (dbContext.Type.Equals(Enums.DbType.SQLite))
             {
                 TypesDefault = new Dictionary<string, string>
                 {
@@ -144,6 +144,25 @@ namespace EH
             string? insertQuery = GetQuery.Insert(entity, ReplacesTableName, tableName);
             return insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1);
         }
+
+        ///// <summary>
+        ///// Allow to insert multiple entities in the database.
+        ///// </summary>
+        ///// <typeparam name="TEntity"></typeparam>
+        ///// <param name="entities"></param>
+        ///// <param name="tableName"></param>
+        ///// <returns></returns>
+        //public bool BulkInsert<TEntity>(List<TEntity> entities, string? tableName = null)
+        //{
+        //    if (entities.Count == 0) return false;
+        //    tableName ??= ToolsEH.GetTableName<TEntity>(ReplacesTableName);
+
+        //    string? bulkInsertQuery = GetQuery.BulkInsert(entities, ReplacesTableName, tableName);
+        //    return ExecuteNonQuery(bulkInsertQuery, entities.Count) == entities.Count;
+        //}
+
+
+
 
         /// <summary>
         /// Allow to update an entity in the database.
@@ -280,6 +299,12 @@ namespace EH
             if (CheckIfExist(tableName)) { Console.WriteLine($"Table '{tableName}' already exists!"); return true; }
             return CreateTable<TEntity>();
         }
+
+       
+
+
+
+
 
         /// <summary>
         /// Allow to delete an entity in the database.

@@ -47,7 +47,7 @@ namespace EH.Connection
             IDbConnection = Type switch
             {
                 Enums.DbType.Oracle => new OracleConnection($"Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"),
-                Enums.DbType.SqlServer => new SqlConnection($"Data Source={Ip};Initial Catalog={Service};User ID={User};Password={Pass}"),
+                Enums.DbType.SQLServer => new SqlConnection($"Data Source={Ip};Initial Catalog={Service};User ID={User};Password={Pass}"),
                 _ => throw new Exception("Invalid database type!"),
             };
             return IDbConnection;
@@ -94,7 +94,7 @@ namespace EH.Connection
 
             return Type switch
             {
-                Enums.DbType.SqlServer => new SqlCommand(commandText, (SqlConnection)IDbConnection),
+                Enums.DbType.SQLServer => new SqlCommand(commandText, (SqlConnection)IDbConnection),
                 Enums.DbType.Oracle => new OracleCommand(commandText, (OracleConnection)IDbConnection),
                 _ => throw new Exception("Invalid database type!"),
             };
@@ -113,7 +113,7 @@ namespace EH.Connection
 
             return Type switch
             {
-                Enums.DbType.SqlServer => new SqlCommand
+                Enums.DbType.SQLServer => new SqlCommand
                 {
                     CommandType = CommandType.StoredProcedure,
                     CommandText = procName,
@@ -140,9 +140,25 @@ namespace EH.Connection
         {
             return Type switch
             {
-                Enums.DbType.SqlServer => new SqlParameter(parameterName, parameterValue),
+                Enums.DbType.SQLServer => new SqlParameter(parameterName, parameterValue),
                 Enums.DbType.Oracle => new OracleParameter(parameterName, parameterValue),
                 _ => throw new Exception("Invalid database type!"),
+            };
+        }
+
+        /// <summary>
+        /// Creates a bulk copy object specific to the database type.
+        /// </summary>
+        /// <typeparam name="T">The type of bulk copy object to return.</typeparam>
+        /// <returns>The bulk copy object cast to the specified type.</returns>
+        /// <exception cref="ArgumentException">Thrown when the database type is not supported.</exception>
+        public override object CreateBulkCopy()
+        {
+            return Type switch
+            {
+                Enums.DbType.SQLServer => new SqlBulkCopy((SqlConnection)IDbConnection),
+                Enums.DbType.Oracle => new OracleBulkCopy((OracleConnection)IDbConnection),
+                _ => throw new ArgumentException("Invalid database type!", nameof(Type)),
             };
         }
 

@@ -35,7 +35,7 @@ namespace EH.Connection
                 {
                     database.Service = inicialCatalog;
                     database.Ip = dataSource;
-                    database.Type = Enums.DbType.SqlServer;
+                    database.Type = Enums.DbType.SQLServer;
                     return true;
                 }
                 else if (dataSource is not null) // Oracle

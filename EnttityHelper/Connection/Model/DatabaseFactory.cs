@@ -1,4 +1,7 @@
-﻿using System.Data;
+﻿using Oracle.ManagedDataAccess.Client;
+using System;
+using System.Data;
+using System.Data.SqlClient;
 using static EH.Connection.Enums;
 
 namespace EH.Connection
@@ -119,10 +122,52 @@ namespace EH.Connection
         public abstract IDataParameter CreateParameter(string parameterName, object parameterValue);
 
         /// <summary>
-        /// Creates a new instance of the DatabaseFactory class.
+        /// Creates a new instance of the class.
         /// </summary>
         public abstract object Clone();
 
+        /// <summary>
+        /// Creates a bulk copy object suitable for the specific database.
+        /// </summary>
+        /// <returns>A bulk copy object.</returns>
+        public abstract object CreateBulkCopy();
+
         #endregion
+
+
+        //#region Interfaces
+
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        //public interface IDbBulkCopy : IDisposable
+        //{
+        //    /// <summary>
+        //    /// 
+        //    /// </summary>
+        //    string DestinationTableName { get; set; }
+
+        //    /// <summary>
+        //    /// 
+        //    /// </summary>
+        //    /// <param name="dataTable"></param>
+        //    void WriteToServer(DataTable dataTable);
+        //}
+
+        //public static class IDbBulkCopyExtensions
+        //{
+        //    public static IDbBulkCopy AsIDbBulkCopy(this SqlBulkCopy sqlBulkCopy)
+        //    {
+        //        return new SqlBulkCopyAdapter(sqlBulkCopy);
+        //    }
+
+        //    public static IDbBulkCopy AsIDbBulkCopy(this OracleBulkCopy oracleBulkCopy)
+        //    {
+        //        return new OracleBulkCopyAdapter(oracleBulkCopy);
+        //    }
+        //}
+
+        //#endregion
+
     }
 }

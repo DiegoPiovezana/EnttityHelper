@@ -1,8 +1,10 @@
 ﻿using EH.Connection;
 using EH.Properties;
+using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 
 namespace EH.Commands
 {
@@ -87,7 +89,7 @@ namespace EH.Commands
                 {
                     transaction.Rollback();
                     throw;
-                }                
+                }
             }
             catch (Exception ex)
             {
@@ -96,8 +98,33 @@ namespace EH.Commands
             }
         }
 
+        internal static bool PerformBulkCopyOperation(this Database dbContext, DataTable dataToCopy, string tableName)
+        {
+            try
+            {
+                var bulkCopyObject = dbContext.CreateBulkCopy();
+                switch (bulkCopyObject)
+                {
+                    case OracleBulkCopy oracleBulkCopy:
+                        oracleBulkCopy.DestinationTableName = tableName;
+                        oracleBulkCopy.WriteToServer(dataToCopy);
+                        return true;
 
+                    case SqlBulkCopy sqlBulkCopy:
+                        sqlBulkCopy.DestinationTableName = tableName;
+                        sqlBulkCopy.WriteToServer(dataToCopy);
+                        return true;
 
+                    default:
+                        throw new NotSupportedException("Bulk Copy operation is not yet supported for this database type.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error when performing the Bulk Copy operation: " + ex.Message);
+                throw;
+            }
+        }
 
 
     }
