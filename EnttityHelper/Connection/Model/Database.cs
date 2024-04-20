@@ -28,7 +28,7 @@ namespace EH.Connection
         {
             try
             {
-                ToolsDb.MapDatabase(stringConnection, this);
+                ToolsDbConnect.MapDatabase(stringConnection, this);
                 CreateConnection();
             }
             catch (Exception)

@@ -5,7 +5,7 @@ namespace EH.Connection
     /// <summary>
     /// Secondary functionality for manipulating connection.
     /// </summary>
-    internal static class ToolsDb
+    internal static class ToolsDbConnect
     {
         public static bool MapDatabase(string connectionString, Database database)
         {

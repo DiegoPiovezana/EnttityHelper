@@ -145,24 +145,46 @@ namespace EH
             return insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1);
         }
 
-        ///// <summary>
-        ///// Allow to insert multiple entities in the database.
-        ///// </summary>
-        ///// <typeparam name="TEntity"></typeparam>
-        ///// <param name="entities"></param>
-        ///// <param name="tableName"></param>
-        ///// <returns></returns>
-        //public bool BulkInsert<TEntity>(List<TEntity> entities, string? tableName = null)
-        //{
-        //    if (entities.Count == 0) return false;
-        //    tableName ??= ToolsEH.GetTableName<TEntity>(ReplacesTableName);
+        /// <summary>
+        /// Allow to insert a DataTable in the database.
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="dataTable"></param>
+        /// <param name="tableName"></param>
+        /// <returns></returns>
+        public int Insert<TEntity>(DataTable dataTable, string? tableName = null)
+        {
+            if (dataTable.Rows.Count == 0) return 0;
+            tableName ??= dataTable.TableName;           
+            return Commands.Execute.PerformBulkCopyOperation(DbContext, dataTable, tableName) ? dataTable.Rows.Count : 0;
+        }
 
-        //    string? bulkInsertQuery = GetQuery.BulkInsert(entities, ReplacesTableName, tableName);
-        //    return ExecuteNonQuery(bulkInsertQuery, entities.Count) == entities.Count;
-        //}
+        /// <summary>
+        /// Allow to insert a IDataReader in the database.
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="dataReader"></param>
+        /// <param name="tableName"></param>
+        /// <returns></returns>
+        public bool Insert<TEntity>(IDataReader dataReader, string? tableName = null)
+        {
+            if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
+            return Commands.Execute.PerformBulkCopyOperation(DbContext, dataReader, tableName);
+        }
 
-
-
+        /// <summary>
+        /// Allow to insert a DataRow[] in the database.
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="dataRow"></param>
+        /// <param name="tableName"></param>
+        /// <returns></returns>
+        public int Insert<TEntity>(DataRow[] dataRow, string? tableName = null)
+        {
+            if (dataRow.Length == 0) return 0;
+            if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
+            return Commands.Execute.PerformBulkCopyOperation(DbContext, dataRow, tableName) ? dataRow.Length : 0;
+        }
 
         /// <summary>
         /// Allow to update an entity in the database.
