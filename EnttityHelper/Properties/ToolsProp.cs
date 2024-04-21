@@ -2,13 +2,12 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Data;
 using System.Linq;
 using System.Reflection;
 
 namespace EH.Properties
 {
-    internal static class ToolsEH
+    internal static class ToolsProp
     {
         internal static Dictionary<string, Property> GetProperties<T>(T objectEntity, bool includeNotMapped = false, bool ignoreVirtual = true)
         {
@@ -150,61 +149,12 @@ namespace EH.Properties
             return $"{schema}{tableName}";
         }
 
-        public static List<T> MapDataReaderToList<T>(this IDataReader reader, bool matchDb = true)
-        {
-            try
-            {
-                List<T> list = new();
 
-                while (reader.Read())
-                {
-                    T obj = Activator.CreateInstance<T>();
 
-                    foreach (PropertyInfo propInfo in typeof(T).GetProperties())
-                    {
-                        if (propInfo == null || propInfo.GetGetMethod().IsVirtual || propInfo.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
 
-                        string nameColumn = propInfo.GetCustomAttribute<ColumnAttribute>()?.Name ?? propInfo.Name;
 
-                        int ordinal;
-                        try
-                        {
-                            ordinal = reader.GetOrdinal(nameColumn);
-                        }
-                        catch (IndexOutOfRangeException)
-                        {
-                            Console.WriteLine($"Column '{nameColumn}' not found in table!");
 
-                            if (matchDb) { throw new IndexOutOfRangeException($"Column '{nameColumn}' of '{propInfo.DeclaringType}' not found in table in database!"); }
-                            else { continue; }
-                        }
 
-                        if (!reader.IsDBNull(reader.GetOrdinal(nameColumn)))
-                        {
-                            object value = reader[nameColumn];
-                            Type propType = propInfo.PropertyType;
-
-                            if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                            {
-                                if (value != null) { propInfo.SetValue(obj, Convert.ChangeType(value, Nullable.GetUnderlyingType(propType))); }
-                            }
-                            else
-                            {
-                                propInfo.SetValue(obj, Convert.ChangeType(value, propType));
-                            }
-                        }
-                    }
-
-                    list.Add(obj);
-                }
-
-                return list;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
 
     }
 }

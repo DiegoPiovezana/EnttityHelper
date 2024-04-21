@@ -1,4 +1,5 @@
-﻿using EH.Connection;
+﻿using EH.Command;
+using EH.Connection;
 using EH.Properties;
 using Oracle.ManagedDataAccess.Client;
 using System;
@@ -76,7 +77,7 @@ namespace EH.Commands
 
                         if (reader != null)
                         {
-                            List<TEntity> entities = ToolsEH.MapDataReaderToList<TEntity>(reader);
+                            List<TEntity> entities = Tools.MapDataReaderToList<TEntity>(reader);
                             reader.Close();
                             connection.Close();
                             Console.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");

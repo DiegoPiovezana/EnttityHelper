@@ -12,7 +12,7 @@ namespace EH.Entities
         {
             if (entity == null) return;
 
-            var propertiesFK = ToolsEH.GetFKProperties(entity);
+            var propertiesFK = ToolsProp.GetFKProperties(entity);
             if (propertiesFK == null || propertiesFK.Count == 0)
             {
                 Console.WriteLine("No foreign key properties found!");
@@ -28,7 +28,7 @@ namespace EH.Entities
             {
                 if (pair.Value != null)
                 {
-                    var pk = ToolsEH.GetPK(pair.Value);
+                    var pk = ToolsProp.GetPK(pair.Value);
                     if (pk == null) continue;
 
                     var propertyToUpdate = entity.GetType().GetProperty(pair.Key.ToString());

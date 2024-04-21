@@ -1,4 +1,5 @@
-﻿using EH.Connection;
+﻿using EH.Command;
+using EH.Connection;
 using EH.Properties;
 using Oracle.ManagedDataAccess.Client;
 using System;
@@ -131,8 +132,8 @@ namespace EH
         {
             if (!string.IsNullOrEmpty(namePropUnique))
             {
-                var properties = ToolsEH.GetProperties(entity);
-                tableName ??= ToolsEH.GetTableName<TEntity>(ReplacesTableName);
+                var properties = ToolsProp.GetProperties(entity);
+                tableName ??= ToolsProp.GetTableName<TEntity>(ReplacesTableName);
 
                 if (CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))
                 {
@@ -157,7 +158,7 @@ namespace EH
             if (dataTable.Rows.Count == 0) return 0;
             tableName ??= dataTable.TableName;
             return Commands.Execute.PerformBulkCopyOperation(DbContext, dataTable, tableName) ? dataTable.Rows.Count : 0;
-        }        
+        }
 
         /// <summary>
         /// Allow to insert a DataRow[] in the database.
@@ -307,11 +308,18 @@ namespace EH
             }
         }
 
+        /// <summary>
+        /// Creates a table in the database based on the structure specified in a DataTable object.
+        /// </summary>
+        /// <param name="dataTable">The DataTable object containing the structure of the table to be created.</param>
+        /// <param name="tableName">(Optional) The name of the table to be created. If not specified, the name from the DataTable object will be used.</param>
+        /// <returns>True if the table is created successfully, otherwise False.</returns>
+        /// <exception cref="InvalidOperationException">An exception is thrown if an error occurs while attempting to create the table.</exception>
         public bool CreateTable(DataTable dataTable, string? tableName = null)
         {
             if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
-            string? createTableQuery = GetQuery.CreateTable<DataTable>(TypesDefault, ReplacesTableName, tableName);
+            string? createTableQuery = GetQuery.CreateTableFromDataTable(dataTable, TypesDefault, ReplacesTableName, tableName);
 
             if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
             {
@@ -325,7 +333,6 @@ namespace EH
             }
         }
 
-
         /// <summary>
         /// Allows you to create a table in the database according to the provided objectEntity object, if table does not exist.
         /// </summary>
@@ -336,12 +343,39 @@ namespace EH
         public bool CreateTableIfNotExist<TEntity>(string? tableName = null)
         {
             if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
-            tableName ??= ToolsEH.GetTableName<TEntity>(ReplacesTableName);
+            tableName ??= ToolsProp.GetTableName<TEntity>(ReplacesTableName);
             if (CheckIfExist(tableName)) { Console.WriteLine($"Table '{tableName}' already exists!"); return true; }
             return CreateTable<TEntity>();
         }
 
+        public bool CreateTableIfNotExist(DataTable dataTable, string? tableName = null)
+        {
+            if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
+            tableName ??= Define.NameTableFromDataTable(dataTable, ReplacesTableName);
+            if (CheckIfExist(tableName)) { Console.WriteLine($"Table '{tableName}' already exists!"); return true; }
+            return CreateTable(dataTable, tableName);
+        }
 
+        public bool CreateTableAndInsert(DataTable dataTable, string? tableName = null)
+        {
+            if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
+
+            string? createTableQuery = GetQuery.CreateTableFromDataTable(dataTable, TypesDefault, ReplacesTableName, tableName);
+
+            if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
+            {
+                Console.WriteLine("Table created!");
+
+
+
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("Table not created!");
+                return false;
+            }
+        }
 
 
 
