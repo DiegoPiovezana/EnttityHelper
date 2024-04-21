@@ -122,13 +122,14 @@ namespace EH
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entity">Entity to be inserted into the database.</param>      
-        /// <param name="namePropUnique">(Optional) Name of the property to be considered as a uniqueness criterion.</param>  
+        /// <param name="namePropUnique">(Optional) Name of the property to be considered as a uniqueness criterion.</param> 
+        /// <param name="createTable">(Optional) If the table that will receive the insertion does not exist, it can be created.</param> 
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>
         /// True, if one or more entities are inserted into the database.
         /// <para>If the return is negative, it indicates that the insertion did not happen due to some established criteria.</para>
         /// </returns>
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, string? tableName = null)
+        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = false, string? tableName = null)
         {
             if (!string.IsNullOrEmpty(namePropUnique))
             {
@@ -140,6 +141,11 @@ namespace EH
                     Console.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
                     return -101;
                 }
+
+                if (!CheckIfExist(tableName) && createTable)
+                {
+                    CreateTable<TEntity>(tableName);
+                }
             }
 
             string? insertQuery = GetQuery.Insert(entity, ReplacesTableName, tableName);
@@ -147,26 +153,36 @@ namespace EH
         }
 
         /// <summary>
-        /// Allow to insert a DataTable in the database.
+        /// Inserts data from a DataTable into the specified database table.
         /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <param name="dataTable"></param>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
-        public int Insert<TEntity>(DataTable dataTable, string? tableName = null)
+        /// <typeparam name="TEntity">The type of entity corresponding to the table.</typeparam>
+        /// <param name="dataTable">The DataTable containing the data to be inserted.</param>
+        /// <param name="createTable">(Optional) If true and the destination table does not exist, it will be created based on the structure of the DataTable.</param>
+        /// <param name="tableName">Optional. The name of the table where the data will be inserted. If not specified, the name of the DataTable will be used.</param>
+        /// <returns>The number of rows successfully inserted into the database table.</returns>
+
+        public int Insert<TEntity>(DataTable dataTable, bool createTable = false, string? tableName = null)
         {
             if (dataTable.Rows.Count == 0) return 0;
             tableName ??= dataTable.TableName;
+
+            if (!CheckIfExist(tableName) && createTable)
+            {
+                CreateTable(dataTable, tableName);
+            }
+
             return Commands.Execute.PerformBulkCopyOperation(DbContext, dataTable, tableName) ? dataTable.Rows.Count : 0;
         }
 
         /// <summary>
-        /// Allow to insert a DataRow[] in the database.
+        /// Inserts data from an array of DataRow into the specified database table.
         /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <param name="dataRow"></param>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
+        /// <typeparam name="TEntity">The type of entity corresponding to the table.</typeparam>
+        /// <param name="dataRow">An array of DataRow objects containing the data to be inserted.</param>
+        /// <param name="tableName">Optional. The name of the table where the data will be inserted. If not specified, the name of the entity type will be used.</param>
+        /// <returns>The number of rows successfully inserted into the database table.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if the tableName parameter is null.</exception>
+
         public int Insert<TEntity>(DataRow[] dataRow, string? tableName = null)
         {
             if (dataRow.Length == 0) return 0;
@@ -175,12 +191,14 @@ namespace EH
         }
 
         /// <summary>
-        /// Allow to insert a IDataReader in the database.
+        /// Inserts data from an IDataReader into the specified database table.
         /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <param name="dataReader"></param>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
+        /// <typeparam name="TEntity">The type of entity corresponding to the table.</typeparam>
+        /// <param name="dataReader">The IDataReader containing the data to be inserted.</param>
+        /// <param name="tableName">Optional. The name of the table where the data will be inserted. If not specified, the name of the entity type will be used.</param>
+        /// <returns>True if the data is inserted successfully, otherwise False.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if the tableName parameter is null.</exception>
+
         public bool Insert<TEntity>(IDataReader dataReader, string? tableName = null)
         {
             if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
@@ -302,9 +320,8 @@ namespace EH
                 return true;
             }
             else
-            {
-                Console.WriteLine("Table not created!");
-                return false;
+            {               
+                throw new InvalidOperationException("Table not created!");
             }
         }
 
@@ -328,13 +345,12 @@ namespace EH
             }
             else
             {
-                Console.WriteLine("Table not created!");
-                return false;
+                throw new InvalidOperationException("Table not created!");
             }
         }
 
         /// <summary>
-        /// Allows you to create a table in the database according to the provided objectEntity object, if table does not exist.
+        /// Allows you to create a table in the database according to the provided Entity object, if table does not exist.
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to create the table.</typeparam>  
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
@@ -356,26 +372,6 @@ namespace EH
             return CreateTable(dataTable, tableName);
         }
 
-        public bool CreateTableAndInsert(DataTable dataTable, string? tableName = null)
-        {
-            if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
-
-            string? createTableQuery = GetQuery.CreateTableFromDataTable(dataTable, TypesDefault, ReplacesTableName, tableName);
-
-            if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
-            {
-                Console.WriteLine("Table created!");
-
-
-
-                return true;
-            }
-            else
-            {
-                Console.WriteLine("Table not created!");
-                return false;
-            }
-        }
 
 
 
