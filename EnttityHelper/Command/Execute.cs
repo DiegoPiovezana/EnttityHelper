@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Text;
 
 namespace EH.Commands
 {
@@ -100,7 +101,6 @@ namespace EH.Commands
 
         internal static bool PerformBulkCopyOperation(this Database dbContext, object inputDataToCopy, string tableName)
         {
-
             // dataToCopy: DataRow[], DataTable, IDataReader
 
             if (dbContext is null)
@@ -150,6 +150,9 @@ namespace EH.Commands
                 throw;
             }
         }
+
+        
+
 
 
     }

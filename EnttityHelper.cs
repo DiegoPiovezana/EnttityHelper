@@ -155,22 +155,9 @@ namespace EH
         public int Insert<TEntity>(DataTable dataTable, string? tableName = null)
         {
             if (dataTable.Rows.Count == 0) return 0;
-            tableName ??= dataTable.TableName;           
+            tableName ??= dataTable.TableName;
             return Commands.Execute.PerformBulkCopyOperation(DbContext, dataTable, tableName) ? dataTable.Rows.Count : 0;
-        }
-
-        /// <summary>
-        /// Allow to insert a IDataReader in the database.
-        /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <param name="dataReader"></param>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
-        public bool Insert<TEntity>(IDataReader dataReader, string? tableName = null)
-        {
-            if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
-            return Commands.Execute.PerformBulkCopyOperation(DbContext, dataReader, tableName);
-        }
+        }        
 
         /// <summary>
         /// Allow to insert a DataRow[] in the database.
@@ -187,6 +174,19 @@ namespace EH
         }
 
         /// <summary>
+        /// Allow to insert a IDataReader in the database.
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="dataReader"></param>
+        /// <param name="tableName"></param>
+        /// <returns></returns>
+        public bool Insert<TEntity>(IDataReader dataReader, string? tableName = null)
+        {
+            if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
+            return Commands.Execute.PerformBulkCopyOperation(DbContext, dataReader, tableName);
+        }
+
+        /// <summary>
         /// Allow to update an entity in the database.
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
@@ -196,7 +196,7 @@ namespace EH
         /// <returns>Number of entities updated in the database.</returns>
         public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class
         {
-            string? updateQuery = GetQuery.Update(entity, nameId, ReplacesTableName);
+            string? updateQuery = GetQuery.Update(entity, nameId, ReplacesTableName, tableName);
             return ExecuteNonQuery(updateQuery, 1);
         }
 
@@ -307,6 +307,25 @@ namespace EH
             }
         }
 
+        public bool CreateTable(DataTable dataTable, string? tableName = null)
+        {
+            if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
+
+            string? createTableQuery = GetQuery.CreateTable<DataTable>(TypesDefault, ReplacesTableName, tableName);
+
+            if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
+            {
+                Console.WriteLine("Table created!");
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("Table not created!");
+                return false;
+            }
+        }
+
+
         /// <summary>
         /// Allows you to create a table in the database according to the provided objectEntity object, if table does not exist.
         /// </summary>
@@ -322,7 +341,7 @@ namespace EH
             return CreateTable<TEntity>();
         }
 
-       
+
 
 
 
@@ -338,7 +357,7 @@ namespace EH
         public int Delete<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class
         {
             string? deleteQuery = GetQuery.Delete(entity, nameId, ReplacesTableName, tableName);
-            return ExecuteNonQuery(deleteQuery,1);
+            return ExecuteNonQuery(deleteQuery, 1);
         }
 
         /// <summary>
@@ -363,10 +382,10 @@ namespace EH
             return (List<TEntity>?)Commands.Execute.ExecuteCommand<TEntity>(DbContext, query);
         }
 
-        //public IDataReader? ExecuteSelect<TEntity>(string? query)
-        //{
-        //    return (IDataReader)ExecuteCommand<TEntity>(query);
-        //}
+        public IDataReader? GetDataReader<TEntity>(string? query)
+        {
+            return (IDataReader)Commands.Execute.ExecuteCommand<TEntity>(DbContext, query);
+        }
 
         /// <summary>
         /// Include all FK entities.

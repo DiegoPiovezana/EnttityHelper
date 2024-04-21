@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -188,6 +189,34 @@ namespace EH.Connection
             queryBuilder.Append(")");
             return queryBuilder.ToString();
         }
+
+        public string? CreateTableFromDataTable(DataTable dataTable, Dictionary<string, string>? typesSql, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
+        {
+            StringBuilder queryBuilder = new();
+            
+            if (string.IsNullOrEmpty(tableName) && replacesTableName?.Keys != null)
+            {
+                tableName = dataTable.TableName;
+
+                foreach (string replace in replacesTableName?.Keys)
+                {
+                    tableName = tableName.Replace(replace, replacesTableName[replace]);
+                }
+            }
+            
+            queryBuilder.Append($"CREATE TABLE {tableName} (");
+
+            var columnsName = dataTable.Columns;
+            foreach (DataColumn column in columnsName)
+            {
+                queryBuilder.Append($"{column.ColumnName} {column.DataType.Name}, ");
+            }
+
+            queryBuilder.Length -= 2; // Remove the last comma and space
+            queryBuilder.Append(")");
+            return queryBuilder.ToString();
+        }
+
 
     }
 }

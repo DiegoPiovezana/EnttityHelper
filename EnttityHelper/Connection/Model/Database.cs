@@ -148,9 +148,11 @@ namespace EH.Connection
 
         /// <summary>
         /// Creates a bulk copy object specific to the database type.
-        /// </summary>
-        /// <typeparam name="T">The type of bulk copy object to return.</typeparam>
-        /// <returns>The bulk copy object cast to the specified type.</returns>
+        /// </summary>    
+        /// <returns>
+        /// <para>A bulk copy object specific to the database type.</para>
+        /// Returns an IDbBulkCopy implementation for SQL Server (SqlBulkCopy) or Oracle (OracleBulkCopy), depending on the configured database type.
+        /// </returns>
         /// <exception cref="ArgumentException">Thrown when the database type is not supported.</exception>
         public override object CreateBulkCopy()
         {

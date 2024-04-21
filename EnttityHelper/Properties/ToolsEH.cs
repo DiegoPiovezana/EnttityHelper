@@ -150,7 +150,7 @@ namespace EH.Properties
             return $"{schema}{tableName}";
         }
 
-        public static List<T> MapDataReaderToList<T>(IDataReader reader, bool matchDb = true)
+        public static List<T> MapDataReaderToList<T>(this IDataReader reader, bool matchDb = true)
         {
             try
             {
