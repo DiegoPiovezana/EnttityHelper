@@ -412,10 +412,10 @@ namespace EH
             return (List<TEntity>?)Commands.Execute.ExecuteCommand<TEntity>(DbContext, query);
         }
 
-        public IDataReader? GetDataReader<TEntity>(string? query)
-        {
-            return (IDataReader)Commands.Execute.ExecuteCommand<TEntity>(DbContext, query);
-        }
+        //public IDataReader? GetDataReader<TEntity>(string? query)
+        //{
+        //    return (IDataReader)Commands.Execute.ExecuteCommand<TEntity>(DbContext, query);
+        //}
 
         /// <summary>
         /// Include all FK entities.

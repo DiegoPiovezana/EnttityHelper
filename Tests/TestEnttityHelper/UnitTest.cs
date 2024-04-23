@@ -1,6 +1,8 @@
 using EH;
 using NUnit.Framework.Internal;
 using Oracle.ManagedDataAccess.Client;
+using TestEH_UnitTest.Entities;
+using TestEH_UnitTest.Entitities;
 using TestEnttityHelper.OthersEntity;
 
 namespace TestEnttityHelper
@@ -169,6 +171,84 @@ namespace TestEnttityHelper
             }
         }
 
+
+        [Test, Order(10)]
+        public void TestOneToOne()
+        {
+            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            if (eh.DbContext.ValidateConnection())
+            {
+                EntityTest entityTest = new() { Id = 300, Name = "Testando 1 entidade 100 via C#", StartDate = DateTime.Now };
+                eh.Insert(entityTest, nameof(entityTest.Id));
+
+                EntityTest entityTest2 = new() { Id = 300, Name = "Testando 2 entidade 300 atualizando hora via C#", StartDate = DateTime.Now };
+                eh.Update(entityTest2, nameof(entityTest.Id));
+
+                var entities = eh.Get<EntityTest>(true, $"{nameof(EntityTest.Id)} = 300");
+
+                if (entities is not null && entities[0].Name.Equals("Testando 2 entidade 300 atualizando hora via C#"))
+                {
+                    int result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 300");
+                    Assert.That(result == 1, Is.EqualTo(true));
+                }
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
+
+        [Test, Order(10)]
+        public void TestOneToMany()
+        {
+            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            if (eh.DbContext.ValidateConnection())
+            {
+                Career carrer = new("Developer");
+                eh.Insert(carrer);
+
+                User user = new("Diego Piovezana") { Id = 0, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now };
+                eh.Insert(user);
+
+                var carrers = eh.Get<EntityTest>(true, $"{nameof(EntityTest.Id)} = 300");
+
+
+                int result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 300");
+                Assert.That(result == 1, Is.EqualTo(true));
+
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
+
+        [Test, Order(10)]
+        public void TestManyToMany()
+        {
+            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            if (eh.DbContext.ValidateConnection())
+            {
+                EntityTest entityTest = new() { Id = 300, Name = "Testando 1 entidade 100 via C#", StartDate = DateTime.Now };
+                eh.Insert(entityTest, nameof(entityTest.Id));
+
+                EntityTest entityTest2 = new() { Id = 300, Name = "Testando 2 entidade 300 atualizando hora via C#", StartDate = DateTime.Now };
+                eh.Update(entityTest2, nameof(entityTest.Id));
+
+                var entities = eh.Get<EntityTest>(true, $"{nameof(EntityTest.Id)} = 300");
+
+                if (entities is not null && entities[0].Name.Equals("Testando 2 entidade 300 atualizando hora via C#"))
+                {
+                    int result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 300");
+                    Assert.That(result == 1, Is.EqualTo(true));
+                }
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
+
         [Test, Order(11)]
         public void TestFullEntityREADME()
         {
@@ -181,7 +261,7 @@ namespace TestEnttityHelper
                 eh.CreateTableIfNotExist<User>();
 
                 // Create new entity
-                User userD = new() { Id = 0, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now };
+                User userD = new("Diego Piovezana") { Id = 0, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now };
 
                 // Insert in database
                 eh.Insert(userD);
@@ -193,7 +273,7 @@ namespace TestEnttityHelper
                 eh.Update(userD);
 
                 // Search in database
-                User? userDSearched = eh.Search(userD);                               
+                User? userDSearched = eh.Search(userD);
 
                 // Deletes user D from the database
                 eh.Delete(userD);
