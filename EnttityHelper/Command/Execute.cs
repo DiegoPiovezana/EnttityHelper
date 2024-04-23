@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Text;
 
 namespace EH.Commands
@@ -62,7 +63,7 @@ namespace EH.Commands
 
                         transaction.Commit();
                         connection.Close();
-                        Console.WriteLine($"Rows Affected: {rowsAffected}");
+                        Debug.WriteLine($"Rows Affected: {rowsAffected}");
                         return rowsAffected;
                     }
                     else // isSelect
@@ -80,7 +81,7 @@ namespace EH.Commands
                             List<TEntity> entities = Tools.MapDataReaderToList<TEntity>(reader);
                             reader.Close();
                             connection.Close();
-                            Console.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
+                            Debug.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
                             return entities;
                         }
 
@@ -95,7 +96,7 @@ namespace EH.Commands
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Debug.WriteLine(ex.Message);
                 throw;
             }
         }
@@ -147,7 +148,7 @@ namespace EH.Commands
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error when performing the Bulk Copy operation: " + ex.Message);
+                Debug.WriteLine("Error when performing the Bulk Copy operation: " + ex.Message);
                 throw;
             }
         }

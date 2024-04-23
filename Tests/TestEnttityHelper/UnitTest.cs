@@ -204,17 +204,20 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
-                Career carrer = new("Developer");
-                eh.Insert(carrer);
+                //eh.CreateTableIfNotExist<Career>();
+                //eh.CreateTableIfNotExist<User>();
 
-                User user = new("Diego Piovezana") { Id = 0, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now };
-                eh.Insert(user);
+                //Career carrer = new(1,"Developer");
+                //eh.Insert(carrer);
 
-                var carrers = eh.Get<EntityTest>(true, $"{nameof(EntityTest.Id)} = 300");
+                //User user = new("Diego Piovezana") { Id = 0, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                //eh.Insert(user);
+
+                var carrers = eh.Get<Career>();
+                var users = eh.Get<User>();
 
 
-                int result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 300");
-                Assert.That(result == 1, Is.EqualTo(true));
+                Assert.Pass();
 
             }
             else

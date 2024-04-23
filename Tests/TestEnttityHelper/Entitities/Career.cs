@@ -16,9 +16,11 @@ namespace TestEH_UnitTest.Entitities
 
         public Career() { }
 
-        public Career(string name)
+        public Career(Int64 idCareer, string name)
         {
+            IdCareer = idCareer;
             Name = name;
+            Active = true;
         }
 
         public override string ToString()

@@ -75,7 +75,7 @@ namespace EH.Properties
             if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
 
             PropertyInfo[] properties = objectEntity.GetType().GetProperties();
-            Dictionary<object, object> propertiesId = new();
+            Dictionary<object, object> propertiesFk = new();
             Dictionary<object, object> propertiesVirtual = new();
             Dictionary<object, object> propertiesObj = new();
 
@@ -87,7 +87,7 @@ namespace EH.Properties
                 {
                     var entityNameFk = prop.GetCustomAttribute<ForeignKeyAttribute>().Name;
                     var idFk = prop.GetValue(objectEntity, null);
-                    propertiesId.Add(entityNameFk, idFk);
+                    propertiesFk.Add(entityNameFk, idFk);
                 }
 
                 if (prop.GetGetMethod().IsVirtual)
@@ -97,10 +97,10 @@ namespace EH.Properties
                 }
             }
 
-            foreach (var propFkKey in propertiesId.Keys.ToList())
+            foreach (var propFkKey in propertiesFk.Keys.ToList())
             {
                 var propFk = propertiesVirtual[propFkKey];
-                propFk.GetType().GetProperty(GetPK(propFk).Name).SetValue(propFk, propertiesId[propFkKey]);
+                propFk.GetType().GetProperty(GetPK(propFk).Name).SetValue(propFk, propertiesFk[propFkKey]);
                 propertiesObj.Add(propFkKey, propFk);
             }
 

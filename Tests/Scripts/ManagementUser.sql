@@ -135,3 +135,10 @@ INSERT INTO TB_SR_USERS__ORIGENS (IdOrigem, Identificacao, Nome, Ativo) VALUES (
 SELECT * FROM TB_SR_USERS__ORIGENS;
 
 SELECT * FROM TB_SR_USERS__USERS WHERE (IdOrigem=0);
+
+
+
+---------------------------------------------------------
+
+SELECT * FROM TB_USER;
+SELECT * FROM TB_CAREERS;

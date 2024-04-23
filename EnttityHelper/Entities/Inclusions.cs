@@ -1,21 +1,29 @@
 ﻿using EH.Properties;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 
 namespace EH.Entities
 {
-    internal static class Inclusions
+    internal class Inclusions
     {
-        internal static void IncludeForeignKeyEntities<TEntity>(this TEntity entity, string? fkOnly = null)
+        private readonly EnttityHelper _enttityHelper;
+
+        public Inclusions(EnttityHelper enttityHelper)
+        {
+            _enttityHelper = enttityHelper;
+        }
+
+        internal void IncludeForeignKeyEntities<TEntity>(TEntity entity, string? fkOnly = null)
         {
             if (entity == null) return;
 
             var propertiesFK = ToolsProp.GetFKProperties(entity);
             if (propertiesFK == null || propertiesFK.Count == 0)
             {
-                Console.WriteLine("No foreign key properties found!");
+                Debug.WriteLine($"No foreign key properties found in '{entity}'.");
                 return;
             }
 
@@ -51,7 +59,7 @@ namespace EH.Entities
                         MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(elementType);
 
                         // Retrieve the foreign key entities
-                        IEnumerable<object> entityFKList = (IEnumerable<object>)genericGetMethod.Invoke(typeof(EnttityHelper), new object[] { true, $"{pk.Name}='{pkValue}'" });
+                        IEnumerable<object> entityFKList = (IEnumerable<object>)genericGetMethod.Invoke(_enttityHelper, new object[] { true, $"{pk.Name}='{pkValue}'", null });
 
                         // Cast each entity to the actual type
                         IEnumerable<object> castEntityFKList = entityFKList.Cast<object>();

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
@@ -34,7 +35,7 @@ namespace EH.Command
                         }
                         catch (IndexOutOfRangeException)
                         {
-                            Console.WriteLine($"Column '{nameColumn}' not found in table!");
+                            Debug.WriteLine($"Column '{nameColumn}' not found in table!");
 
                             if (matchDb) { throw new IndexOutOfRangeException($"Column '{nameColumn}' of '{propInfo.DeclaringType}' not found in table in database!"); }
                             else { continue; }

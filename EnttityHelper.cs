@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Linq;
 
 namespace EH
@@ -138,7 +139,7 @@ namespace EH
 
                 if (CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))
                 {
-                    Console.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
+                    Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
                     return -101;
                 }
 
@@ -225,7 +226,7 @@ namespace EH
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="includeAll">(Optional) If true, all entities that are properties of the parent property will be included (this is the default behavior).</param>
         /// <param name="filter">(Optional) Entity search criteria.</param>     
-        /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
+        /// <param name="tableName">(Optional) Name of the table where the entities are inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>Entities list.</returns>
         public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null)
         {
@@ -316,11 +317,11 @@ namespace EH
 
             if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
             {
-                Console.WriteLine("Table created!");
+                Debug.WriteLine("Table created!");
                 return true;
             }
             else
-            {               
+            {
                 throw new InvalidOperationException("Table not created!");
             }
         }
@@ -340,7 +341,7 @@ namespace EH
 
             if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
             {
-                Console.WriteLine("Table created!");
+                Debug.WriteLine("Table created!");
                 return true;
             }
             else
@@ -360,7 +361,7 @@ namespace EH
         {
             if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
             tableName ??= ToolsProp.GetTableName<TEntity>(ReplacesTableName);
-            if (CheckIfExist(tableName)) { Console.WriteLine($"Table '{tableName}' already exists!"); return true; }
+            if (CheckIfExist(tableName)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
             return CreateTable<TEntity>();
         }
 
@@ -368,14 +369,9 @@ namespace EH
         {
             if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
             tableName ??= Define.NameTableFromDataTable(dataTable, ReplacesTableName);
-            if (CheckIfExist(tableName)) { Console.WriteLine($"Table '{tableName}' already exists!"); return true; }
+            if (CheckIfExist(tableName)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
             return CreateTable(dataTable, tableName);
         }
-
-
-
-
-
 
         /// <summary>
         /// Allow to delete an entity in the database.
@@ -436,8 +432,8 @@ namespace EH
         /// <returns>True, if it's ok.</returns>
         public bool IncludeAll<TEntity>(List<TEntity>? entities)
         {
-            if (entities == null || entities.Count == 0) return false;
-            foreach (TEntity entity in entities) { Entities.Inclusions.IncludeForeignKeyEntities(entity); }
+            if (entities == null || entities.Count == 0) return false;           
+            foreach (TEntity entity in entities) { new Entities.Inclusions(this).IncludeForeignKeyEntities(entity); }
             return true;
         }
 
@@ -451,7 +447,7 @@ namespace EH
         public bool IncludeEntityFK<TEntity>(TEntity entity, string fkName)
         {
             if (entity == null) return false;
-            Entities.Inclusions.IncludeForeignKeyEntities(entity, fkName);
+            new Entities.Inclusions(this).IncludeForeignKeyEntities(entity, fkName);
             return true;
         }
 

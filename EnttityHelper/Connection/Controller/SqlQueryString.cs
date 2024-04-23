@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -55,7 +56,7 @@ namespace EH.Connection
 
             if (nameId is null)
             {
-                Console.WriteLine("No primary key found!");
+                Debug.WriteLine("No primary key found!");
                 return null;
             }
 
@@ -121,7 +122,7 @@ namespace EH.Connection
 
             if (idPropName is null)
             {
-                Console.WriteLine("No primary key found!");
+                Debug.WriteLine("No primary key found!");
                 return null;
             }
 
@@ -157,7 +158,7 @@ namespace EH.Connection
 
                 if (value is null)
                 {
-                    Console.WriteLine($"Type default not found in Dictionary TypesDefault for '{pair.Value.Type.Name}'!");
+                    Debug.WriteLine($"Type default not found in Dictionary TypesDefault for '{pair.Value.Type.Name}'!");
                     throw new InvalidOperationException($"Type default not found in Dictionary TypesDefault for '{pair.Value.Type.Name}'! Please enter it into the dictionary or consider changing the type.");
                 }
 
@@ -221,7 +222,7 @@ namespace EH.Connection
 
                 if (typeColumn is null)
                 {
-                    Console.WriteLine($"Type default not found in Dictionary TypesDefault for '{column.ColumnName}'!");
+                    Debug.WriteLine($"Type default not found in Dictionary TypesDefault for '{column.ColumnName}'!");
                     throw new InvalidOperationException($"Type default not found in Dictionary TypesDefault for '{column.ColumnName}'! Please enter it into the dictionary or consider changing the type.");
                 }
 
