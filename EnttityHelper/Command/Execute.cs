@@ -41,7 +41,7 @@ namespace EH.Commands
                 }
 
                 using IDbConnection connection = DbContext.CreateConnection();
-                DbContext.OpenConnection();
+                connection.Open();
 
                 IDbTransaction? transaction = DbContext.CreateTransaction() ?? throw new InvalidOperationException("Transaction is null.");
 
@@ -122,6 +122,9 @@ namespace EH.Commands
 
             try
             {
+                using IDbConnection connection = dbContext.CreateConnection();
+                connection.Open();
+
                 var bulkCopyObject = dbContext.CreateBulkCopy();
 
                 switch (bulkCopyObject)
@@ -144,11 +147,12 @@ namespace EH.Commands
 
                     default:
                         throw new NotSupportedException("Bulk Copy operation is not yet supported for this database type.");
-                }
+                }                
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Error when performing the Bulk Copy operation: " + ex.Message);
+                dbContext.CloseConnection();
                 throw;
             }
         }

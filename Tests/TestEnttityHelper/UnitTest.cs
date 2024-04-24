@@ -1,6 +1,7 @@
 using EH;
 using NUnit.Framework.Internal;
 using Oracle.ManagedDataAccess.Client;
+using SH;
 using TestEH_UnitTest.Entities;
 using TestEH_UnitTest.Entitities;
 using TestEnttityHelper.OthersEntity;
@@ -172,7 +173,7 @@ namespace TestEnttityHelper
         }
 
 
-        [Test, Order(10)]
+        [Test, Order(11)]
         public void TestOneToOne()
         {
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
@@ -198,7 +199,7 @@ namespace TestEnttityHelper
             }
         }
 
-        [Test, Order(10)]
+        [Test, Order(12)]
         public void TestManyToOne()
         {
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
@@ -225,7 +226,7 @@ namespace TestEnttityHelper
             }
         }
 
-        [Test, Order(10)]
+        [Test, Order(13)]
         public void TestManyToMany()
         {
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
@@ -256,7 +257,27 @@ namespace TestEnttityHelper
             }
         }
 
-        [Test, Order(11)]
+        [Test, Order(14)]
+        public void TestInsertDataTable()
+        {
+            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            if (eh.DbContext.ValidateConnection())
+            {
+                eh.TypesDefault.Add("Object", "NVARCHAR2(100)");
+
+                var dt = SheetHelper.GetDataTable(@"C:\Users\diego\Desktop\Tests\Converter\ColunasExcel.xlsx", "Sheet8");
+                eh.Insert(dt);
+
+                Assert.Pass();
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
+
+
+        [Test, Order(15)]
         public void TestFullEntityREADME()
         {
             // Create a connection with the database using the connection string

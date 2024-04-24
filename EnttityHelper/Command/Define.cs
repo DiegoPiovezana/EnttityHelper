@@ -9,9 +9,8 @@ namespace EH.Command
 {
     internal class Define
     {
-        internal static string NameTableFromDataTable(DataTable dataTable, Dictionary<string, string>? replacesTableName)
-        {
-            string? tableName = dataTable.TableName;
+        internal static string NameTableFromDataTable(string tableName, Dictionary<string, string>? replacesTableName)
+        {            
             if (string.IsNullOrEmpty(tableName) && replacesTableName?.Keys != null)
             {
                 foreach (string replace in replacesTableName.Keys)
