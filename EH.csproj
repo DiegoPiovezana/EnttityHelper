@@ -10,7 +10,7 @@
 		<AssemblyName>EnttityHelper</AssemblyName>
 		<PackageId>EnttityHelper</PackageId>
 		<Description>Allows easy manipulation of entities in different databases.</Description>
-		<Version>0.4.0</Version>
+		<Version>0.5.0-alpha-1</Version>
 		<Authors>Diêgo Piovezana</Authors>
 		<Company>DiegoPiov</Company>
 		<RepositoryUrl>https://github.com/DiegoPiovezana/EnttityHelper</RepositoryUrl>
@@ -20,10 +20,8 @@
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 		<ApplicationIcon>EnttityHelper\Images\EnttityHelper_icon.ico</ApplicationIcon>
 		<PackageIcon>EnttityHelper_icon.png</PackageIcon>
-		<PackageReleaseNotes>- Possibility to customize table name using replaces;
-- If entity lacks a primary key, the first property can be considered as the identifier;
-- Considered the Column attribute of a property as the column name of the table;
-- Allow defining a minimum size for columns.</PackageReleaseNotes>
+		<PackageReleaseNotes>- Alpha Version
+- Possible bugs possibly present</PackageReleaseNotes>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<AppDesignerFolder>Properties</AppDesignerFolder>		
