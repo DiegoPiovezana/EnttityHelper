@@ -6,7 +6,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
-using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -199,12 +198,13 @@ namespace EH.Connection
                     string tableEntity1 = tableName;
 
                     var propEntity2 = properties[prop.Value.ForeignKey.Name];
-                    Type collectionType = propEntity2.PropertyInfo.PropertyType;                    
+                    Type collectionType = propEntity2.PropertyInfo.PropertyType;
                     Type entityType = collectionType.GetGenericArguments()[0];
                     TableAttribute table2Attribute = entityType.GetCustomAttribute<TableAttribute>();
-                    var propPkEntity2 = entityType.GetProperties().Where(prop => Attribute.IsDefined(prop, typeof(System.ComponentModel.DataAnnotations.KeyAttribute)));
-                    
-                    var pkEntity2 = propPkEntity2.First().Name;
+                    var propsEntity2 = entityType.GetProperties();
+                    var propPkEntity2 = propsEntity2.Where(prop => Attribute.IsDefined(prop, typeof(System.ComponentModel.DataAnnotations.KeyAttribute)));
+
+                    var pkEntity2 = propPkEntity2?.FirstOrDefault()?.Name ?? propsEntity2.FirstOrDefault().Name;
                     string tableEntity2 = table2Attribute.Name;
 
                     string queryCollection =
@@ -240,7 +240,7 @@ namespace EH.Connection
             if (typesSql is null) { throw new ArgumentNullException(nameof(typesSql)); }
 
             StringBuilder queryBuilder = new();
-            tableName ??= Define.NameTableFromDataTable(dataTable, replacesTableName);
+            tableName ??= Define.NameTableFromDataTable(dataTable.TableName, replacesTableName);
 
             queryBuilder.Append($"CREATE TABLE {tableName} (");
 
@@ -266,6 +266,27 @@ namespace EH.Connection
             queryBuilder.Append(")");
             return queryBuilder.ToString();
         }
+
+        /// <summary>
+        /// Creates a SQL query to add a foreign key constraint to a table.
+        /// </summary>
+        /// <param name="tableName">The name of the child table where the foreign key will be added.</param>
+        /// <param name="childKeyColumn">The name of the column in the child table that will be the foreign key.</param>
+        /// <param name="parentTableName">The name of the parent table containing the referenced primary key column.</param>
+        /// <param name="parentKeyColumn">The name of the column in the parent table that is the primary key being referenced.</param>
+        /// <param name="foreignKeyName">The name for the foreign key constraint.</param>
+        /// <returns>A SQL query to add the foreign key constraint.</returns>
+        public string AddForeignKeyConstraint(string tableName, string childKeyColumn, string parentTableName, string parentKeyColumn, string foreignKeyName)
+        {
+            string sqlQuery = $@"
+                ALTER TABLE {tableName}
+                ADD CONSTRAINT {foreignKeyName}
+                FOREIGN KEY ({childKeyColumn})
+                REFERENCES {parentTableName}({parentKeyColumn});";
+
+            return sqlQuery;
+        }
+
 
     }
 }

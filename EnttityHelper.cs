@@ -35,7 +35,7 @@ namespace EH
         /// <summary>
         /// Allows you to obtain the main commands to be executed on the database.
         /// </summary>
-        public SqlQueryString GetQuery = new();
+        public static SqlQueryString GetQuery = new();
 
 
         /// <summary>
@@ -130,50 +130,65 @@ namespace EH
         /// True, if one or more entities are inserted into the database.
         /// <para>If the return is negative, it indicates that the insertion did not happen due to some established criteria.</para>
         /// </returns>
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = false, string? tableName = null)
+        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null)
         {
-            if (!string.IsNullOrEmpty(namePropUnique))
+            if (entity is not DataTable dataTable)
             {
-                var properties = ToolsProp.GetProperties(entity);
-                tableName ??= ToolsProp.GetTableName<TEntity>(ReplacesTableName);
-
-                if (CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))
+                if (!string.IsNullOrEmpty(namePropUnique))
                 {
-                    Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
-                    return -101;
+                    var properties = ToolsProp.GetProperties(entity);
+                    tableName ??= ToolsProp.GetTableName<TEntity>(ReplacesTableName);
+
+                    if (CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))
+                    {
+                        Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
+                        return -101;
+                    }
+
+                    if (!CheckIfExist(tableName) && createTable)
+                    {
+                        CreateTable<TEntity>(tableName);
+                    }
                 }
+
+                string? insertQuery = GetQuery.Insert(entity, ReplacesTableName, tableName);
+                return insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1);
+            }
+            else
+            {
+                if (dataTable.Rows.Count == 0) return 0;
+                tableName ??= Define.NameTableFromDataTable(dataTable.TableName, ReplacesTableName);
 
                 if (!CheckIfExist(tableName) && createTable)
                 {
-                    CreateTable<TEntity>(tableName);
+                    CreateTable(dataTable, tableName);
                 }
-            }
 
-            string? insertQuery = GetQuery.Insert(entity, ReplacesTableName, tableName);
-            return insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1);
+                return Commands.Execute.PerformBulkCopyOperation(DbContext, dataTable, tableName) ? dataTable.Rows.Count : 0;
+            }
         }
 
-        /// <summary>
-        /// Inserts data from a DataTable into the specified database table.
-        /// </summary>
-        /// <typeparam name="TEntity">The type of entity corresponding to the table.</typeparam>
-        /// <param name="dataTable">The DataTable containing the data to be inserted.</param>
-        /// <param name="createTable">(Optional) If true and the destination table does not exist, it will be created based on the structure of the DataTable.</param>
-        /// <param name="tableName">Optional. The name of the table where the data will be inserted. If not specified, the name of the DataTable will be used.</param>
-        /// <returns>The number of rows successfully inserted into the database table.</returns>
+        ///// <summary>
+        ///// Inserts data from a DataTable into the specified database table.
+        ///// </summary>
+        ///// <typeparam name="TEntity">The type of entity corresponding to the table.</typeparam>
+        ///// <param name="dataTable">The DataTable containing the data to be inserted.</param>
+        ///// <param name="createTable">(Optional) If true and the destination table does not exist, it will be created based on the structure of the DataTable.</param>
+        ///// <param name="tableName">Optional. The name of the table where the data will be inserted. If not specified, the name of the DataTable will be used.</param>
+        ///// <returns>The number of rows successfully inserted into the database table.</returns>
 
-        public int Insert<TEntity>(DataTable dataTable, bool createTable = false, string? tableName = null)
-        {
-            if (dataTable.Rows.Count == 0) return 0;
-            tableName ??= dataTable.TableName;
+        //public int Insert(DataTable dataTable, bool createTable = false, string? tableName = null)
+        //{
+        //    if (dataTable.Rows.Count == 0) return 0;
+        //    tableName ??= dataTable.TableName;
 
-            if (!CheckIfExist(tableName) && createTable)
-            {
-                CreateTable(dataTable, tableName);
-            }
+        //    if (!CheckIfExist(tableName) && createTable)
+        //    {
+        //        CreateTable(dataTable, tableName);
+        //    }
 
-            return Commands.Execute.PerformBulkCopyOperation(DbContext, dataTable, tableName) ? dataTable.Rows.Count : 0;
-        }
+        //    return Commands.Execute.PerformBulkCopyOperation(DbContext, dataTable, tableName) ? dataTable.Rows.Count : 0;
+        //}
 
         /// <summary>
         /// Inserts data from an array of DataRow into the specified database table.
@@ -307,9 +322,10 @@ namespace EH
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to create the table.</typeparam>
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
+        /// <param name="createOnlyPrimaryTable">(Optional) If true, tables used for M:N relationships, for example, will not be created. By default they are created too.</param>
         /// <returns>True, if table was created and false, if not created.</returns>
         /// <exception cref="InvalidOperationException">Occurs if the table should have been created but was not.</exception>      
-        public bool CreateTable<TEntity>(string? tableName = null)
+        public bool CreateTable<TEntity>(string? tableName = null, bool createOnlyPrimaryTable = false)
         {
             if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
@@ -325,8 +341,9 @@ namespace EH
                 {
                     throw new InvalidOperationException("Table not created!");
                 }
+                if (createOnlyPrimaryTable) { break; }
             }
-            return true;            
+            return true;
         }
 
         /// <summary>
@@ -371,7 +388,7 @@ namespace EH
         public bool CreateTableIfNotExist(DataTable dataTable, string? tableName = null)
         {
             if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
-            tableName ??= Define.NameTableFromDataTable(dataTable, ReplacesTableName);
+            tableName ??= Define.NameTableFromDataTable(dataTable.TableName, ReplacesTableName);
             if (CheckIfExist(tableName)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
             return CreateTable(dataTable, tableName);
         }
@@ -435,7 +452,7 @@ namespace EH
         /// <returns>True, if it's ok.</returns>
         public bool IncludeAll<TEntity>(List<TEntity>? entities)
         {
-            if (entities == null || entities.Count == 0) return false;           
+            if (entities == null || entities.Count == 0) return false;
             foreach (TEntity entity in entities) { new Entities.Inclusions(this).IncludeForeignKeyEntities(entity); }
             return true;
         }
