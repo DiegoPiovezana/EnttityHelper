@@ -40,7 +40,7 @@ namespace EH.Commands
                     throw new InvalidOperationException("Connection does not exist.");
                 }
 
-                using IDbConnection connection = DbContext.CreateConnection();
+                IDbConnection connection = DbContext.CreateConnection();
                 connection.Open();
 
                 IDbTransaction? transaction = DbContext.CreateTransaction() ?? throw new InvalidOperationException("Transaction is null.");
@@ -68,7 +68,7 @@ namespace EH.Commands
                     }
                     else // isSelect
                     {
-                        using var reader = command.ExecuteReader();
+                        IDataReader? reader = command.ExecuteReader();
                         transaction.Commit();
 
                         if (getDataReader)

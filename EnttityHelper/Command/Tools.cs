@@ -111,5 +111,31 @@ namespace EH.Command
         }
 
 
+        public static DataTable GetFirstRows(this IDataReader reader, int rowCount)
+        {
+            DataTable dataTable = new ();
+           
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                dataTable.Columns.Add(reader.GetName(i), reader.GetFieldType(i));
+            }
+           
+            int count = 0;
+            while (reader.Read() && count < rowCount)
+            {
+                DataRow row = dataTable.NewRow();
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    row[i] = reader[i];
+                }
+                dataTable.Rows.Add(row);
+                count++;
+            }
+
+            return dataTable;
+        }
+
+
+
     }
 }

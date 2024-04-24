@@ -276,8 +276,26 @@ namespace TestEnttityHelper
             }
         }
 
+        [Test, Order(154)]
+        public void TestInsertLinkSelect()
+        {
+            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            if (eh.DbContext.ValidateConnection())
+            {
+                string query = "SELECT * FROM SHEET8";
+                EnttityHelper eh2 = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
 
-        [Test, Order(15)]
+                eh.InsertLinkSelect(query, eh2,"TEST_LINKSELECT");
+
+                Assert.Pass();
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
+
+        [Test, Order(16)]
         public void TestFullEntityREADME()
         {
             // Create a connection with the database using the connection string

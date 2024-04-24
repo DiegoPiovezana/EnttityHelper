@@ -3,6 +3,7 @@ using EH.Connection;
 using EH.Properties;
 using Oracle.ManagedDataAccess.Client;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -132,7 +133,37 @@ namespace EH
         /// </returns>
         public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null)
         {
-            if (entity is not DataTable dataTable)
+            if (entity is DataTable dataTable)
+            {
+                if (dataTable.Rows.Count == 0) return 0;
+                tableName ??= Define.NameTableFromDataTable(dataTable.TableName, ReplacesTableName);
+
+                if (!CheckIfExist(tableName) && createTable)
+                {
+                    CreateTable(dataTable, tableName);
+                }
+
+                return Commands.Execute.PerformBulkCopyOperation(DbContext, dataTable, tableName) ? dataTable.Rows.Count : 0;
+            }
+            else if (entity is IDataReader dataReader)
+            {
+                if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
+
+                if (!CheckIfExist(tableName) && createTable)
+                {
+                    DbContext.CreateOpenConnection();
+                    CreateTable(dataReader.GetFirstRows(10), tableName);
+                }
+
+                return Commands.Execute.PerformBulkCopyOperation(DbContext, dataReader, tableName) ? 1 : 0;
+            }
+            else if (entity is DataRow[] dataRow)
+            {
+                if (dataRow.Length == 0) return 0;
+                if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
+                return Commands.Execute.PerformBulkCopyOperation(DbContext, dataRow, tableName) ? dataRow.Length : 0;
+            }
+            else
             {
                 if (!string.IsNullOrEmpty(namePropUnique))
                 {
@@ -153,18 +184,6 @@ namespace EH
 
                 string? insertQuery = GetQuery.Insert(entity, ReplacesTableName, tableName);
                 return insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1);
-            }
-            else
-            {
-                if (dataTable.Rows.Count == 0) return 0;
-                tableName ??= Define.NameTableFromDataTable(dataTable.TableName, ReplacesTableName);
-
-                if (!CheckIfExist(tableName) && createTable)
-                {
-                    CreateTable(dataTable, tableName);
-                }
-
-                return Commands.Execute.PerformBulkCopyOperation(DbContext, dataTable, tableName) ? dataTable.Rows.Count : 0;
             }
         }
 
@@ -190,35 +209,49 @@ namespace EH
         //    return Commands.Execute.PerformBulkCopyOperation(DbContext, dataTable, tableName) ? dataTable.Rows.Count : 0;
         //}
 
-        /// <summary>
-        /// Inserts data from an array of DataRow into the specified database table.
-        /// </summary>
-        /// <typeparam name="TEntity">The type of entity corresponding to the table.</typeparam>
-        /// <param name="dataRow">An array of DataRow objects containing the data to be inserted.</param>
-        /// <param name="tableName">Optional. The name of the table where the data will be inserted. If not specified, the name of the entity type will be used.</param>
-        /// <returns>The number of rows successfully inserted into the database table.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if the tableName parameter is null.</exception>
+        ///// <summary>
+        ///// Inserts data from an array of DataRow into the specified database table.
+        ///// </summary>
+        ///// <typeparam name="TEntity">The type of entity corresponding to the table.</typeparam>
+        ///// <param name="dataRow">An array of DataRow objects containing the data to be inserted.</param>
+        ///// <param name="tableName">Optional. The name of the table where the data will be inserted. If not specified, the name of the entity type will be used.</param>
+        ///// <returns>The number of rows successfully inserted into the database table.</returns>
+        ///// <exception cref="ArgumentNullException">Thrown if the tableName parameter is null.</exception>
 
-        public int Insert<TEntity>(DataRow[] dataRow, string? tableName = null)
+        //public int Insert<TEntity>(DataRow[] dataRow, string? tableName = null)
+        //{
+        //    if (dataRow.Length == 0) return 0;
+        //    if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
+        //    return Commands.Execute.PerformBulkCopyOperation(DbContext, dataRow, tableName) ? dataRow.Length : 0;
+        //}
+
+        ///// <summary>
+        ///// Inserts data from an IDataReader into the specified database table.
+        ///// </summary>
+        ///// <typeparam name="TEntity">The type of entity corresponding to the table.</typeparam>
+        ///// <param name="dataReader">The IDataReader containing the data to be inserted.</param>
+        ///// <param name="tableName">Optional. The name of the table where the data will be inserted. If not specified, the name of the entity type will be used.</param>
+        ///// <returns>True if the data is inserted successfully, otherwise False.</returns>
+        ///// <exception cref="ArgumentNullException">Thrown if the tableName parameter is null.</exception>
+
+        //public bool Insert<TEntity>(IDataReader dataReader, string? tableName = null)
+        //{
+        //    if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
+        //    return Commands.Execute.PerformBulkCopyOperation(DbContext, dataReader, tableName);
+        //}
+
+
+        public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName)
         {
-            if (dataRow.Length == 0) return 0;
-            if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
-            return Commands.Execute.PerformBulkCopyOperation(DbContext, dataRow, tableName) ? dataRow.Length : 0;
-        }
+            var dataReaderSelect = (IDataReader?)Commands.Execute.ExecuteCommand<IDataReader>(DbContext, selectQuery, false, true);
+            if (dataReaderSelect is null) return 0;
 
-        /// <summary>
-        /// Inserts data from an IDataReader into the specified database table.
-        /// </summary>
-        /// <typeparam name="TEntity">The type of entity corresponding to the table.</typeparam>
-        /// <param name="dataReader">The IDataReader containing the data to be inserted.</param>
-        /// <param name="tableName">Optional. The name of the table where the data will be inserted. If not specified, the name of the entity type will be used.</param>
-        /// <returns>True if the data is inserted successfully, otherwise False.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if the tableName parameter is null.</exception>
+            int inserts = db2.Insert(dataReaderSelect, tableName, true, tableName);
 
-        public bool Insert<TEntity>(IDataReader dataReader, string? tableName = null)
-        {
-            if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
-            return Commands.Execute.PerformBulkCopyOperation(DbContext, dataReader, tableName);
+            dataReaderSelect.Close();
+            DbContext.CloseConnection();
+
+            return inserts;
         }
 
         /// <summary>
