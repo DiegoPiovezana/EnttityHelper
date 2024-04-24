@@ -1,6 +1,8 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Net;
 using System.Reflection;
 
 namespace EH.Properties
@@ -53,14 +55,19 @@ namespace EH.Properties
         public bool? IsNotMapped { get; set; }
 
         /// <summary>
-        /// Indicates whether the property is a primary key.
+        /// The property primary key.
         /// </summary>
-        public bool? IsPrimaryKey { get; set; }
+        public KeyAttribute? PrimaryKey { get; set; }
 
         /// <summary>
-        /// Indicates whether the property is a foreign key.
+        /// The property foreign key.
         /// </summary>
-        public bool? IsForeignKey { get; set; }
+        public ForeignKeyAttribute? ForeignKey { get; set; }
+
+        /// <summary>
+        /// Indicates whether the property is a collection.
+        /// </summary>
+        public bool? IsCollection { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum length of the 
@@ -144,11 +151,12 @@ namespace EH.Properties
 
             Name = propertyInfo.Name;
             ColumnName = propertyInfo.GetCustomAttribute<ColumnAttribute>()?.Name;
-            IsPrimaryKey = propertyInfo.GetCustomAttribute<KeyAttribute>() != null;
-            IsForeignKey = propertyInfo.GetCustomAttribute<ForeignKeyAttribute>() != null;
+            PrimaryKey = propertyInfo.GetCustomAttribute<KeyAttribute>();
+            ForeignKey = propertyInfo.GetCustomAttribute<ForeignKeyAttribute>();
             IsNotMapped = propertyInfo.GetCustomAttribute<NotMappedAttribute>() != null;
             IsVirtual = propertyInfo.GetGetMethod()?.IsVirtual ?? false;
             IsRequired = propertyInfo.GetCustomAttribute<RequiredAttribute>() != null;
+            IsCollection = propertyInfo.PropertyType != typeof(string) && typeof(System.Collections.IEnumerable).IsAssignableFrom(propertyInfo.PropertyType);
 
             MaxLength = propertyInfo.GetCustomAttribute<MaxLengthAttribute>()?.Length;
             MinLength = propertyInfo.GetCustomAttribute<MinLengthAttribute>()?.Length;

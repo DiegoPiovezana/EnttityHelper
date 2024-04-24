@@ -1,53 +1,144 @@
-
 CREATE TABLE TB_SR_USERS__USERS(
-Id VARCHAR2(20),
-Email VARCHAR2(50),
-Login VARCHAR2(20),
-Name VARCHAR2(500),
-Active NUMBER(1),
-DtCreation TIMESTAMP,
-DtLastLogin TIMESTAMP,
-DtActivation TIMESTAMP,
-DtDeactivation TIMESTAMP,
-DtAlteration TIMESTAMP,
-DtRevision TIMESTAMP,
-InternalUser VARCHAR2(1),
-IdSupervisor VARCHAR2(20),
-IdGroup NUMBER,
-IdOrigin NUMBER,
-IdCarrer NUMBER,
-IdServiceCreation NUMBER
+    ID VARCHAR2(20),
+    EMAIL VARCHAR2(50),
+    LOGIN VARCHAR2(20),
+    NAME VARCHAR2(500),
+    ACTIVE NUMBER(1),
+    DTCREATION TIMESTAMP,
+    DTLASTLOGIN TIMESTAMP,
+    DTACTIVATION TIMESTAMP,
+    DTDEACTIVATION TIMESTAMP,
+    DTALTERATION TIMESTAMP,
+    DTREVISION TIMESTAMP,
+    INTERNALUSER VARCHAR2(1),
+    IDSUPERVISOR VARCHAR2(20),
+    IDGROUP NUMBER,
+    IDORIGIN NUMBER,
+    IDCARRER NUMBER,
+    IDSERVICECREATION NUMBER
 );
 
-
 CREATE TABLE TB_SR_USERS__USERS(
-    Id VARCHAR2(100), 
-    Email VARCHAR2(100), 
-    Login VARCHAR2(100), 
-    Name VARCHAR2(100), 
-    Active NUMBER(1), 
-    DtCreation TIMESTAMP, 
-    DtLastLogin TIMESTAMP, 
-    DtActivation TIMESTAMP, 
-    DtDeactivation TIMESTAMP, 
-    DtAlteration TIMESTAMP, 
-    DtRevision TIMESTAMP, 
-    InternalUser VARCHAR2(100), 
-    IdSupervisor VARCHAR2(100)
-    );
+    ID VARCHAR2(100),
+    EMAIL VARCHAR2(100),
+    LOGIN VARCHAR2(100),
+    NAME VARCHAR2(100),
+    ACTIVE NUMBER(1),
+    DTCREATION TIMESTAMP,
+    DTLASTLOGIN TIMESTAMP,
+    DTACTIVATION TIMESTAMP,
+    DTDEACTIVATION TIMESTAMP,
+    DTALTERATION TIMESTAMP,
+    DTREVISION TIMESTAMP,
+    INTERNALUSER VARCHAR2(100),
+    IDSUPERVISOR VARCHAR2(100)
+);
 
 DROP TABLE TB_SR_USERS__USERS;
+
 DELETE FROM TB_SR_USERS__USERS;
 
+SELECT
+    *
+FROM
+    TB_SR_USERS__USERS;
 
-SELECT * FROM TB_SR_USERS__USERS;
-SELECT * FROM TB_SR_USERS__USERS WHERE (1 = 1);
+SELECT
+    *
+FROM
+    TB_SR_USERS__USERS
+WHERE
+    (1 = 1);
 
-INSERT INTO TB_SR_USERS__USERS (Id, Email, Login, Name, Active, DtCreation, DtLastLogin, DtActivation, DtDeactivation, DtAlteration, DtRevision, InternalUser, IdSupervisor) VALUES ('usuario.primeiro', 'usuario.primeiro@gmail.com', 'usuario.primeiro', 'Usuário Teste 1 via banco', '1', '12/09/2023 00:17:56', '', '12/09/2023 00:17:56', '', '', '', 'Y', '');
+INSERT INTO TB_SR_USERS__USERS (
+    ID,
+    EMAIL,
+    LOGIN,
+    NAME,
+    ACTIVE,
+    DTCREATION,
+    DTLASTLOGIN,
+    DTACTIVATION,
+    DTDEACTIVATION,
+    DTALTERATION,
+    DTREVISION,
+    INTERNALUSER,
+    IDSUPERVISOR
+) VALUES (
+    'usuario.primeiro',
+    'usuario.primeiro@gmail.com',
+    'usuario.primeiro',
+    'Usuário Teste 1 via banco',
+    '1',
+    '12/09/2023 00:17:56',
+    '',
+    '12/09/2023 00:17:56',
+    '',
+    '',
+    '',
+    'Y',
+    ''
+);
 
-INSERT INTO TB_SR_USERS__USERS (Id, Email, Login, Name, Active, DtCreation, DtLastLogin, DtActivation, DtDeactivation, DtAlteration, DtRevision, InternalUser, IdSupervisor) VALUES ('usuario.segundo', 'usuario.segundo@hotmail.com', '8085858555455454', 'Usuário Teste 2 via banco', '1',  '06/11/2023 17:10:05', '', '06/11/2023 17:10:05', '', '', '', 'Y', 'usuario.primeiro');
+INSERT INTO TB_SR_USERS__USERS (
+    ID,
+    EMAIL,
+    LOGIN,
+    NAME,
+    ACTIVE,
+    DTCREATION,
+    DTLASTLOGIN,
+    DTACTIVATION,
+    DTDEACTIVATION,
+    DTALTERATION,
+    DTREVISION,
+    INTERNALUSER,
+    IDSUPERVISOR
+) VALUES (
+    'usuario.segundo',
+    'usuario.segundo@hotmail.com',
+    '8085858555455454',
+    'Usuário Teste 2 via banco',
+    '1',
+    '06/11/2023 17:10:05',
+    '',
+    '06/11/2023 17:10:05',
+    '',
+    '',
+    '',
+    'Y',
+    'usuario.primeiro'
+);
 
-INSERT INTO TB_SR_USERS__USERS (Id, Email, Login, Name, Active, DtCreation, DtLastLogin, DtActivation, DtDeactivation, DtAlteration, DtRevision, InternalUser, IdSupervisor) VALUES ('usuario.terceiro', 'usuario.terceiro@hotmail.com', '8085858555455454', 'Usuário Teste 2 via banco', '1',  '06/11/2023 17:10:05', '', '06/11/2023 17:10:05', '', '', '', 'Y', 'usuario.primeiro');
+INSERT INTO TB_SR_USERS__USERS (
+    ID,
+    EMAIL,
+    LOGIN,
+    NAME,
+    ACTIVE,
+    DTCREATION,
+    DTLASTLOGIN,
+    DTACTIVATION,
+    DTDEACTIVATION,
+    DTALTERATION,
+    DTREVISION,
+    INTERNALUSER,
+    IDSUPERVISOR
+) VALUES (
+    'usuario.terceiro',
+    'usuario.terceiro@hotmail.com',
+    '8085858555455454',
+    'Usuário Teste 2 via banco',
+    '1',
+    '06/11/2023 17:10:05',
+    '',
+    '06/11/2023 17:10:05',
+    '',
+    '',
+    '',
+    'Y',
+    'usuario.primeiro'
+);
 
 COMMIT;
 
@@ -63,17 +154,46 @@ COMMIT;
 
 -------------------- COPIAR TABELA ------------------
 
-CREATE TABLE TB_SR_USERS__USERS_TEMP AS SELECT * FROM TB_SR_USERS__USERS;
+CREATE TABLE TB_SR_USERS__USERS_TEMP AS
+    SELECT
+        *
+    FROM
+        TB_SR_USERS__USERS;
+
 DROP TABLE TB_SR_USERS__USERS;
+
 -- (CRIA TB_SR_USERS__USERS TABELA NO C#)
 
-INSERT INTO TB_SR_USERS__USERS 
-(Id, Email, Login, Name, Active, DtCreation, DtLastLogin, DtActivation, DtDeactivation, DtAlteration, DtRevision, InternalUser, IdSupervisor, IdCareer)
-SELECT * FROM TB_SR_USERS__USERS_TEMP;
+INSERT INTO TB_SR_USERS__USERS (
+    ID,
+    EMAIL,
+    LOGIN,
+    NAME,
+    ACTIVE,
+    DTCREATION,
+    DTLASTLOGIN,
+    DTACTIVATION,
+    DTDEACTIVATION,
+    DTALTERATION,
+    DTREVISION,
+    INTERNALUSER,
+    IDSUPERVISOR,
+    IDCAREER
+)
+    SELECT
+        *
+    FROM
+        TB_SR_USERS__USERS_TEMP;
 
-SELECT * FROM TB_SR_USERS__USERS;
-SELECT * FROM TB_SR_USERS__USERS_TEMP;
+SELECT
+    *
+FROM
+    TB_SR_USERS__USERS;
 
+SELECT
+    *
+FROM
+    TB_SR_USERS__USERS_TEMP;
 
 -----------------------------------------------------
 
@@ -84,61 +204,146 @@ SELECT
     OBJECT_TYPE
 FROM
     ALL_OBJECTS
--- WHERE
---     OBJECT_NAME = 'TB_ENTITY_TEST'
+ -- WHERE
+ --     OBJECT_NAME = 'TB_ENTITY_TEST'
 ;
-
 
 ---------------------
 
 CREATE TABLE TB_SR_USERS__CAREERS (
-    IdCareer NUMBER(10) PRIMARY KEY, 
-    Name NVARCHAR2(200), 
-    CareerLevel NUMBER, 
-    Active NUMBER(1)
-    );
+    IDCAREER NUMBER(10) PRIMARY KEY,
+    NAME NVARCHAR2(200),
+    CAREERLEVEL NUMBER,
+    ACTIVE NUMBER(1)
+);
 
 DROP TABLE TB_SR_USERS__CAREERS;
 
 -- TB_SR_USERS__CAREERS
-SELECT * FROM TB_SR_USERS__CAREERS;
+SELECT
+    *
+FROM
+    TB_SR_USERS__CAREERS;
 
-
-
-SELECT * FROM TB_SR_USERS__CAREERS WHERE (IdCareer='1');
-
+SELECT
+    *
+FROM
+    TB_SR_USERS__CAREERS
+WHERE
+    (IDCAREER='1');
 
 -----------------------
 
 
-SELECT * FROM TB_SR_USERS__GROUPS;
+SELECT
+    *
+FROM
+    TB_SR_USERS__GROUPS;
+
 DROP TABLE TB_SR_USERS__GROUPS;
-
-
-
-
-
 
 ------------------------------
 
 -- TB_SR_USERS__ORIGENS
 
 CREATE TABLE TB_SR_USERS__ORIGENS(
-IdOrigem NUMBER,
-Identificacao VARCHAR2(100)(20),
-Nome VARCHAR2(100)(500),
-Ativo NUMBER(1)
+    IDORIGEM NUMBER,
+    IDENTIFICACAO VARCHAR2(100)(20),
+    NOME VARCHAR2(100)(500),
+    ATIVO NUMBER(1)
 );
 
-INSERT INTO TB_SR_USERS__ORIGENS (IdOrigem, Identificacao, Nome, Ativo) VALUES ('0', '00000', 'Origem Teste via banco', '1');
+INSERT INTO TB_SR_USERS__ORIGENS (
+    IDORIGEM,
+    IDENTIFICACAO,
+    NOME,
+    ATIVO
+) VALUES (
+    '0',
+    '00000',
+    'Origem Teste via banco',
+    '1'
+);
 
-SELECT * FROM TB_SR_USERS__ORIGENS;
+SELECT
+    *
+FROM
+    TB_SR_USERS__ORIGENS;
 
-SELECT * FROM TB_SR_USERS__USERS WHERE (IdOrigem=0);
-
-
+SELECT
+    *
+FROM
+    TB_SR_USERS__USERS
+WHERE
+    (IDORIGEM=0);
 
 ---------------------------------------------------------
 
-SELECT * FROM TB_USER;
-SELECT * FROM TB_CAREERS;
+SELECT
+    *
+FROM
+    TB_USER;
+
+SELECT
+    *
+FROM
+    TB_CAREERS;
+
+CREATE TABLE TB_USER_IDGROUPS (
+    ID_TB_USER INT,
+    ID_IDGROUPS INT,
+    PRIMARY KEY (ID_TB_USER, ID_IDGROUPS),
+    FOREIGN KEY (ID_TB_USER) REFERENCES (ID_TB_USER),
+    FOREIGN KEY (ID_IDGROUPS) REFERENCES (ID_IDGROUPS)
+);
+
+DROP TABLE TB_USER_IDGROUPS;
+
+
+CREATE TABLE UsuarioGrupo (
+    UsuarioId INT,
+    GrupoId INT,
+    CONSTRAINT FK_UsuarioGrupo_Usuario FOREIGN KEY (UsuarioId) REFERENCES Usuario(UsuarioId),
+    CONSTRAINT FK_UsuarioGrupo_Grupo FOREIGN KEY (GrupoId) REFERENCES Grupo(GrupoId),
+    CONSTRAINT PK_UsuarioGrupo PRIMARY KEY (UsuarioId, GrupoId)
+);
+
+
+
+CREATE TABLE Test(
+    ID INT PRIMARY KEY,
+    NAME VARCHAR(50),
+    SALT BLOB
+);
+
+
+INSERT INTO Test (
+    ID,
+    NAME,
+    SALT
+) VALUES (
+    2,
+    'Teste 1',
+    hextoraw('0x01')
+);
+
+
+
+CREATE TABLE TB_USER_TB_GRUPO (
+    ID_ID1 INT, ID_ID2 INT,
+    PRIMARY KEY (ID_ID1, ID_ID2),
+    FOREIGN KEY (ID_ID1) REFERENCES TB_USER(ID),
+    FOREIGN KEY (ID_ID2) REFERENCES TB_GRUPO(ID)
+);
+
+CREATE TABLE TB_USER_TB_GRUPO (
+    ID_ID1 INT, ID_ID2 INT,
+    PRIMARY KEY (ID_ID1, ID_ID2)
+);
+
+DROP TABLE TB_USER_TB_GRUPO;
+
+ALTER TABLE Usuario_Grupo
+ADD CONSTRAINT FK_Usuario_Grupo_Grupo
+FOREIGN KEY (ID_Grupo)
+REFERENCES Grupo(ID);

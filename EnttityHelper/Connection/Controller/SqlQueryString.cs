@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Diagnostics;
+using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -138,58 +140,89 @@ namespace EH.Connection
         /// <param name="typesSql">Dictionary containing types related to C# code and database data.</param>
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>  
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
-        /// <returns>Table creation query.</returns>
-        public string? CreateTable<TEntity>(Dictionary<string, string>? typesSql, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
+        /// <returns>Table creation query. If it is necessary to create an auxiliary table, for an M:N relationship for example, more than one query will be returned.</returns>
+        public ICollection<string?> CreateTable<TEntity>(Dictionary<string, string>? typesSql, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
         {
             if (typesSql is null) { throw new ArgumentNullException(nameof(typesSql)); }
 
-            StringBuilder queryBuilder = new();
+            ICollection<string?> createsTable = new List<string?>();
+            StringBuilder queryBuilderPrincipal = new();
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
-            queryBuilder.Append($"CREATE TABLE {tableName} (");
+            queryBuilderPrincipal.Append($"CREATE TABLE {tableName} (");
 
             TEntity entity = Activator.CreateInstance<TEntity>() ?? throw new ArgumentNullException(nameof(entity));
-            var properties = ToolsProp.GetProperties(entity);
+            var properties = ToolsProp.GetProperties(entity, false, false);
+            var pk = ToolsProp.GetPK((object)entity);
 
-            foreach (KeyValuePair<string, Property> pair in properties)
+            foreach (KeyValuePair<string, Property> prop in properties)
             {
-                if (pair.Value?.Type is null) { throw new InvalidOperationException($"Error mapping entity '{nameof(entity)}' property types!"); }
+                if (prop.Value?.Type is null) { throw new InvalidOperationException($"Error mapping entity '{nameof(entity)}' property types!"); }
 
-                typesSql.TryGetValue(pair.Value.Type.Name.Trim(), out string value);
+                if (prop.Value.IsVirtual.HasValue && prop.Value.IsVirtual.Value) { continue; }
 
-                if (value is null)
+                if (prop.Value.IsCollection.HasValue && !prop.Value.IsCollection.Value)
                 {
-                    Debug.WriteLine($"Type default not found in Dictionary TypesDefault for '{pair.Value.Type.Name}'!");
-                    throw new InvalidOperationException($"Type default not found in Dictionary TypesDefault for '{pair.Value.Type.Name}'! Please enter it into the dictionary or consider changing the type.");
+                    typesSql.TryGetValue(prop.Value.Type.Name.Trim(), out string value);
+
+                    if (value is null)
+                    {
+                        Debug.WriteLine($"Type default not found in Dictionary TypesDefault for '{prop.Value.Type.Name}'!");
+                        throw new InvalidOperationException($"Type default not found in Dictionary TypesDefault for '{prop.Value.Type.Name}'! Please enter it into the dictionary or consider changing the type.");
+                    }
+
+                    // MaxLength?
+                    if (prop.Value.MaxLength > 0)
+                    {
+                        value = Regex.Replace(value, @"\([^()]*\)", "");
+                        value += $"({prop.Value.MaxLength})";
+                    }
+
+                    // PK?                    
+                    if (prop.Key == pk?.Name || prop.Key == pk?.GetCustomAttribute<ColumnAttribute>()?.Name)
+                    {
+                        queryBuilderPrincipal.Append($"{prop.Key} {value} PRIMARY KEY, ");
+                    }
+                    else
+                    {
+                        queryBuilderPrincipal.Append($"{prop.Key} {value}, ");
+                    }
+
+                    // MinimumLength?
+                    if (prop.Value.MinLength > 0)
+                    {
+                        queryBuilderPrincipal.Append($"CHECK(LENGTH({prop.Key}) >= {prop.Value.MinLength}), ");
+                    }
                 }
+                else // IsCollection
+                {
+                    var pkEntity1 = pk.Name;
+                    string tableEntity1 = tableName;
 
-                // MaxLength?
-                if (pair.Value.MaxLength > 0)
-                {
-                    value = Regex.Replace(value, @"\([^()]*\)", "");
-                    value += $"({pair.Value.MaxLength})";
-                }
+                    var propEntity2 = properties[prop.Value.ForeignKey.Name];
+                    Type collectionType = propEntity2.PropertyInfo.PropertyType;                    
+                    Type entityType = collectionType.GetGenericArguments()[0];
+                    TableAttribute table2Attribute = entityType.GetCustomAttribute<TableAttribute>();
+                    var propPkEntity2 = entityType.GetProperties().Where(prop => Attribute.IsDefined(prop, typeof(System.ComponentModel.DataAnnotations.KeyAttribute)));
+                    
+                    var pkEntity2 = propPkEntity2.First().Name;
+                    string tableEntity2 = table2Attribute.Name;
 
-                // PK?
-                var pk = ToolsProp.GetPK((object)entity);
-                if (pair.Key == pk?.Name || pair.Key == pk?.GetCustomAttribute<ColumnAttribute>()?.Name)
-                {
-                    queryBuilder.Append($"{pair.Key} {value} PRIMARY KEY, ");
-                }
-                else
-                {
-                    queryBuilder.Append($"{pair.Key} {value}, ");
-                }
+                    string queryCollection =
+                        $"CREATE TABLE {tableEntity1}_{tableEntity2} (" +
+                        $"ID_{pkEntity1}1 INT, ID_{pkEntity2}2 INT, " +
+                        $"PRIMARY KEY (ID_{pkEntity1}, ID_{pkEntity2}), " +
+                        $"FOREIGN KEY (ID_{pkEntity1}) REFERENCES {tableEntity1}({pkEntity1}))";
 
-                // MinimumLength?
-                if (pair.Value.MinLength > 0)
-                {
-                    queryBuilder.Append($"CHECK(LENGTH({pair.Key}) >= {pair.Value.MinLength}), ");
+                    // TODO: Add the second foreign key after the second table is created
+
+                    createsTable.Add(queryCollection);
                 }
             }
 
-            queryBuilder.Length -= 2; // Remove the last comma and space
-            queryBuilder.Append(")");
-            return queryBuilder.ToString();
+            queryBuilderPrincipal.Length -= 2; // Remove the last comma and space
+            queryBuilderPrincipal.Append(")");
+            createsTable.Add(queryBuilderPrincipal.ToString());
+            return createsTable;
         }
 
         /// <summary>

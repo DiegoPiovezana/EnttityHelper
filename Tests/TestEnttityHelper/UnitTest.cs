@@ -199,7 +199,7 @@ namespace TestEnttityHelper
         }
 
         [Test, Order(10)]
-        public void TestOneToMany()
+        public void TestManyToOne()
         {
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
@@ -216,7 +216,6 @@ namespace TestEnttityHelper
                 var carrers = eh.Get<Career>();
                 var users = eh.Get<User>();
 
-
                 Assert.Pass();
 
             }
@@ -232,19 +231,24 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
-                EntityTest entityTest = new() { Id = 300, Name = "Testando 1 entidade 100 via C#", StartDate = DateTime.Now };
-                eh.Insert(entityTest, nameof(entityTest.Id));
+                eh.CreateTableIfNotExist<Group>();
 
-                EntityTest entityTest2 = new() { Id = 300, Name = "Testando 2 entidade 300 atualizando hora via C#", StartDate = DateTime.Now };
-                eh.Update(entityTest2, nameof(entityTest.Id));
+                //eh.ExecuteNonQuery("DROP TABLE TB_USER");
+                eh.CreateTableIfNotExist<User>();
 
-                var entities = eh.Get<EntityTest>(true, $"{nameof(EntityTest.Id)} = 300");
+                Group group1 = new() { Id = 0, Name = "Developers", Description = "Developer Group" };
+                eh.Insert(group1);
 
-                if (entities is not null && entities[0].Name.Equals("Testando 2 entidade 300 atualizando hora via C#"))
-                {
-                    int result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 300");
-                    Assert.That(result == 1, Is.EqualTo(true));
-                }
+                Group group2 = new() { Id = 1, Name = "Testers", Description = "Tester Group" };
+                eh.Insert(group2);
+
+                User user = new("Diego Piovezana") { Id = 0, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1, IdGroups = new List<int>() { 0, 1 } };
+                eh.Insert(user);
+
+                var carrers = eh.Get<Career>();
+                var users = eh.Get<User>();
+
+                Assert.Pass();
             }
             else
             {

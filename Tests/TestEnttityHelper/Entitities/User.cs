@@ -14,8 +14,8 @@ namespace TestEH_UnitTest.Entities
         [ForeignKey(nameof(Career))] public long IdCareer { get; internal set; }
         public virtual Career? Career { get; internal set; }
 
-        //[ForeignKey(nameof(Groups))] public ICollection<long> IdGroups { get; internal set; }
-        //public virtual ICollection<Group>? Groups { get; internal set; }
+        [ForeignKey(nameof(Groups))] public ICollection<int> IdGroups { get; internal set; }
+        public virtual ICollection<Group>? Groups { get; internal set; }
 
 
         //[NotMapped] public Classification? Classification { get; internal set; }

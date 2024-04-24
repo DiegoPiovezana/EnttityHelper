@@ -313,17 +313,20 @@ namespace EH
         {
             if (DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
-            string? createTableQuery = GetQuery.CreateTable<TEntity>(TypesDefault, ReplacesTableName, tableName);
+            var createsTableQuery = GetQuery.CreateTable<TEntity>(TypesDefault, ReplacesTableName, tableName);
 
-            if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
+            foreach (string? createTableQuery in createsTableQuery)
             {
-                Debug.WriteLine("Table created!");
-                return true;
+                if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
+                {
+                    Debug.WriteLine("Table created!");
+                }
+                else
+                {
+                    throw new InvalidOperationException("Table not created!");
+                }
             }
-            else
-            {
-                throw new InvalidOperationException("Table not created!");
-            }
+            return true;            
         }
 
         /// <summary>
