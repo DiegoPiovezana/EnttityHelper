@@ -78,7 +78,7 @@ namespace App
                 eh.CreateTableIfNotExist<User>();
 
                 // Cria uma nova entidade
-                User userD = new() { Id = 0, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now };
+                User userD = new() { Id = 0, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
 
                 // Insere no banco de dados
                 eh.Insert(userD);

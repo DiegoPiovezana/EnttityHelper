@@ -320,7 +320,7 @@ namespace TestEnttityHelper
                 eh.CreateTableIfNotExist<User>();
 
                 // Create new entity
-                User userD = new("Diego Piovezana") { Id = 0, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now };
+                User userD = new("Diego Piovezana") { Id = 0, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
 
                 // Insert in database
                 eh.Insert(userD);
