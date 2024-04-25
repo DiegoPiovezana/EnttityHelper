@@ -5,8 +5,9 @@
 # EnttityHelper [Alpha]
 Possibilita a fácil manipulação de entidades em diferentes bancos de dados.<br/>
 
-
 <img src="..\Images\EnttityHelper_publish.png" width=100% height=100%><br/>
+<br/>
+[![Changelog](https://img.shields.io/badge/Changelog-View%20Here-blue.svg)](../../CHANGELOG.md) [![License](https://img.shields.io/badge/License-GPL-yellow.svg)](../../LICENSE.txt)
 
 ## RECURSOS DISPONÍVEIS:<br/>
 ✔ Open-Source;<br/>
@@ -15,13 +16,13 @@ Possibilita a fácil manipulação de entidades em diferentes bancos de dados.<b
 ✔ Realiza as principais operações: atualizar, inserir, selecionar e excluir entidades;<br/>
 ✔ Permite criar uma tabela no banco de dados de acordo com as propriedades de um objeto C#;<br/>
 ✔ Capaz de considerar atributos das propriedades de um objeto para criar uma tabela;<br/>
-✔ Manipulações independentes: as entidades podem ser manipuladas sem precisar fazer parte de um Contexto.<br/>
+✔ Manipulações independentes: as entidades podem ser manipuladas sem precisar fazer parte de um Contexto;<br/>
 ✔ Manipulações seguras: se a quantidade de alteração não é a esperada, a transação não será efetivada;<br/>
 ✔ Realize inserções de entidades, DataTable, IDataReader ou DataRow[] de maneira eficiente;<br/>
 ✔ Possível definir o nome das tabelas e o tipo das colunas de maneira totalmente personalizada ou automática;<br/>
 ✔ Capaz de criar tabelas a partir de uma DataTable;<br/>
 ✔ Faça select em um banco e insira o resultado desse select em outro banco (`InserLinkSelect`);<br/>
-✔ [Em breve] Possível estabelecer relações Muito para Muitos.<br/>
+✔ [Em breve] Possível estabelecer relações Muito-para-Muitos.<br/>
 
 <br/>
 
@@ -34,8 +35,8 @@ https://bit.ly/FeedbackHappyHelper
 ```
  dotnet add package EnttityHelper --version 0.5.0-alpha-1
 ```	
-
 <br/>
+
 
 ## EXEMPLO DE USO EM CRUD:
 ```c#
@@ -85,7 +86,7 @@ namespace App
     }
 }
 ```
-
+<br/>
 
 ## EXEMPLO DE INSERT DE DATATABLE:
 ```c#
@@ -124,6 +125,7 @@ namespace App
     }
 }
 ```
+<br/>
 
 ## EXEMPLO DE INSERT DE DATATABLE:
 ```c#
@@ -157,3 +159,4 @@ namespace App
     }
 }
 ```
+<br/>

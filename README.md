@@ -1,12 +1,13 @@
 [![NuGet](https://img.shields.io/nuget/v/EnttityHelper.svg)](https://www.nuget.org/packages/EnttityHelper/)
 
-<img src="https://raw.githubusercontent.com/DiegoPiovezana/DiegoPiovezana/main/Images/br.png" width=2.0% height=2.0%> Veja a documentação em português [clicando aqui](Globalization/Readme_pt-br.md).<br/>
+<img src="https://raw.githubusercontent.com/DiegoPiovezana/DiegoPiovezana/main/Images/br.png" width=2.0% height=2.0%> Veja a documentação em português [clicando aqui](EnttityHelper/Globalization/Readme_pt-br.md).<br/>
 
 # EnttityHelper [Alpha]
 Allows easy manipulation of entities in different databases.<br/>
 
-
 <img src="EnttityHelper\Images\EnttityHelper_publish.png" width=100% height=100%><br/>
+<br/>
+[![Changelog](https://img.shields.io/badge/Changelog-View%20Here-blue.svg)](CHANGELOG.md) [![License](https://img.shields.io/badge/License-GPL-yellow.svg)](LICENSE.txt)
 
 ## AVAILABLE FEATURES:<br/>
 ✔ Open-Source;<br/>
@@ -86,6 +87,7 @@ namespace App
 }
 
 ```
+<br/>
 
 ## EXAMPLE OF DATATABLE INSERTION:
 ```c#
@@ -124,6 +126,7 @@ namespace App
     }
 }
 ```
+<br/>
 
 ## EXAMPLE OF LINK SELECT INSERTION:
 ```c#
@@ -157,3 +160,4 @@ namespace App
     }
 }
 ```
+<br/>
