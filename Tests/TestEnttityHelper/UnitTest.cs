@@ -263,10 +263,19 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
+                // Colunas vazias terão automaticamente o tipo Object. No banco de dados, o tipo Object será NVARCHAR2(100)
                 eh.TypesDefault.Add("Object", "NVARCHAR2(100)");
 
-                var dt = SheetHelper.GetDataTable(@"C:\Users\diego\Desktop\Tests\Converter\ColunasExcel.xlsx", "Sheet8");
-                eh.Insert(dt);
+                // Realiza a leitura da primeira aba do DataTable
+                var dt = SheetHelper.GetDataTable(@"C:\Users\diego\Desktop\Tests\Converter\ColunasExcel.xlsx", "1");
+
+                // Se a tabela existir, ela será excluída
+                if (eh.CheckIfExist("TableX")) eh.ExecuteNonQuery($"DROP TABLE TableX");
+
+                // Possível inserir o DataTable considerando diversos cenários
+                eh.Insert(dt,null,true,"TableX"); 
+                //eh.Insert(dt, null, true); // O nome da tabela será automaticamente o nome da aba da planilha (retirando caracteres especiais)
+                //eh.Insert(dt, null, false); // A tabela não será criada e apenas ocorrerá a inserção do DataTable              
 
                 Assert.Pass();
             }
@@ -276,16 +285,20 @@ namespace TestEnttityHelper
             }
         }
 
-        [Test, Order(154)]
+        [Test, Order(15)]
         public void TestInsertLinkSelect()
         {
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
+                // Select na tabela do banco de dados do banco de dados 1
                 string query = "SELECT * FROM SHEET8";
-                EnttityHelper eh2 = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
 
-                eh.InsertLinkSelect(query, eh2,"TEST_LINKSELECT");
+                // Cria uma nova conexão com o banco de dados 2
+                EnttityHelper eh2 = new($"Data Source=152.27.13.90:49262/xe2;User Id=system2;Password=oracle2");
+
+                // Insere o resultado do select na tabela do banco de dados 2
+                eh.InsertLinkSelect(query, eh2, "TEST_LINKSELECT");
 
                 Assert.Pass();
             }
@@ -319,7 +332,8 @@ namespace TestEnttityHelper
                 eh.Update(userD);
 
                 // Search in database
-                User? userDSearched = eh.Search(userD);
+                User? userDSearched1 = eh.Search(userD);
+                User? userDSearched2 = eh.Search(new User { Name = "John" }, true, nameof(User.Name));
 
                 // Deletes user D from the database
                 eh.Delete(userD);
