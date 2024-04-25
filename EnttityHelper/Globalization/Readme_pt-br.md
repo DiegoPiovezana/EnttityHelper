@@ -148,7 +148,7 @@ namespace App
 ```
 <br/>
 
-## EXEMPLO DE INSERT DE DATATABLE:
+## EXEMPLO DE INSERT LINK SELECT:
 ```c#
 using EH;
 
