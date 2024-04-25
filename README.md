@@ -40,6 +40,27 @@ https://bit.ly/FeedbackHappyHelper
 
 ## EXAMPLE OF CRUD USAGE:
 ```c#
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ExampleEntity
+{
+    [Table("TB_USER")]
+    internal class User
+    {
+        [Key()] public int Id { get; internal set; }
+        [Required][MaxLength(300)] public string Name { get; internal set; }
+        [Required][MaxLength(100)] public string? GitHub { get; internal set; }
+        public DateTime DtCreation { get; internal set; }
+        [ForeignKey(nameof(Career))] public long IdCareer { get; internal set; }
+        public virtual Career? Career { get; internal set; }        
+
+        public User() { } // Mandatory empty constructor  
+    }
+}
+```
+
+```c#
 using EH;
 
 namespace App
