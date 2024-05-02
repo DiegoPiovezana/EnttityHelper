@@ -242,7 +242,7 @@ namespace EH.Command
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
-            var createsTableQuery = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, _enttityHelper.ReplacesTableName, tableName);
+            var createsTableQuery = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, createOnlyPrimaryTable, _enttityHelper.ReplacesTableName, tableName);
 
             foreach (string? createTableQuery in createsTableQuery.Reverse()) // The last table is the main table
             {
@@ -254,7 +254,7 @@ namespace EH.Command
                 {
                     throw new InvalidOperationException("Table not created!");
                 }
-                if (createOnlyPrimaryTable) { break; }
+                //if (createOnlyPrimaryTable) { break; }
             }
             return true;
         }

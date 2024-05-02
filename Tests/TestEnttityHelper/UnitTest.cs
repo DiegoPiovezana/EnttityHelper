@@ -232,7 +232,7 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
-                //eh.ExecuteNonQuery("DROP TABLE TB_USER");
+                if (eh.CheckIfExist(eh.GetTableName<Group>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Group>()}");
                 eh.CreateTableIfNotExist<Group>(true);
 
                 //eh.ExecuteNonQuery("DROP TABLE TB_USER");
@@ -274,7 +274,7 @@ namespace TestEnttityHelper
                 if (eh.CheckIfExist("TableX")) eh.ExecuteNonQuery($"DROP TABLE TableX");
 
                 // Possível inserir o DataTable considerando diversos cenários
-                eh.Insert(dt,null,true,"TableX"); 
+                eh.Insert(dt, null, true, "TableX");
                 //eh.Insert(dt, null, true); // O nome da tabela será automaticamente o nome da aba da planilha (retirando caracteres especiais)
                 //eh.Insert(dt, null, false); // A tabela não será criada e apenas ocorrerá a inserção do DataTable              
 
