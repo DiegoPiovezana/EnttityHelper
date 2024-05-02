@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using TestEH_UnitTest.Entities;
 
 namespace TestEH_UnitTest.Entitities
 {
@@ -10,7 +11,8 @@ namespace TestEH_UnitTest.Entitities
         [Required] public string Name { get; internal set; }
         [Required] public string Description { get; internal set; }
 
-
+        [ForeignKey(nameof(Users))] public ICollection<int> IdUsers { get; internal set; }
+        public virtual ICollection<User>? Users { get; internal set; }
 
     }
 }
