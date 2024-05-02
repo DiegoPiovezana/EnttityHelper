@@ -1,13 +1,8 @@
 ﻿using EH.Command;
 using EH.Connection;
-using EH.Properties;
-using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
-using System.Diagnostics;
-using System.Linq;
 
 namespace EH
 {
@@ -67,7 +62,14 @@ namespace EH
         /// <inheritdoc/>  
         public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null)
         {
-           return _features.Insert(entity, namePropUnique, createTable, tableName);
+            try
+            {
+                return _features.Insert(entity, namePropUnique, createTable, tableName);
+            }
+            catch (Exception)
+            {
+                throw;
+            }           
         }
 
         //public int Insert(DataTable dataTable, bool createTable = false, string? tableName = null)
@@ -85,97 +87,223 @@ namespace EH
         /// <inheritdoc/> 
         public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName)
         {
-          return _features.InsertLinkSelect(selectQuery, db2, tableName);
+            try
+            {
+                return _features.InsertLinkSelect(selectQuery, db2, tableName);
+            }
+            catch (Exception)
+            {
+                throw;
+            }            
         }
 
         /// <inheritdoc/> 
         public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class
         {
-            return _features.Update(entity, nameId, tableName);
+            try
+            {
+                return _features.Update(entity, nameId, tableName);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }            
         }
 
         /// <inheritdoc/> 
         public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null)
         {
-            return _features.Get<TEntity>(includeAll, filter, tableName);
+            try
+            {
+                return _features.Get<TEntity>(includeAll, filter, tableName);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }            
         }
 
         /// <inheritdoc/> 
         public TEntity? Search<TEntity>(TEntity entity, bool includeAll = true, string? idPropName = null, string? tableName = null) where TEntity : class
         {
-            return _features.Search(entity, includeAll, idPropName, tableName);
+            try
+            {
+                return _features.Search(entity, includeAll, idPropName, tableName);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }            
         }
 
         /// <inheritdoc/>
         public bool CheckIfExist(string tableName, string? filter = null, int quantity = 0)
         {
-            return _features.CheckIfExist(tableName, filter, quantity);
+            try
+            {
+                return _features.CheckIfExist(tableName, filter, quantity);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }           
         }
 
         /// <inheritdoc/>    
         public bool CreateTable<TEntity>(string? tableName = null, bool createOnlyPrimaryTable = false)
         {
-            return _features.CreateTable<TEntity>(tableName, createOnlyPrimaryTable);
+            try
+            {
+                return _features.CreateTable<TEntity>(tableName, createOnlyPrimaryTable);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }            
         }
 
         /// <inheritdoc/>
         public bool CreateTable(DataTable dataTable, string? tableName = null)
         {
-            return _features.CreateTable(dataTable, tableName);
+            try
+            {
+                return _features.CreateTable(dataTable, tableName);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }            
         }
 
         /// <inheritdoc/>
         public bool CreateTableIfNotExist<TEntity>(string? tableName = null)
         {
-            return _features.CreateTableIfNotExist<TEntity>(tableName);
+            try
+            {
+                return _features.CreateTableIfNotExist<TEntity>(tableName);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }            
         }
 
         /// <inheritdoc/>
         public bool CreateTableIfNotExist(DataTable dataTable, string? tableName = null)
         {
-            return _features.CreateTableIfNotExist(dataTable, tableName);
+            try
+            {
+                return _features.CreateTableIfNotExist(dataTable, tableName);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }            
         }
 
         /// <inheritdoc/>
         public int Delete<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class
         {
-            return _features.Delete(entity, nameId, tableName);
+            try
+            {
+                return _features.Delete(entity, nameId, tableName);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }            
         }
 
         /// <inheritdoc/>
         public int ExecuteNonQuery(string? query, int expectedChanges = -1)
         {
-            return _features.ExecuteNonQuery(query, expectedChanges);
+            try
+            {
+                return _features.ExecuteNonQuery(query, expectedChanges);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }            
         }
 
         /// <inheritdoc/>
         public List<TEntity>? ExecuteSelect<TEntity>(string? query)
         {
-            return _features.ExecuteSelect<TEntity>(query);
+            try
+            {
+                return _features.ExecuteSelect<TEntity>(query);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }            
         }
 
         /// <inheritdoc/>
         public DataTable? ExecuteSelectDt<TEntity>(string? query)
         {
-            return _features.ExecuteSelectDt<TEntity>(query);
+            try
+            {
+                return _features.ExecuteSelectDt<TEntity>(query);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }            
         }
 
         /// <inheritdoc/>
         public bool IncludeAll<TEntity>(TEntity entity)
         {
-            return _features.IncludeAll(entity);
+            try
+            {
+                return _features.IncludeAll(entity);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }            
         }
 
         /// <inheritdoc/>
         public bool IncludeAll<TEntity>(List<TEntity>? entities)
         {
-            return _features.IncludeAll(entities);
+            try
+            {
+                return _features.IncludeAll(entities);
+            }
+            catch (Exception)
+            {
+                throw;
+            }           
         }
 
         /// <inheritdoc/>
         public bool IncludeEntityFK<TEntity>(TEntity entity, string fkName)
         {
-            return _features.IncludeEntityFK(entity, fkName);
+            try
+            {
+                return _features.IncludeEntityFK(entity, fkName);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }            
         }
 
 
