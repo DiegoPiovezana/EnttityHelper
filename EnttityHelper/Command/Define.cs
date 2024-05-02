@@ -20,7 +20,7 @@ namespace EH.Command
             }
 
             tableName = tableName.Length > 30 ? tableName.Substring(0, 30) : tableName;
-            tableName = Tools.NormalizeText(tableName, '_', false);
+            tableName = Tools.Normalize(tableName, '_', false);
             return tableName;
         }
 

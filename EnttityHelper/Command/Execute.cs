@@ -71,14 +71,11 @@ namespace EH.Commands
                         IDataReader? reader = command.ExecuteReader();
                         transaction.Commit();
 
-                        if (getDataReader)
-                        {
-                            return reader;
-                        }
+                        if (getDataReader) { return reader; }
 
                         if (reader != null)
                         {
-                            List<TEntity> entities = Tools.MapDataReaderToList<TEntity>(reader);
+                            List<TEntity> entities = Tools.ToListEntity<TEntity>(reader);
                             reader.Close();
                             connection.Close();
                             Debug.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
@@ -147,7 +144,7 @@ namespace EH.Commands
 
                     default:
                         throw new NotSupportedException("Bulk Copy operation is not yet supported for this database type.");
-                }                
+                }
             }
             catch (Exception ex)
             {
@@ -157,7 +154,7 @@ namespace EH.Commands
             }
         }
 
-        
+
 
 
 

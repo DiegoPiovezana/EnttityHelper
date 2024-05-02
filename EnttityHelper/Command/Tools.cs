@@ -12,10 +12,19 @@ namespace EH.Command
 {
     internal static class Tools
     {
-        public static List<T> MapDataReaderToList<T>(this IDataReader reader, bool matchDb = true)
+        /// <summary>
+        /// Maps the data from an IDataReader to a list of entities of type T.     
+        /// </summary>
+        /// <typeparam name="T">The type of entity.</typeparam>
+        /// <param name="reader">The IDataReader containing the data to be mapped.</param>
+        /// <param name="matchColumn">Optional parameter indicating whether to match the column names to the entity properties. Default is true.</param>
+        /// <returns>A list of entities of type T mapped from the data in the IDataReader.</returns>
+        public static List<T> ToListEntity<T>(this IDataReader? reader, bool matchColumn = true)
         {
             try
             {
+                if (reader == null) { throw new ArgumentNullException(nameof(reader)); }
+
                 List<T> list = new();
 
                 while (reader.Read())
@@ -28,16 +37,15 @@ namespace EH.Command
 
                         string nameColumn = propInfo.GetCustomAttribute<ColumnAttribute>()?.Name ?? propInfo.Name;
 
-                        int ordinal;
                         try
                         {
-                            ordinal = reader.GetOrdinal(nameColumn);
+                            int ordinal = reader.GetOrdinal(nameColumn);
                         }
                         catch (IndexOutOfRangeException)
                         {
                             Debug.WriteLine($"Column '{nameColumn}' not found in table!");
 
-                            if (matchDb) { throw new IndexOutOfRangeException($"Column '{nameColumn}' of '{propInfo.DeclaringType}' not found in table in database!"); }
+                            if (matchColumn) { throw new IndexOutOfRangeException($"Column '{nameColumn}' of '{propInfo.DeclaringType}' not found in table in database!"); }
                             else { continue; }
                         }
 
@@ -68,7 +76,26 @@ namespace EH.Command
             }
         }
 
-        public static string NormalizeText(string? text, char replaceSpace = '_', bool toLower = true)
+        /// <summary>
+        /// Converts an IDataReader to a DataTable.
+        /// </summary>
+        /// <param name="reader">The IDataReader to be converted.</param>
+        /// <returns>A DataTable containing the data from the IDataReader.</returns>
+        public static DataTable ToDataTable(this IDataReader? reader)
+        {
+            DataTable dtResult = new();
+            dtResult.Load(reader);
+            return dtResult;
+        }
+
+        /// <summary>
+        /// Normalizes the input text by removing diacritics and replacing spaces with the specified character.
+        /// </summary>
+        /// <param name="text">The input text to be normalized.</param>
+        /// <param name="replaceSpace">(Optional) The character used to replace spaces. Default is underscore ('_').</param>
+        /// <param name="toLower">(Optional) Indicates whether the result should be converted to lowercase. Default is true.</param>
+        /// <returns>The normalized string.</returns>
+        public static string Normalize(this string? text, char replaceSpace = '_', bool toLower = true)
         {
             try
             {
@@ -92,7 +119,13 @@ namespace EH.Command
             }
         }
 
-        public static string FixItems(string items)
+        /// <summary>
+        /// Fixes the format of the items string by replacing line breaks, semicolons, spaces, single quotes, and double quotes with commas.
+        /// Removes repeated commas and excess spaces.
+        /// </summary>
+        /// <param name="items">The string containing the items.</param>
+        /// <returns>The fixed items string.</returns>
+        public static string FixItems(this string? items)
         {
             try
             {
@@ -110,16 +143,15 @@ namespace EH.Command
             }
         }
 
-
         public static DataTable GetFirstRows(this IDataReader reader, int rowCount)
         {
-            DataTable dataTable = new ();
-           
+            DataTable dataTable = new();
+
             for (int i = 0; i < reader.FieldCount; i++)
             {
                 dataTable.Columns.Add(reader.GetName(i), reader.GetFieldType(i));
             }
-           
+
             int count = 0;
             while (reader.Read() && count < rowCount)
             {
@@ -134,7 +166,6 @@ namespace EH.Command
 
             return dataTable;
         }
-
 
 
     }
