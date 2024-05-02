@@ -198,22 +198,22 @@ namespace EH.Connection
                     string tableEntity1 = tableName;
 
                     var propEntity2 = properties[prop.Value.ForeignKey.Name];
-                    Type collectionType = propEntity2.PropertyInfo.PropertyType;
-                    Type entityType = collectionType.GetGenericArguments()[0];
-                    TableAttribute table2Attribute = entityType.GetCustomAttribute<TableAttribute>();
-                    var propsEntity2 = entityType.GetProperties();
+                    Type collection2Type = propEntity2.PropertyInfo.PropertyType;
+                    Type entity2Type = collection2Type.GetGenericArguments()[0];
+                    TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
+                    var propsEntity2 = entity2Type.GetProperties();
                     var propPkEntity2 = propsEntity2.Where(prop => Attribute.IsDefined(prop, typeof(System.ComponentModel.DataAnnotations.KeyAttribute)));
 
                     var pkEntity2 = propPkEntity2?.FirstOrDefault()?.Name ?? propsEntity2.FirstOrDefault().Name;
                     string tableEntity2 = table2Attribute.Name;
 
                     string queryCollection =
-                        $"CREATE TABLE {tableEntity1}_{tableEntity2} (" +
+                        $"CREATE TABLE {tableEntity1}To{entity2Type.Name} (" +
                         $"ID_{pkEntity1}1 INT, ID_{pkEntity2}2 INT, " +
-                        $"PRIMARY KEY (ID_{pkEntity1}, ID_{pkEntity2}), " +
-                        $"FOREIGN KEY (ID_{pkEntity1}) REFERENCES {tableEntity1}({pkEntity1}))";
-
-                    // TODO: Add the second foreign key after the second table is created
+                        $"PRIMARY KEY (ID_{pkEntity1}1, ID_{pkEntity2}2), " +
+                        $"FOREIGN KEY (ID_{pkEntity1}1) REFERENCES {tableEntity1}({pkEntity1}), " +
+                        $"FOREIGN KEY (ID_{pkEntity2}2) REFERENCES {tableEntity2}({pkEntity2}) " +
+                        $")";                    
 
                     createsTable.Add(queryCollection);
                 }

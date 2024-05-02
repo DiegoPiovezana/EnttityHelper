@@ -134,14 +134,21 @@ namespace EH.Command
         public bool CreateTable(DataTable dataTable, string? tableName = null);
 
         /// <summary>
-        /// Allows you to create a table in the database according to the provided Entity object, if table does not exist.
+        /// Creates a table for the specified entity if it does not already exist in the database.
         /// </summary>
-        /// <typeparam name="TEntity">Type of entity to create the table.</typeparam>  
-        /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
-        /// <returns>True, if table was created or already exists and false, if it was not created.</returns>
-        /// <exception cref="InvalidOperationException">Occurs if the table should have been created but was not.</exception>      
-        public bool CreateTableIfNotExist<TEntity>(string? tableName = null);
+        /// <typeparam name="TEntity">The type of entity for which to create the table.</typeparam>
+        /// <param name="createOnlyPrimaryTable">Specifies whether to create only the primary table or include auxiliary tables for relationships.</param>
+        /// <param name="tableName">The name of the table. If not provided, the name will be inferred from the entity type.</param>
+        /// <returns>True if the table was created or already exists, otherwise false.</returns>
+        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable = false, string? tableName = null);
 
+
+        /// <summary>
+        /// Creates a table for the specified DataTable if it does not already exist in the database.
+        /// </summary>
+        /// <param name="dataTable">The DataTable representing the table to create.</param>
+        /// <param name="tableName">The name of the table. If not provided, the name will be inferred from the DataTable's TableName property.</param>
+        /// <returns>True if the table was created or already exists, otherwise false.</returns>
         public bool CreateTableIfNotExist(DataTable dataTable, string? tableName = null);
 
         /// <summary>

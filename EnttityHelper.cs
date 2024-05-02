@@ -176,11 +176,11 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public bool CreateTableIfNotExist<TEntity>(string? tableName = null)
+        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable = false, string? tableName = null)
         {
             try
             {
-                return _features.CreateTableIfNotExist<TEntity>(tableName);
+                return _features.CreateTableIfNotExist<TEntity>(createOnlyPrimaryTable, tableName);
             }
             catch (Exception)
             {
