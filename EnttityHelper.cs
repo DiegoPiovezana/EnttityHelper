@@ -68,7 +68,7 @@ namespace EH
             if (dbContext.Type.Equals(Enums.DbType.Oracle))
             {
                 TypesDefault = new Dictionary<string, string> {
-                { "String", "NVARCHAR2(4000)" },
+                { "String", "NVARCHAR2(1000)" },
                 { "Boolean", "NUMBER(1)" },
                 { "DateTime", "TIMESTAMP" },
                 { "Decimal", "NUMBER" },
@@ -84,7 +84,7 @@ namespace EH
             {
                 TypesDefault = new Dictionary<string, string>
                 {
-                { "String", "NVARCHAR(4000)" },
+                { "String", "NVARCHAR(1000)" },
                 { "Boolean", "BIT" },
                 { "DateTime", "DATETIME" },
                 { "Decimal", "DECIMAL" },
