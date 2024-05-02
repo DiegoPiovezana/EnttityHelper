@@ -36,7 +36,7 @@ namespace EH
         /// <summary>
         /// Allows you to obtain the main commands to be executed on the database.
         /// </summary>
-        public static SqlQueryString GetQuery = new();
+        public SqlQueryString GetQuery = new();
 
 
         /// <summary>
@@ -240,7 +240,13 @@ namespace EH
         //    return Commands.Execute.PerformBulkCopyOperation(DbContext, dataReader, tableName);
         //}
 
-
+        /// <summary>
+        /// Executes a SELECT query on one database and inserts the result into another database (or in the same).
+        /// </summary>
+        /// <param name="selectQuery">The SELECT query to be executed.</param>
+        /// <param name="db2">The instance of the EntityHelper representing the destination database.</param>
+        /// <param name="tableName">The name of the table where the result will be inserted.</param>
+        /// <returns>The number of rows inserted into the destination table.</returns>
         public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName)
         {
             var dataReaderSelect = (IDataReader?)Commands.Execute.ExecuteCommand<IDataReader>(DbContext, selectQuery, false, true);
@@ -451,20 +457,15 @@ namespace EH
         }
 
         /// <summary>
-        /// Executes the section in the database and returns the list with the obtained entities.
+        /// Executes a SELECT query in the database and returns a list of entities obtained from the query result.
         /// </summary>
-        /// <typeparam name="TEntity">Type of entities to be obtained.</typeparam>
-        /// <param name="query">Query to be executed.</param>
-        /// <returns>List of entities retrieved from the database.</returns>
+        /// <typeparam name="TEntity">The type of entities to be obtained.</typeparam>
+        /// <param name="query">The SELECT query to be executed.</param>
+        /// <returns>A list of entities retrieved from the database, or null if the query execution fails.</returns>
         public List<TEntity>? ExecuteSelect<TEntity>(string? query)
         {
             return (List<TEntity>?)Commands.Execute.ExecuteCommand<TEntity>(DbContext, query);
-        }
-
-        //public IDataReader? GetDataReader<TEntity>(string? query)
-        //{
-        //    return (IDataReader)Commands.Execute.ExecuteCommand<TEntity>(DbContext, query);
-        //}
+        }             
 
         /// <summary>
         /// Include all FK entities.
