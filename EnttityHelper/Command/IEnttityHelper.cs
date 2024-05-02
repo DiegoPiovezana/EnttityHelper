@@ -118,11 +118,11 @@ namespace EH.Command
         /// Allows you to create a table in the database according to the provided objectEntity object.
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to create the table.</typeparam>
-        /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <param name="createOnlyPrimaryTable">(Optional) If true, tables used for M:N relationships, for example, will not be created. By default they are created too.</param>
+        /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>True, if table was created and false, if not created.</returns>
         /// <exception cref="InvalidOperationException">Occurs if the table should have been created but was not.</exception>      
-        public bool CreateTable<TEntity>(string? tableName = null, bool createOnlyPrimaryTable = false);
+        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable = false, string? tableName = null);
 
         /// <summary>
         /// Creates a table in the database based on the structure specified in a DataTable object.

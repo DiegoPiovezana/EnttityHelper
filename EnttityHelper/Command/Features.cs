@@ -110,7 +110,7 @@ namespace EH.Command
                 if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
                 return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataRow, tableName) ? dataRow.Length : 0;
             }
-            else
+            else // Entity
             {
                 if (!string.IsNullOrEmpty(namePropUnique))
                 {
@@ -125,7 +125,7 @@ namespace EH.Command
 
                     if (!CheckIfExist(tableName) && createTable)
                     {
-                        CreateTable<TEntity>(tableName);
+                        CreateTableIfNotExist<TEntity>(false, tableName);
                     }
                 }
 
@@ -237,13 +237,13 @@ namespace EH.Command
             }
         }
 
-        public bool CreateTable<TEntity>(string? tableName = null, bool createOnlyPrimaryTable = false)
+        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable = false, string? tableName = null)
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
             var createsTableQuery = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, _enttityHelper.ReplacesTableName, tableName);
 
-            foreach (string? createTableQuery in createsTableQuery)
+            foreach (string? createTableQuery in createsTableQuery.Reverse()) // The last table is the main table
             {
                 if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
                 {
@@ -275,12 +275,12 @@ namespace EH.Command
             }
         }
 
-        public bool CreateTableIfNotExist<TEntity>(string? tableName = null)
+        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable = false, string? tableName = null)
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
             tableName ??= ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
             if (CheckIfExist(tableName)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
-            return CreateTable<TEntity>();
+            return CreateTable<TEntity>(createOnlyPrimaryTable, tableName);
         }
 
         public bool CreateTableIfNotExist(DataTable dataTable, string? tableName = null)

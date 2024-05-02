@@ -69,7 +69,7 @@ namespace EH
             catch (Exception)
             {
                 throw;
-            }           
+            }
         }
 
         //public int Insert(DataTable dataTable, bool createTable = false, string? tableName = null)
@@ -94,7 +94,7 @@ namespace EH
             catch (Exception)
             {
                 throw;
-            }            
+            }
         }
 
         /// <inheritdoc/> 
@@ -106,9 +106,8 @@ namespace EH
             }
             catch (Exception)
             {
-
                 throw;
-            }            
+            }
         }
 
         /// <inheritdoc/> 
@@ -120,9 +119,8 @@ namespace EH
             }
             catch (Exception)
             {
-
                 throw;
-            }            
+            }
         }
 
         /// <inheritdoc/> 
@@ -134,9 +132,8 @@ namespace EH
             }
             catch (Exception)
             {
-
                 throw;
-            }            
+            }
         }
 
         /// <inheritdoc/>
@@ -148,23 +145,21 @@ namespace EH
             }
             catch (Exception)
             {
-
                 throw;
-            }           
+            }
         }
 
         /// <inheritdoc/>    
-        public bool CreateTable<TEntity>(string? tableName = null, bool createOnlyPrimaryTable = false)
+        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable = false, string? tableName = null)
         {
             try
             {
-                return _features.CreateTable<TEntity>(tableName, createOnlyPrimaryTable);
+                return _features.CreateTable<TEntity>(createOnlyPrimaryTable, tableName);
             }
             catch (Exception)
             {
-
                 throw;
-            }            
+            }
         }
 
         /// <inheritdoc/>
@@ -176,9 +171,8 @@ namespace EH
             }
             catch (Exception)
             {
-
                 throw;
-            }            
+            }
         }
 
         /// <inheritdoc/>
@@ -190,9 +184,8 @@ namespace EH
             }
             catch (Exception)
             {
-
                 throw;
-            }            
+            }
         }
 
         /// <inheritdoc/>
@@ -204,9 +197,8 @@ namespace EH
             }
             catch (Exception)
             {
-
                 throw;
-            }            
+            }
         }
 
         /// <inheritdoc/>
@@ -218,9 +210,8 @@ namespace EH
             }
             catch (Exception)
             {
-
                 throw;
-            }            
+            }
         }
 
         /// <inheritdoc/>
@@ -232,9 +223,8 @@ namespace EH
             }
             catch (Exception)
             {
-
                 throw;
-            }            
+            }
         }
 
         /// <inheritdoc/>
@@ -246,9 +236,8 @@ namespace EH
             }
             catch (Exception)
             {
-
                 throw;
-            }            
+            }
         }
 
         /// <inheritdoc/>
@@ -260,9 +249,8 @@ namespace EH
             }
             catch (Exception)
             {
-
                 throw;
-            }            
+            }
         }
 
         /// <inheritdoc/>
@@ -274,9 +262,8 @@ namespace EH
             }
             catch (Exception)
             {
-
                 throw;
-            }            
+            }
         }
 
         /// <inheritdoc/>
@@ -289,7 +276,7 @@ namespace EH
             catch (Exception)
             {
                 throw;
-            }           
+            }
         }
 
         /// <inheritdoc/>
@@ -301,9 +288,8 @@ namespace EH
             }
             catch (Exception)
             {
-
                 throw;
-            }            
+            }
         }
 
 
