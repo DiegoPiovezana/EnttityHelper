@@ -232,6 +232,7 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
+                //eh.ExecuteNonQuery("DROP TABLE TB_USER");
                 eh.CreateTableIfNotExist<Group>(true);
 
                 //eh.ExecuteNonQuery("DROP TABLE TB_USER");

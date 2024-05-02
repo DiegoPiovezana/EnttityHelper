@@ -211,7 +211,20 @@ namespace EH.Command
         /// <returns>True if success.</returns>
         public bool IncludeEntityFK<TEntity>(TEntity entity, string fkName);
 
+        /// <summary>
+        /// Gets the table name associated with the specified entity.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <returns>The name of the table associated with the entity.</returns>
+        public string? GetTableName<TEntity>();
 
+        /// <summary>
+        /// Gets the name of the primary key for the specified entity.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <param name="entity">The instance of the entity.</param>
+        /// <returns>The name of the primary key for the entity.</returns>
+        public string? GetPKName<TEntity>(TEntity entity) where TEntity : class;
 
 
     }

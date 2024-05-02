@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,7 +10,7 @@ namespace EH.Properties
 {
     internal static class ToolsProp
     {
-        internal static Dictionary<string, Property> GetProperties<T>(T objectEntity, bool includeNotMapped = false, bool ignoreVirtual = true)
+        internal static Dictionary<string, Property> GetProperties<T>(this T objectEntity, bool includeNotMapped = false, bool ignoreVirtual = true)
         {
             if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
 
@@ -70,7 +71,7 @@ namespace EH.Properties
         /// <summary>
         /// Gets FK entities according to ids.
         /// </summary>   
-        internal static Dictionary<object, object> GetFKProperties<T>(T objectEntity)
+        internal static Dictionary<object, object> GetFKProperties<T>(this T objectEntity)
         {
             if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
 
@@ -107,7 +108,7 @@ namespace EH.Properties
             return propertiesObj;
         }
 
-        public static PropertyInfo GetPK<T>(T obj) where T : class
+        internal static PropertyInfo GetPK<T>(this T obj) where T : class
         {
             try
             {
@@ -133,14 +134,14 @@ namespace EH.Properties
             }
         }
 
-        public static TableAttribute? GetTableAttribute(Type type)
+        internal static TableAttribute? GetTableAttribute(this Type type)
         {
             object[] attributes = type.GetCustomAttributes(true);
             foreach (object attribute in attributes) { if (attribute is TableAttribute tbAttribute) { return tbAttribute; } }
             return default;
         }
 
-        public static string GetTableName<TEntity>(Dictionary<string, string>? replacesTableName = null)
+        internal static string GetTableName<TEntity>(Dictionary<string, string>? replacesTableName = null)
         {
             TableAttribute? ta = GetTableAttribute(typeof(TEntity));
             string schema = ta?.Schema != null ? $"{ta.Schema}." : "";

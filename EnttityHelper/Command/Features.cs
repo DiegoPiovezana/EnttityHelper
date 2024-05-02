@@ -7,6 +7,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 
 namespace EH.Command
 {
@@ -336,6 +337,10 @@ namespace EH.Command
             new Entities.Inclusions(_enttityHelper).IncludeForeignKeyEntities(entity, fkName);
             return true;
         }
+
+        public string? GetTableName<TEntity>() => ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
+
+        public string? GetPKName<TEntity>(TEntity entity) where TEntity : class => ToolsProp.GetPK(entity)?.Name;  
 
     }
 }

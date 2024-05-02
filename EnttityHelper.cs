@@ -292,6 +292,32 @@ namespace EH
             }
         }
 
+        /// <inheritdoc/>
+        public string? GetTableName<TEntity>()
+        {
+            try
+            {
+                return _features.GetTableName<TEntity>();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? GetPKName<TEntity>(TEntity entity) where TEntity : class
+        {
+            try
+            {
+                return _features.GetPKName(entity);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
 
     }
 }
