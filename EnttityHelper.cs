@@ -465,7 +465,26 @@ namespace EH
         public List<TEntity>? ExecuteSelect<TEntity>(string? query)
         {
             return (List<TEntity>?)Commands.Execute.ExecuteCommand<TEntity>(DbContext, query);
-        }             
+        }
+
+        /// <summary>
+        /// Executes a SELECT query in the database and returns the result as a DataTable.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of entities to be obtained.</typeparam>
+        /// <param name="query">The SELECT query to be executed.</param>
+        /// <returns>
+        /// A DataTable containing the result of the query, or null if the query execution fails.
+        /// </returns>
+        public DataTable? ExecuteSelectDt<TEntity>(string? query)
+        {
+            if (Commands.Execute.ExecuteCommand<TEntity>(DbContext, query, false, true) is not IDataReader resultSelect) return null;
+
+            DataTable dtResult = resultSelect.ToDataTable();
+
+            resultSelect.Close();
+            DbContext.CloseConnection();
+            return dtResult;
+        }     
 
         /// <summary>
         /// Include all FK entities.
