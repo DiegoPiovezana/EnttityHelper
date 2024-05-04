@@ -119,10 +119,21 @@ namespace EH.Command
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to create the table.</typeparam>
         /// <param name="createOnlyPrimaryTable">(Optional) If true, tables used for M:N relationships, for example, will not be created. By default they are created too.</param>
+        /// <param name="ignoreProps">A collection of property names to ignore when creating the table.</param>
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>True, if table was created and false, if not created.</returns>
         /// <exception cref="InvalidOperationException">Occurs if the table should have been created but was not.</exception>      
-        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable = false, string? tableName = null);
+        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable = false, ICollection<string>? ignoreProps = null, string? tableName = null);
+
+        /// <summary>
+        /// Creates a table for the specified entity if it does not already exist in the database.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of entity for which to create the table.</typeparam>
+        /// <param name="createOnlyPrimaryTable">Specifies whether to create only the primary table or include auxiliary tables for relationships.</param>
+        /// <param name="ignoreProps">A collection of property names to ignore when creating the table.</param>
+        /// <param name="tableName">The name of the table. If not provided, the name will be inferred from the entity type.</param>
+        /// <returns>True if the table was created or already exists, otherwise false.</returns>
+        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable = false, ICollection<string>? ignoreProps = null, string? tableName = null);
 
         /// <summary>
         /// Creates a table in the database based on the structure specified in a DataTable object.
@@ -132,17 +143,7 @@ namespace EH.Command
         /// <returns>True if the table is created successfully, otherwise False.</returns>
         /// <exception cref="InvalidOperationException">An exception is thrown if an error occurs while attempting to create the table.</exception>
         public bool CreateTable(DataTable dataTable, string? tableName = null);
-
-        /// <summary>
-        /// Creates a table for the specified entity if it does not already exist in the database.
-        /// </summary>
-        /// <typeparam name="TEntity">The type of entity for which to create the table.</typeparam>
-        /// <param name="createOnlyPrimaryTable">Specifies whether to create only the primary table or include auxiliary tables for relationships.</param>
-        /// <param name="tableName">The name of the table. If not provided, the name will be inferred from the entity type.</param>
-        /// <returns>True if the table was created or already exists, otherwise false.</returns>
-        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable = false, string? tableName = null);
-
-
+              
         /// <summary>
         /// Creates a table for the specified DataTable if it does not already exist in the database.
         /// </summary>

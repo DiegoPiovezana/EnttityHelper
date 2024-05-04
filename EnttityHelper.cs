@@ -150,11 +150,24 @@ namespace EH
         }
 
         /// <inheritdoc/>    
-        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable = false, string? tableName = null)
+        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable = false, ICollection<string>? ignoreProps = null, string? tableName = null)
         {
             try
             {
-                return _features.CreateTable<TEntity>(createOnlyPrimaryTable, tableName);
+                return _features.CreateTable<TEntity>(createOnlyPrimaryTable, ignoreProps, tableName);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <inheritdoc/>
+        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable = false, ICollection<string>? ignoreProps = null, string? tableName = null)
+        {
+            try
+            {
+                return _features.CreateTableIfNotExist<TEntity>(createOnlyPrimaryTable, ignoreProps, tableName);
             }
             catch (Exception)
             {
@@ -168,19 +181,6 @@ namespace EH
             try
             {
                 return _features.CreateTable(dataTable, tableName);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        /// <inheritdoc/>
-        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable = false, string? tableName = null)
-        {
-            try
-            {
-                return _features.CreateTableIfNotExist<TEntity>(createOnlyPrimaryTable, tableName);
             }
             catch (Exception)
             {

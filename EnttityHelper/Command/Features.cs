@@ -125,7 +125,7 @@ namespace EH.Command
 
                     if (!CheckIfExist(tableName) && createTable)
                     {
-                        CreateTableIfNotExist<TEntity>(false, tableName);
+                        CreateTableIfNotExist<TEntity>(false, null, tableName);
                     }
                 }
 
@@ -205,11 +205,7 @@ namespace EH.Command
                 using IDbCommand command = _enttityHelper.DbContext.CreateCommand($"SELECT COUNT(*) FROM {tableName} WHERE {filter ?? "1 = 1"}");
                 object result = command.ExecuteScalar(); // >= 0
 
-                if (result != null && result != DBNull.Value)
-                {
-                    return Convert.ToInt32(result) >= quantity;
-                }
-
+                if (result != null && result != DBNull.Value) { return Convert.ToInt32(result) >= quantity; }
                 return false;
             }
             catch (OracleException ex)
@@ -237,11 +233,11 @@ namespace EH.Command
             }
         }
 
-        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable = false, string? tableName = null)
+        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable = false, ICollection<string>? ignoreProps = null, string? tableName = null)
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
-            var createsTableQuery = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, createOnlyPrimaryTable, _enttityHelper.ReplacesTableName, tableName);
+            var createsTableQuery = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, ignoreProps, createOnlyPrimaryTable, _enttityHelper.ReplacesTableName, tableName);
 
             foreach (string? createTableQuery in createsTableQuery.Reverse()) // The last table is the main table
             {
@@ -256,6 +252,14 @@ namespace EH.Command
                 //if (createOnlyPrimaryTable) { break; }
             }
             return true;
+        }
+
+        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable = false, ICollection<string>? ignoreProps = null, string? tableName = null)
+        {
+            if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
+            tableName ??= ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
+            if (CheckIfExist(tableName)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
+            return CreateTable<TEntity>(createOnlyPrimaryTable, ignoreProps, tableName);
         }
 
         public bool CreateTable(DataTable dataTable, string? tableName = null)
@@ -273,15 +277,7 @@ namespace EH.Command
             {
                 throw new InvalidOperationException("Table not created!");
             }
-        }
-
-        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable = false, string? tableName = null)
-        {
-            if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
-            tableName ??= ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
-            if (CheckIfExist(tableName)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
-            return CreateTable<TEntity>(createOnlyPrimaryTable, tableName);
-        }
+        }        
 
         public bool CreateTableIfNotExist(DataTable dataTable, string? tableName = null)
         {

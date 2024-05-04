@@ -137,17 +137,20 @@ namespace EH.Connection
         /// </summary>
         /// <typeparam name="TEntity">The type of main entity.</typeparam>
         /// <param name="typesSql">Dictionary containing types related to C# code and database data.</param>
+        /// <param name="ignoreProps">(Optional) The query to create table will ignore the listed properties.</param>
         /// <param name="onlyPrimaryTable">(Optional) If true, properties that do not belong to an auxiliary table will be ignored.</param>
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>  
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>Table creation query. If it is necessary to create an auxiliary table, for an M:N relationship for example, more than one query will be returned.</returns>
-        public ICollection<string?> CreateTable<TEntity>(Dictionary<string, string>? typesSql, bool onlyPrimaryTable = false, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
+        public ICollection<string?> CreateTable<TEntity>(Dictionary<string, string>? typesSql, ICollection<string>? ignoreProps = null, bool onlyPrimaryTable = false, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
         {
             if (typesSql is null) { throw new ArgumentNullException(nameof(typesSql)); }
+            ignoreProps ??= new List<string>();
 
             ICollection<string?> createsTable = new List<string?>();
             StringBuilder queryBuilderPrincipal = new();
-            tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
+            tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);   
+
             queryBuilderPrincipal.Append($"CREATE TABLE {tableName} (");
 
             TEntity entity = Activator.CreateInstance<TEntity>() ?? throw new ArgumentNullException(nameof(entity));
@@ -158,6 +161,8 @@ namespace EH.Connection
             {
                 if (prop.Value?.Type is null) { throw new InvalidOperationException($"Error mapping entity '{nameof(entity)}' property types!"); }
                                
+                if(ignoreProps.Contains(prop.Value.Name)) { continue; }
+
                 if (prop.Value.IsCollection.HasValue && !prop.Value.IsCollection.Value) // Not IsCollection
                 {
                     if (prop.Value.IsVirtual.HasValue && prop.Value.IsVirtual.Value) { continue; }
