@@ -10,7 +10,7 @@ namespace EH.Properties
 {
     internal static class ToolsProp
     {
-        internal static Dictionary<string, Property> GetProperties<T>(this T objectEntity, bool includeNotMapped = false, bool ignoreVirtual = true)
+        internal static Dictionary<string, Property> GetProperties<T>(this T objectEntity, bool ignoreVirtual = true, bool includeNotMapped = false)
         {
             if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
 

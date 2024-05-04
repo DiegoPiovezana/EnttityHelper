@@ -25,16 +25,32 @@ namespace EH.Connection
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>String command.</returns>
-        public string? Insert<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
+        public ICollection<string?> Insert<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
         {
-            var properties = ToolsProp.GetProperties(entity);
-            string columns = string.Join(", ", properties.Keys);
-            string values = string.Join("', '", properties.Values);
+            List<string?> queries = new();
+
+            Dictionary<string, Property>? properties = ToolsProp.GetProperties(entity, false, false);
+
+            Dictionary<string, Property>? filteredProperties = properties.Where(p => p.Value.IsVirtual == true).ToDictionary(p => p.Key, p => p.Value);
+            string columns = string.Join(", ", filteredProperties.Keys);
+            string values = string.Join("', '", filteredProperties.Values);
 
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
 
-            return $"INSERT INTO {tableName} ({columns}) VALUES ('{values}')";
+            queries.Add($"INSERT INTO {tableName} ({columns}) VALUES ('{values}')");
 
+
+            Dictionary<string, Property>? InversePropertyProperties = properties.Where(p => p.Value.InverseProperty != null).ToDictionary(p => p.Key, p => p.Value);
+
+            foreach (var item in InversePropertyProperties)
+            {
+                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(tableName, item.Value.Type, replacesTableName);             
+                string id1 = ToolsProp.GetPK((object)entity).Name;
+                string id2 = ToolsProp.GetPK(item.Value.Type)?.Name;
+                queries.Add($"INSERT INTO {tableNameInverseProperty} VALUES ('{id1}','{id2}')"); // ID_{pkEntity1}1 INT, ID_{pkEntity2}2 INT
+            }
+
+            return queries;
         }
 
         /// <summary>
@@ -149,7 +165,7 @@ namespace EH.Connection
 
             ICollection<string?> createsTable = new List<string?>();
             StringBuilder queryBuilderPrincipal = new();
-            tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);   
+            tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
 
             queryBuilderPrincipal.Append($"CREATE TABLE {tableName} (");
 
@@ -160,8 +176,8 @@ namespace EH.Connection
             foreach (KeyValuePair<string, Property> prop in properties)
             {
                 if (prop.Value?.Type is null) { throw new InvalidOperationException($"Error mapping entity '{nameof(entity)}' property types!"); }
-                               
-                if(ignoreProps.Contains(prop.Value.Name)) { continue; }
+
+                if (ignoreProps.Contains(prop.Value.Name)) { continue; }
 
                 if (prop.Value.IsCollection.HasValue && !prop.Value.IsCollection.Value) // Not IsCollection
                 {
@@ -212,10 +228,10 @@ namespace EH.Connection
                     var propsEntity2 = entity2Type.GetProperties();
                     var propPkEntity2 = propsEntity2.Where(prop => Attribute.IsDefined(prop, typeof(System.ComponentModel.DataAnnotations.KeyAttribute)));
                     var pkEntity2 = propPkEntity2?.FirstOrDefault()?.Name ?? propsEntity2.FirstOrDefault().Name;
-                                        
+
                     TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
                     string tableEntity2 = table2Attribute.Name ?? entity2Type.Name;
-                                        
+
                     string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(tableName, entity2Type, replacesTableName);
 
                     string queryCollection =

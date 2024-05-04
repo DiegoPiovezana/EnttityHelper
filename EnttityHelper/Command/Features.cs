@@ -129,8 +129,13 @@ namespace EH.Command
                     }
                 }
 
-                string? insertQuery = _enttityHelper.GetQuery.Insert(entity, _enttityHelper.ReplacesTableName, tableName);
-                return insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1);
+                ICollection<string?> insertsQuery = _enttityHelper.GetQuery.Insert(entity, _enttityHelper.ReplacesTableName, tableName);
+                foreach (string? insertQuery in insertsQuery) 
+                {
+                    insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1);
+                }
+
+                return 
             }
         }
 
