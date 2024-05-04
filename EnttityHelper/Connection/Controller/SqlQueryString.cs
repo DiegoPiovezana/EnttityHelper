@@ -135,7 +135,7 @@ namespace EH.Connection
         /// <summary>
         /// Allows you to obtain the table creation query for TEntity./>.
         /// </summary>
-        /// <typeparam name="TEntity">The type of entity.</typeparam>
+        /// <typeparam name="TEntity">The type of main entity.</typeparam>
         /// <param name="typesSql">Dictionary containing types related to C# code and database data.</param>
         /// <param name="onlyPrimaryTable">(Optional) If true, properties that do not belong to an auxiliary table will be ignored.</param>
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>  
@@ -195,7 +195,7 @@ namespace EH.Connection
                 }
                 else // IsCollection
                 {
-                    if(onlyPrimaryTable) { continue; }
+                    if (onlyPrimaryTable) { continue; }
 
                     var pkEntity1 = pk.Name;
                     string tableEntity1 = tableName;
@@ -203,20 +203,24 @@ namespace EH.Connection
                     var propEntity2 = properties[prop.Value.ForeignKey.Name];
                     Type collection2Type = propEntity2.PropertyInfo.PropertyType;
                     Type entity2Type = collection2Type.GetGenericArguments()[0];
-                    TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
+
                     var propsEntity2 = entity2Type.GetProperties();
                     var propPkEntity2 = propsEntity2.Where(prop => Attribute.IsDefined(prop, typeof(System.ComponentModel.DataAnnotations.KeyAttribute)));
-
                     var pkEntity2 = propPkEntity2?.FirstOrDefault()?.Name ?? propsEntity2.FirstOrDefault().Name;
-                    string tableEntity2 = table2Attribute.Name;
+
+                    
+                    TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
+                    string tableEntity2 = table2Attribute.Name ?? entity2Type.Name;
+                                        
+                    string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(prop.Value, propEntity2, replacesTableName);
 
                     string queryCollection =
-                        $"CREATE TABLE {tableEntity1}To{entity2Type.Name} (" +
+                        $"CREATE TABLE {tableNameManyToMany} (" +
                         $"ID_{pkEntity1}1 INT, ID_{pkEntity2}2 INT, " +
                         $"PRIMARY KEY (ID_{pkEntity1}1, ID_{pkEntity2}2), " +
                         $"FOREIGN KEY (ID_{pkEntity1}1) REFERENCES {tableEntity1}({pkEntity1}), " +
                         $"FOREIGN KEY (ID_{pkEntity2}2) REFERENCES {tableEntity2}({pkEntity2}) " +
-                        $")";                    
+                        $")";
 
                     createsTable.Add(queryCollection);
                 }

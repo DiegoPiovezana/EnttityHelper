@@ -150,7 +150,37 @@ namespace EH.Properties
             return $"{schema}{tableName}";
         }
 
+        internal static string GetTableNameManyToMany(object entity1, object entity2, Dictionary<string, string>? replacesTableName = null)
+        {
+            var type1 = entity1.GetType();
+            TableAttribute? ta1 = GetTableAttribute(type1);
+            string schema1 = ta1?.Schema != null ? $"{ta1.Schema}." : "";
+            string tableName1 = ta1?.Name ?? type1.Name;
+            string tb = $"{schema1}{tableName1}";
 
+            var type2 = entity2.GetType();
+            TableAttribute? ta2 = GetTableAttribute(type2);
+            string tableName2 = ta2?.Name ?? type2.Name;
+
+            if (tb.Length + tableName2.Length <= 30)
+            {
+                tb = $"{tb.ToUpper()}to{tableName2.ToUpper()}";
+            }
+            else if (tb.Length + type2.Name.Length <= 30)
+            {
+                tb = $"{tb.ToUpper()}to{type2.Name.ToUpper()}";
+            }
+            else
+            {
+                string entity2Name = type2.Name.ToUpper();
+                tb = $"{tb.ToUpper()}to{entity2Name}";
+                tb = tb.Substring(0, Math.Min(tb.Length, 20));
+            }
+
+            if (replacesTableName is not null) tb = replacesTableName.Aggregate(tb, (text, replace) => text.Replace(replace.Key, replace.Value));
+            
+            return tb;
+        }
 
 
 

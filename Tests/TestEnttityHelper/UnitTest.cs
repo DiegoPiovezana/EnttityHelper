@@ -232,11 +232,13 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
-                if (eh.CheckIfExist(eh.GetTableName<Group>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Group>()}");
-                eh.CreateTableIfNotExist<Group>(true);
+                //if (eh.CheckIfExist(eh.GetTableName<Group>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Group>()}");
+                //eh.CreateTableIfNotExist<Group>(true);
 
                 //eh.ExecuteNonQuery("DROP TABLE TB_USER");
-                eh.CreateTableIfNotExist<User>(false);
+                //eh.CreateTableIfNotExist<User>(false);
+
+
 
                 Group group1 = new() { Id = 0, Name = "Developers", Description = "Developer Group" };
                 eh.Insert(group1);
