@@ -136,9 +136,11 @@ namespace EH.Properties
 
         internal static TableAttribute? GetTableAttribute(this Type type)
         {
-            object[] attributes = type.GetCustomAttributes(true);
-            foreach (object attribute in attributes) { if (attribute is TableAttribute tbAttribute) { return tbAttribute; } }
-            return default;
+            //object[] attributes = type.GetCustomAttributes(true);
+            //foreach (object attribute in attributes) { if (attribute is TableAttribute tbAttribute) { return tbAttribute; } }
+            //return default;
+
+            return type.GetCustomAttributes(typeof(TableAttribute), true).FirstOrDefault() as TableAttribute;
         }
 
         internal static string GetTableName<TEntity>(Dictionary<string, string>? replacesTableName = null)
