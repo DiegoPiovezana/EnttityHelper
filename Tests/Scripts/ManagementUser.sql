@@ -351,7 +351,10 @@ DROP TABLE TB_USERToGroup;
 
 select * from TB_USER;
 select * from TB_GROUP_USERS;
+select * from TB_USERToGroup;
+select * from TB_USERtoTB_GROUP_USERS;
 
+COMMIT;
 -- -- Nomes das tabelas MxN
 -- TB_USERtoTB_GROUP_USERS -- Se menor que 30 caracteres
 -- TB_USERtoGROUP          -- Se anterior maior que 30 caracteres

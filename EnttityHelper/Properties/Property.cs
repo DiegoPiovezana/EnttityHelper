@@ -65,6 +65,11 @@ namespace EH.Properties
         public ForeignKeyAttribute? ForeignKey { get; set; }
 
         /// <summary>
+        /// The property inverse property.
+        /// </summary>
+        public InversePropertyAttribute? InverseProperty { get; set; }
+
+        /// <summary>
         /// Indicates whether the property is a collection.
         /// </summary>
         public bool? IsCollection { get; set; }
@@ -153,6 +158,8 @@ namespace EH.Properties
             ColumnName = propertyInfo.GetCustomAttribute<ColumnAttribute>()?.Name;
             PrimaryKey = propertyInfo.GetCustomAttribute<KeyAttribute>();
             ForeignKey = propertyInfo.GetCustomAttribute<ForeignKeyAttribute>();
+            InverseProperty = propertyInfo.GetCustomAttribute<InversePropertyAttribute>();
+
             IsNotMapped = propertyInfo.GetCustomAttribute<NotMappedAttribute>() != null;
             IsVirtual = propertyInfo.GetGetMethod()?.IsVirtual ?? false;
             IsRequired = propertyInfo.GetCustomAttribute<RequiredAttribute>() != null;

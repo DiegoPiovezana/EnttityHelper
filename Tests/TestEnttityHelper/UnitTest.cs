@@ -235,8 +235,9 @@ namespace TestEnttityHelper
                 //if (eh.CheckIfExist(eh.GetTableName<Group>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Group>()}");
                 //eh.CreateTableIfNotExist<Group>(true);
 
+                //eh.ExecuteNonQuery("DROP TABLE TB_USERtoTB_GROUP_USERS");
                 //eh.ExecuteNonQuery("DROP TABLE TB_USER");
-                //eh.CreateTableIfNotExist<User>(false);
+                eh.CreateTableIfNotExist<User>(false);
 
 
 
@@ -246,7 +247,9 @@ namespace TestEnttityHelper
                 Group group2 = new() { Id = 1, Name = "Testers", Description = "Tester Group" };
                 eh.Insert(group2);
 
-                User user = new("Diego Piovezana") { Id = 0, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1, IdGroups = new List<int>() { 0, 1 } };
+                User user = new("Diego Piovezana") { Id = 0, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1};
+                List<Group> groupsUser = new() { group1, group2 };
+                user.Groups.ToList().AddRange(groupsUser);
                 eh.Insert(user);
 
                 var carrers = eh.Get<Career>();

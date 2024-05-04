@@ -157,11 +157,11 @@ namespace EH.Connection
             foreach (KeyValuePair<string, Property> prop in properties)
             {
                 if (prop.Value?.Type is null) { throw new InvalidOperationException($"Error mapping entity '{nameof(entity)}' property types!"); }
-
-                if (prop.Value.IsVirtual.HasValue && prop.Value.IsVirtual.Value) { continue; }
-
-                if (prop.Value.IsCollection.HasValue && !prop.Value.IsCollection.Value)
+                               
+                if (prop.Value.IsCollection.HasValue && !prop.Value.IsCollection.Value) // Not IsCollection
                 {
+                    if (prop.Value.IsVirtual.HasValue && prop.Value.IsVirtual.Value) { continue; }
+
                     typesSql.TryGetValue(prop.Value.Type.Name.Trim(), out string value);
 
                     if (value is null)
@@ -200,19 +200,18 @@ namespace EH.Connection
                     var pkEntity1 = pk.Name;
                     string tableEntity1 = tableName;
 
-                    var propEntity2 = properties[prop.Value.ForeignKey.Name];
+                    var propEntity2 = properties[prop.Value.Name];
                     Type collection2Type = propEntity2.PropertyInfo.PropertyType;
                     Type entity2Type = collection2Type.GetGenericArguments()[0];
 
                     var propsEntity2 = entity2Type.GetProperties();
                     var propPkEntity2 = propsEntity2.Where(prop => Attribute.IsDefined(prop, typeof(System.ComponentModel.DataAnnotations.KeyAttribute)));
                     var pkEntity2 = propPkEntity2?.FirstOrDefault()?.Name ?? propsEntity2.FirstOrDefault().Name;
-
-                    
+                                        
                     TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
                     string tableEntity2 = table2Attribute.Name ?? entity2Type.Name;
                                         
-                    string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(prop.Value, propEntity2, replacesTableName);
+                    string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(tableName, entity2Type, replacesTableName);
 
                     string queryCollection =
                         $"CREATE TABLE {tableNameManyToMany} (" +
