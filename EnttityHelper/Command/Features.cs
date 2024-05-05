@@ -78,7 +78,7 @@ namespace EH.Command
             }
         }
 
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null)
+        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false)
         {
             if (entity is DataTable dataTable)
             {
@@ -129,13 +129,16 @@ namespace EH.Command
                     }
                 }
 
-                ICollection<string?> insertsQuery = _enttityHelper.GetQuery.Insert(entity, _enttityHelper.ReplacesTableName, tableName);
-                foreach (string? insertQuery in insertsQuery) 
-                {
-                    insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1);
-                }
+                ICollection<string?> insertsQuery = _enttityHelper.GetQuery.Insert(entity, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties);
+                
+                //int inserts = 0;
+                //foreach (string? insertQuery in insertsQuery)
+                //{
+                //    inserts += insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1);
+                //}
+                int inserts = insertsQuery.Sum(insertQuery => insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1));
 
-                return 
+                return inserts;
             }
         }
 
@@ -282,7 +285,7 @@ namespace EH.Command
             {
                 throw new InvalidOperationException("Table not created!");
             }
-        }        
+        }
 
         public bool CreateTableIfNotExist(DataTable dataTable, string? tableName = null)
         {

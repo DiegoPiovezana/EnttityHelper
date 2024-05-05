@@ -108,21 +108,25 @@ namespace EH.Properties
             return propertiesObj;
         }
 
+        /// <summary>
+        /// Gets the primary key of an entity (class or object).
+        /// </summary> 
         internal static PropertyInfo GetPK<T>(this T obj) where T : class
         {
             try
             {
-                var propPk = obj.GetType().GetProperties().FirstOrDefault(p => Attribute.IsDefined(p, typeof(KeyAttribute)));
+                var objType = obj is Type? obj as Type : obj.GetType();
+                var propPk = objType.GetProperties().FirstOrDefault(p => Attribute.IsDefined(p, typeof(KeyAttribute)));
 
                 if (propPk is null)
                 {
                     if (false) // TODO: Custom Exception List
                     {
-                        throw new InvalidOperationException($"No primary key found in '{obj.GetType().Name}'!");
+                        throw new InvalidOperationException($"No primary key found in '{objType.Name}'!");
                     }
                     else
                     {
-                        propPk = obj.GetType().GetProperties().FirstOrDefault();
+                        propPk = objType.GetProperties().FirstOrDefault();
                     }
                 }
 

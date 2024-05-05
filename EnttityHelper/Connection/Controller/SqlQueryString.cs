@@ -2,6 +2,7 @@
 using EH.Properties;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Diagnostics;
@@ -24,30 +25,50 @@ namespace EH.Connection
         /// <param name="entity">Entity to be inserted into the database.</param>  
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
+        /// <param name="ignoreInversePropertyProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
         /// <returns>String command.</returns>
-        public ICollection<string?> Insert<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
+        public ICollection<string?> Insert<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName = null, string? tableName = null, bool ignoreInversePropertyProperties = false)
         {
             List<string?> queries = new();
 
             Dictionary<string, Property>? properties = ToolsProp.GetProperties(entity, false, false);
 
-            Dictionary<string, Property>? filteredProperties = properties.Where(p => p.Value.IsVirtual == true).ToDictionary(p => p.Key, p => p.Value);
+            Dictionary<string, Property>? filteredProperties = properties.Where(p => p.Value.IsVirtual == false).ToDictionary(p => p.Key, p => p.Value);
             string columns = string.Join(", ", filteredProperties.Keys);
             string values = string.Join("', '", filteredProperties.Values);
-
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
-
             queries.Add($"INSERT INTO {tableName} ({columns}) VALUES ('{values}')");
 
+            if (ignoreInversePropertyProperties) { return queries; }
 
-            Dictionary<string, Property>? InversePropertyProperties = properties.Where(p => p.Value.InverseProperty != null).ToDictionary(p => p.Key, p => p.Value);
-
-            foreach (var item in InversePropertyProperties)
+            Dictionary<string, Property>? inverseProperties = properties.Where(p => p.Value.InverseProperty != null).ToDictionary(p => p.Key, p => p.Value);
+            foreach (var invProp in inverseProperties)
             {
-                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(tableName, item.Value.Type, replacesTableName);             
-                string id1 = ToolsProp.GetPK((object)entity).Name;
-                string id2 = ToolsProp.GetPK(item.Value.Type)?.Name;
-                queries.Add($"INSERT INTO {tableNameInverseProperty} VALUES ('{id1}','{id2}')"); // ID_{pkEntity1}1 INT, ID_{pkEntity2}2 INT
+                Type collectionType = invProp.Value.PropertyInfo.PropertyType;
+                Type entityType = collectionType.GetGenericArguments()[0];
+                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(tableName, entityType, replacesTableName);
+
+                if (invProp.Value.IsCollection != true) { throw new InvalidOperationException("The InverseProperty property must be a collection."); }
+
+                string idName1 = ToolsProp.GetPK((object)entity).Name; // Ex: User
+                string idName2 = ToolsProp.GetPK((object)entityType).Name;  // Ex: Group
+
+                var itemsCollection = (IEnumerable<object>)invProp.Value.Value;
+                if (itemsCollection is null) { continue; } // If the collection is null, there is no need to insert anything.
+
+                foreach (var item in itemsCollection)
+                {
+                    PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
+                    PropertyInfo prop2 = item.GetType().GetProperty(idName2);
+
+                    if (prop2 != null)
+                    {
+                        object idValue1 = prop1.GetValue(entity);
+                        object idValue2 = prop2.GetValue(item);
+
+                        queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idName1}1, ID_{idName2}2) VALUES ('{idValue1}', '{idValue2}')"); // ID_{pkEntity1}1 INT, ID_{pkEntity2}2 INT
+                    }
+                }
             }
 
             return queries;

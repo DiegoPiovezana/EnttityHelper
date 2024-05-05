@@ -1,5 +1,4 @@
-﻿using EH.Connection;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 
@@ -15,11 +14,12 @@ namespace EH.Command
         /// <param name="namePropUnique">(Optional) Name of the property to be considered as a uniqueness criterion.</param> 
         /// <param name="createTable">(Optional) If the table that will receive the insertion does not exist, it can be created.</param> 
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
+        /// <param name="ignoreInversePropertyProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
         /// <returns>
         /// True, if one or more entities are inserted into the database.
         /// <para>If the return is negative, it indicates that the insertion did not happen due to some established criteria.</para>
         /// </returns>
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null);
+        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false);
 
         ///// <summary>
         ///// Inserts data from a DataTable into the specified database table.
@@ -143,7 +143,7 @@ namespace EH.Command
         /// <returns>True if the table is created successfully, otherwise False.</returns>
         /// <exception cref="InvalidOperationException">An exception is thrown if an error occurs while attempting to create the table.</exception>
         public bool CreateTable(DataTable dataTable, string? tableName = null);
-              
+
         /// <summary>
         /// Creates a table for the specified DataTable if it does not already exist in the database.
         /// </summary>

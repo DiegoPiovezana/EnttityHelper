@@ -352,7 +352,7 @@ DROP TABLE TB_USERToGroup;
 
 select * from TB_USER;
 select * from TB_GROUP_USERS;
-select * from TB_USERToGroup;
+-- select * from TB_USERToGroup;
 select * from TB_USERtoTB_GROUP_USERS;
 
 COMMIT;
@@ -360,3 +360,10 @@ COMMIT;
 -- TB_USERtoTB_GROUP_USERS -- Se menor que 30 caracteres
 -- TB_USERtoGROUP          -- Se anterior maior que 30 caracteres
 
+DELETE FROM TB_USER;
+INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer) VALUES ('1', 'Diego Piovezana', '@DiegoPiovezana', '05/05/2024 03:21:14', '1');
+DELETE FROM TB_USERtoTB_GROUP_USERS;
+INSERT INTO TB_USERtoTB_GROUP_USERS (ID_ID1,ID_ID2) VALUES ('1','1');
+INSERT INTO TB_USERtoTB_GROUP_USERS (ID_ID1,ID_ID2) VALUES ('1','2');
+
+ROLLBACK;

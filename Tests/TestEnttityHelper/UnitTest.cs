@@ -242,17 +242,18 @@ namespace TestEnttityHelper
 
 
                 Group group1 = new() { Id = 1, Name = "Developers", Description = "Developer Group" };
-                eh.Insert(group1);
+                //eh.Insert(group1);
 
                 Group group2 = new() { Id = 2, Name = "Testers", Description = "Tester Group" };
-                eh.Insert(group2);
+                //eh.Insert(group2);
 
+                eh.ExecuteNonQuery("DELETE FROM TB_USER");
                 User user = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                List<Group> groupsUser = new() { group1, group2 };                
+                List<Group> groupsUser = new() { group1, group2 };
                 foreach (var group in groupsUser) { user.Groups.Add(group); }
                 eh.Insert(user);
 
-                var carrers = eh.Get<Career>();
+                //var carrers = eh.Get<Career>();
                 var users = eh.Get<User>();
 
                 Assert.Pass();

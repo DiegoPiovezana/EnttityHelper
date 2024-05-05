@@ -60,11 +60,11 @@ namespace EH
 
 
         /// <inheritdoc/>  
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null)
+        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false)
         {
             try
             {
-                return _features.Insert(entity, namePropUnique, createTable, tableName);
+                return _features.Insert(entity, namePropUnique, createTable, tableName, ignoreInversePropertyProperties);
             }
             catch (Exception)
             {
