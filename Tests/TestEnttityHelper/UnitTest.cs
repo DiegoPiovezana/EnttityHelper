@@ -232,6 +232,7 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
+                // CREATE TABLE
                 //if (eh.CheckIfExist(eh.GetTableName<Group>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Group>()}");
                 //eh.CreateTableIfNotExist<Group>(true);
 
@@ -240,21 +241,31 @@ namespace TestEnttityHelper
                 //eh.CreateTableIfNotExist<User>(false);
 
 
-
-                Group group1 = new() { Id = 1, Name = "Developers", Description = "Developer Group" };
+                // INSERT
+                //Group group1 = new() { Id = 1, Name = "Developers", Description = "Developer Group" };
                 //eh.Insert(group1);
 
-                Group group2 = new() { Id = 2, Name = "Testers", Description = "Tester Group" };
+                //Group group2 = new() { Id = 2, Name = "Testers", Description = "Tester Group" };
                 //eh.Insert(group2);
 
-                eh.ExecuteNonQuery("DELETE FROM TB_USER");
-                User user = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                List<Group> groupsUser = new() { group1, group2 };
-                foreach (var group in groupsUser) { user.Groups.Add(group); }
-                eh.Insert(user);
+                //eh.ExecuteNonQuery("DELETE FROM TB_USER");
+                //User user = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                //List<Group> groupsUser = new() { group1, group2 };
+                //foreach (var group in groupsUser) { user.Groups.Add(group); }
+                //eh.Insert(user);
 
-                //var carrers = eh.Get<Career>();
+                // GET
                 var users = eh.Get<User>();
+
+
+                // UPDATE
+                User userUpdate = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+
+
+
+
+
+                var carrers = eh.Get<Career>();
 
                 Assert.Pass();
             }

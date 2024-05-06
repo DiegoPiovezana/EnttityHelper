@@ -84,6 +84,8 @@ namespace EH.Properties
             {
                 if (prop.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
 
+                if (prop.GetCustomAttribute<InversePropertyAttribute>() != null) { continue; }
+
                 if (prop.GetCustomAttribute<ForeignKeyAttribute>() != null)
                 {
                     var entityNameFk = prop.GetCustomAttribute<ForeignKeyAttribute>().Name;
@@ -107,6 +109,57 @@ namespace EH.Properties
 
             return propertiesObj;
         }
+
+        /// <summary>
+        /// Gets InverseProperty entities.
+        /// </summary>   
+        internal static Dictionary<object, object> GetInverseProperties<T>(this T objectEntity)
+        {
+            if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
+
+            PropertyInfo[] properties = objectEntity.GetType().GetProperties();
+            Dictionary<object, object> propertiesInverseProperty = new();         
+
+            foreach (PropertyInfo prop in properties)
+            {
+                if (prop.GetCustomAttribute<InversePropertyAttribute>() is null) { continue; }
+                               
+                Type collectionType = prop.PropertyType;            
+                if (collectionType.IsGenericType && collectionType.GetGenericTypeDefinition() == typeof(ICollection<>))
+                {                   
+                    Type entityType = collectionType.GetGenericArguments()[0];              
+                    var collectionInstance = (ICollection<object>)prop.GetValue(objectEntity);    
+                    propertiesInverseProperty.Add(prop.Name, collectionInstance);
+                }
+            }
+
+            return propertiesInverseProperty;
+
+
+            //if (prop.GetCustomAttribute<ForeignKeyAttribute>() is null)
+            //    {
+            //        var entityNameFk = prop.GetCustomAttribute<ForeignKeyAttribute>().Name;
+            //        var idFk = prop.GetValue(objectEntity, null);
+            //        propertiesInverseProperty.Add(entityNameFk, idFk);
+            //    }
+
+            //    if (prop.GetGetMethod().IsVirtual)
+            //    {
+            //        var obj = Activator.CreateInstance(prop.PropertyType);
+            //        if (obj != null) propertiesInverseProperty.Add(prop.Name, obj);
+            //    }
+            //}
+
+            //foreach (var propFkKey in propertiesInverseProperty.Keys.ToList())
+            //{
+            //    var propFk = propertiesVirtual[propFkKey];
+            //    propFk.GetType().GetProperty(GetPK(propFk).Name).SetValue(propFk, propertiesInverseProperty[propFkKey]);
+            //    propertiesObj.Add(propFkKey, propFk);
+            //}
+
+            //return propertiesObj;
+        }
+
 
         /// <summary>
         /// Gets the primary key of an entity (class or object).

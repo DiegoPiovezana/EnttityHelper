@@ -130,7 +130,7 @@ namespace EH.Command
                 }
 
                 ICollection<string?> insertsQuery = _enttityHelper.GetQuery.Insert(entity, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties);
-                
+
                 //int inserts = 0;
                 //foreach (string? insertQuery in insertsQuery)
                 //{
@@ -330,7 +330,12 @@ namespace EH.Command
         public bool IncludeAll<TEntity>(List<TEntity>? entities)
         {
             if (entities == null || entities.Count == 0) return false;
-            foreach (TEntity entity in entities) { new Entities.Inclusions(_enttityHelper).IncludeForeignKeyEntities(entity); }
+            Entities.Inclusions? inclusions = new (_enttityHelper);
+            foreach (TEntity entity in entities)
+            {
+                inclusions.IncludeForeignKeyEntities(entity);
+                inclusions.IncludeInverseProperties(entity);
+            }
             return true;
         }
 
@@ -338,6 +343,13 @@ namespace EH.Command
         {
             if (entity == null) return false;
             new Entities.Inclusions(_enttityHelper).IncludeForeignKeyEntities(entity, fkName);
+            return true;
+        }
+
+        public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyOnly)
+        {
+            if (entity == null) return false;
+            new Entities.Inclusions(_enttityHelper).IncludeInverseProperties(entity, inversePropertyOnly);
             return true;
         }
 

@@ -367,3 +367,26 @@ INSERT INTO TB_USERtoTB_GROUP_USERS (ID_ID1,ID_ID2) VALUES ('1','1');
 INSERT INTO TB_USERtoTB_GROUP_USERS (ID_ID1,ID_ID2) VALUES ('1','2');
 
 ROLLBACK;
+
+
+---------------------
+-- Get
+
+
+
+
+
+
+----------------------
+-- UPDATE
+
+
+
+
+
+
+
+-----------------------------------------------------
+
+select * from TB_CAREERS;
+select * from TB_USER;
