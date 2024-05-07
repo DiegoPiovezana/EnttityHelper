@@ -337,7 +337,14 @@ SELECT * FROM SHEET8;
 
 SELECT * FROM TEST_LINKSELECT;
 
+
+---------------------------------------------------------------------------------------------------
+
 -- MxN
+
+---------------------
+-- Create table
+
 CREATE TABLE TB_USERToGroup 
 (
 ID_Id1 INT, 
@@ -365,6 +372,7 @@ INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer) VALUES ('1', 'Diego
 DELETE FROM TB_USERtoTB_GROUP_USERS;
 INSERT INTO TB_USERtoTB_GROUP_USERS (ID_ID1,ID_ID2) VALUES ('1','1');
 INSERT INTO TB_USERtoTB_GROUP_USERS (ID_ID1,ID_ID2) VALUES ('1','2');
+DROP TABLE TB_USERtoTB_GROUP_USERS;
 
 ROLLBACK;
 
@@ -372,7 +380,7 @@ ROLLBACK;
 ---------------------
 -- Get
 
-
+SELECT * FROM TB_USERtoTB_GROUP_USERS WHERE (ID_Id1='1');
 
 
 

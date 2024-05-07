@@ -24,10 +24,10 @@ namespace EH.Connection
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entity">Entity to be inserted into the database.</param>  
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>
-        /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
+        /// <param name="tableName1">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <param name="ignoreInversePropertyProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
         /// <returns>String command.</returns>
-        public ICollection<string?> Insert<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName = null, string? tableName = null, bool ignoreInversePropertyProperties = false)
+        public ICollection<string?> Insert<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName = null, string? tableName1 = null, bool ignoreInversePropertyProperties = false)
         {
             List<string?> queries = new();
 
@@ -36,8 +36,8 @@ namespace EH.Connection
             Dictionary<string, Property>? filteredProperties = properties.Where(p => p.Value.IsVirtual == false).ToDictionary(p => p.Key, p => p.Value);
             string columns = string.Join(", ", filteredProperties.Keys);
             string values = string.Join("', '", filteredProperties.Values);
-            tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
-            queries.Add($"INSERT INTO {tableName} ({columns}) VALUES ('{values}')");
+            tableName1 ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
+            queries.Add($"INSERT INTO {tableName1} ({columns}) VALUES ('{values}')");
 
             if (ignoreInversePropertyProperties) { return queries; }
 
@@ -45,13 +45,15 @@ namespace EH.Connection
             foreach (var invProp in inverseProperties)
             {
                 Type collectionType = invProp.Value.PropertyInfo.PropertyType;
-                Type entityType = collectionType.GetGenericArguments()[0];
-                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(tableName, entityType, replacesTableName);
+                Type entity2Type = collectionType.GetGenericArguments()[0];
+                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(tableName1, entity2Type, replacesTableName);
 
                 if (invProp.Value.IsCollection != true) { throw new InvalidOperationException("The InverseProperty property must be a collection."); }
 
+                var tableName2 = ToolsProp.GetTableName(entity, replacesTableName);
+
                 string idName1 = ToolsProp.GetPK((object)entity).Name; // Ex: User
-                string idName2 = ToolsProp.GetPK((object)entityType).Name;  // Ex: Group
+                string idName2 = ToolsProp.GetPK((object)entity2Type).Name;  // Ex: Group
 
                 var itemsCollection = (IEnumerable<object>)invProp.Value.Value;
                 if (itemsCollection is null) { continue; } // If the collection is null, there is no need to insert anything.
@@ -63,10 +65,14 @@ namespace EH.Connection
 
                     if (prop2 != null)
                     {
+                        string idTb1 = tableName1.Substring(0, Math.Min(tableName1.Length, 27));
+                        string idTb2 = tableName2.Substring(0, Math.Min(tableName2.Length, 27));
+
                         object idValue1 = prop1.GetValue(entity);
                         object idValue2 = prop2.GetValue(item);
 
-                        queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idName1}1, ID_{idName2}2) VALUES ('{idValue1}', '{idValue2}')"); // ID_{pkEntity1}1 INT, ID_{pkEntity2}2 INT
+                        //queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idName1}1, ID_{idName2}2) VALUES ('{idValue1}', '{idValue2}')"); // ID_{pkEntity1}1 INT, ID_{pkEntity2}2 INT
+                        queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
                     }
                 }
             }
@@ -253,14 +259,17 @@ namespace EH.Connection
                     TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
                     string tableEntity2 = table2Attribute.Name ?? entity2Type.Name;
 
-                    string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(tableName, entity2Type, replacesTableName);
+                    string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(tableEntity1, entity2Type, replacesTableName);
+
+                    string idTb1 = tableEntity1.Substring(0, Math.Min(tableEntity1.Length, 27));
+                    string idTb2 = tableEntity2.Substring(0, Math.Min(tableEntity2.Length, 27));
 
                     string queryCollection =
                         $"CREATE TABLE {tableNameManyToMany} (" +
-                        $"ID_{pkEntity1}1 INT, ID_{pkEntity2}2 INT, " +
-                        $"PRIMARY KEY (ID_{pkEntity1}1, ID_{pkEntity2}2), " +
-                        $"FOREIGN KEY (ID_{pkEntity1}1) REFERENCES {tableEntity1}({pkEntity1}), " +
-                        $"FOREIGN KEY (ID_{pkEntity2}2) REFERENCES {tableEntity2}({pkEntity2}) " +
+                        $"ID_{tableEntity1} INT, ID_{tableEntity2} INT, " +
+                        $"PRIMARY KEY (ID_{idTb1}, ID_{idTb2}), " +
+                        $"FOREIGN KEY (ID_{idTb1}) REFERENCES {idTb1}({pkEntity1}), " +
+                        $"FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2}({pkEntity2}) " +
                         $")";
 
                     createsTable.Add(queryCollection);

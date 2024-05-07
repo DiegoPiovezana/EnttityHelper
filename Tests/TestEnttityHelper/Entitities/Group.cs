@@ -10,7 +10,7 @@ namespace TestEH_UnitTest.Entitities
         [Key()] public int Id { get; internal set; }
         [Required] public string Name { get; internal set; }
         [Required] public string Description { get; internal set; }
-        [InverseProperty(nameof(User.Groups))] public virtual ICollection<User> Users { get; internal set; } = new List<User>();
+        //[InverseProperty(nameof(User.Groups))] public virtual ICollection<User> Users { get; internal set; } = new List<User>();
 
     }
 }

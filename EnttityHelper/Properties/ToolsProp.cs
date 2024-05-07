@@ -1,10 +1,12 @@
-﻿using System;
+﻿using EH.Command;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace EH.Properties
 {
@@ -113,51 +115,90 @@ namespace EH.Properties
         /// <summary>
         /// Gets InverseProperty entities.
         /// </summary>   
-        internal static Dictionary<object, object> GetInverseProperties<T>(this T objectEntity)
+        internal static Dictionary<object, object>? GetInverseProperties<T>(this T objectEntity, EnttityHelper eh)
         {
-            if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
-
-            PropertyInfo[] properties = objectEntity.GetType().GetProperties();
-            Dictionary<object, object> propertiesInverseProperty = new();         
-
-            foreach (PropertyInfo prop in properties)
+            try
             {
-                if (prop.GetCustomAttribute<InversePropertyAttribute>() is null) { continue; }
-                               
-                Type collectionType = prop.PropertyType;            
-                if (collectionType.IsGenericType && collectionType.GetGenericTypeDefinition() == typeof(ICollection<>))
-                {                   
-                    Type entityType = collectionType.GetGenericArguments()[0];              
-                    var collectionInstance = (ICollection<object>)prop.GetValue(objectEntity);    
-                    propertiesInverseProperty.Add(prop.Name, collectionInstance);
+                if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
+
+                PropertyInfo[] properties = objectEntity.GetType().GetProperties();
+                Dictionary<object, object> propertiesInverseProperty = new();
+
+                foreach (PropertyInfo prop in properties)
+                {
+                    if (prop.GetCustomAttribute<InversePropertyAttribute>() is null) { continue; }
+
+                    Type collectionType = prop.PropertyType;
+                    if (collectionType.IsGenericType && collectionType.GetGenericTypeDefinition() == typeof(ICollection<>))
+                    {
+                        Type entityType = collectionType.GetGenericArguments()[0];
+
+                        if (entityType.IsClass && !entityType.IsAbstract)
+                        {
+                            Type listType = typeof(List<>).MakeGenericType(entityType);
+                            var listInstance = Activator.CreateInstance(listType);
+
+                            Features features = new(eh);
+                            var getMethod = typeof(Features).GetMethod("Get").MakeGenericMethod(entityType);
+                            //var entitiesToAdd = (IEnumerable<object>)getMethod.Invoke(features, new object[] { true, $"{prop.GetCustomAttribute<InversePropertyAttribute>().Property}='{prop.GetValue(objectEntity)}'", null });
+
+                            //var selectMethod = features.GetType().GetMethod("ExecuteSelect").MakeGenericMethod(entityType);
+
+                            string nameTable = GetTableNameManyToMany(GetTableName<T>(), entityType);
+                            string idName1 = GetPK((object)objectEntity).Name;
+                            PropertyInfo idProp1 = objectEntity.GetType().GetProperty(idName1);
+                            object idValue1 = idProp1.GetValue(objectEntity);
+
+                            var entitiesToAdd = (IEnumerable<object>)getMethod.Invoke(features, new object[] { false, $"ID_{idName1}1='{idValue1}'", nameTable }); // ID_{pkEntity1}1
+
+                            var addMethod = collectionType.GetMethod("Add");
+
+                            foreach (var item in entitiesToAdd)
+                            {
+                                addMethod.Invoke(listInstance, new object[] { item });
+                            }
+
+                            //var collectionInstance = (ICollection<object>)prop.GetValue(objectEntity);
+                            //var collectionInstance = Activator.CreateInstance(entityType);
+                            //var collectionGroupInstance = (ICollection<Group>)listInstance;
+                            var collectionInstance = (ICollection<object>)listInstance;
+
+                            propertiesInverseProperty.Add(prop.Name, collectionInstance);
+                        }
+                    }
                 }
+
+                return propertiesInverseProperty;
+
+
+                //if (prop.GetCustomAttribute<ForeignKeyAttribute>() is null)
+                //    {
+                //        var entityNameFk = prop.GetCustomAttribute<ForeignKeyAttribute>().Name;
+                //        var idFk = prop.GetValue(objectEntity, null);
+                //        propertiesInverseProperty.Add(entityNameFk, idFk);
+                //    }
+
+                //    if (prop.GetGetMethod().IsVirtual)
+                //    {
+                //        var obj = Activator.CreateInstance(prop.PropertyType);
+                //        if (obj != null) propertiesInverseProperty.Add(prop.Name, obj);
+                //    }
+                //}
+
+                //foreach (var propFkKey in propertiesInverseProperty.Keys.ToList())
+                //{
+                //    var propFk = propertiesVirtual[propFkKey];
+                //    propFk.GetType().GetProperty(GetPK(propFk).Name).SetValue(propFk, propertiesInverseProperty[propFkKey]);
+                //    propertiesObj.Add(propFkKey, propFk);
+                //}
+
+                //return propertiesObj;
             }
-
-            return propertiesInverseProperty;
-
-
-            //if (prop.GetCustomAttribute<ForeignKeyAttribute>() is null)
-            //    {
-            //        var entityNameFk = prop.GetCustomAttribute<ForeignKeyAttribute>().Name;
-            //        var idFk = prop.GetValue(objectEntity, null);
-            //        propertiesInverseProperty.Add(entityNameFk, idFk);
-            //    }
-
-            //    if (prop.GetGetMethod().IsVirtual)
-            //    {
-            //        var obj = Activator.CreateInstance(prop.PropertyType);
-            //        if (obj != null) propertiesInverseProperty.Add(prop.Name, obj);
-            //    }
-            //}
-
-            //foreach (var propFkKey in propertiesInverseProperty.Keys.ToList())
-            //{
-            //    var propFk = propertiesVirtual[propFkKey];
-            //    propFk.GetType().GetProperty(GetPK(propFk).Name).SetValue(propFk, propertiesInverseProperty[propFkKey]);
-            //    propertiesObj.Add(propFkKey, propFk);
-            //}
-
-            //return propertiesObj;
+            catch (Exception)
+            {
+                //throw;
+                return null;
+            }
         }
 
 
@@ -168,7 +209,7 @@ namespace EH.Properties
         {
             try
             {
-                var objType = obj is Type? obj as Type : obj.GetType();
+                var objType = obj is Type ? obj as Type : obj.GetType();
                 var propPk = objType.GetProperties().FirstOrDefault(p => Attribute.IsDefined(p, typeof(KeyAttribute)));
 
                 if (propPk is null)
@@ -209,11 +250,23 @@ namespace EH.Properties
             return $"{schema}{tableName}";
         }
 
+        internal static string GetTableName<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName = null)
+        {
+            if (entity is null) return null;
+            TableAttribute? ta = GetTableAttribute(typeof(TEntity));
+            string schema = ta?.Schema != null ? $"{ta.Schema}." : "";
+            string tableName = ta?.Name ?? typeof(TEntity).Name;
+            if (replacesTableName is not null) tableName = replacesTableName.Aggregate(tableName, (text, replace) => text.Replace(replace.Key, replace.Value));
+            return $"{schema}{tableName}";
+        }
+
         internal static string GetTableNameManyToMany(string nameTbEntity1, Type entity2, Dictionary<string, string>? replacesTableName = null)
         {
-            string tb = nameTbEntity1;           
-            TableAttribute? ta2 = GetTableAttribute(entity2);
-            string tableName2 = ta2?.Name ?? entity2.Name;
+            string tb = nameTbEntity1;
+            //TableAttribute? ta2 = GetTableAttribute(entity2);
+            //string tableName2 = ta2?.Name ?? entity2.Name;
+
+            string tableName2 = GetTableName(entity2);
 
             if (tb.Length + tableName2.Length <= 30)
             {
@@ -226,7 +279,7 @@ namespace EH.Properties
             else
             {
                 string entity2Name = entity2.Name.ToUpper();
-                tb = $"{tb.ToUpper()}to{entity2Name}";                
+                tb = $"{tb.ToUpper()}to{entity2Name}";
             }
 
             if (replacesTableName is not null) tb = replacesTableName.Aggregate(tb, (text, replace) => text.Replace(replace.Key, replace.Value));

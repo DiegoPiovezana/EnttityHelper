@@ -232,6 +232,7 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
+
                 // CREATE TABLE
                 //if (eh.CheckIfExist(eh.GetTableName<Group>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Group>()}");
                 //eh.CreateTableIfNotExist<Group>(true);
@@ -254,6 +255,13 @@ namespace TestEnttityHelper
                 //foreach (var group in groupsUser) { user.Groups.Add(group); }
                 //eh.Insert(user);
 
+                // TODO: Entity FK necessary only for the Get (include)
+                //eh.CreateTableIfNotExist<Career>();
+                //Career carrer = new() { IdCareer = 1, Name = "Pleno", CareerLevel = 2, Active = true };
+                //eh.Insert(carrer);
+                //var carrers = eh.Get<Career>();
+
+
                 // GET
                 var users = eh.Get<User>();
 
@@ -265,7 +273,6 @@ namespace TestEnttityHelper
 
 
 
-                var carrers = eh.Get<Career>();
 
                 Assert.Pass();
             }

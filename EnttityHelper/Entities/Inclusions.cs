@@ -91,7 +91,7 @@ namespace EH.Entities
         {
             if (entity == null) return;
 
-            var propertiesInverse = ToolsProp.GetInverseProperties(entity);
+            var propertiesInverse = ToolsProp.GetInverseProperties(entity, _enttityHelper);
             if (propertiesInverse == null || propertiesInverse.Count == 0)
             {
                 Debug.WriteLine($"No inverse properties found in '{entity}'.");
@@ -117,28 +117,28 @@ namespace EH.Entities
                         var pkValue = pk.GetValue(pair.Value, null);
                         if (pkValue == null || string.IsNullOrEmpty(pkValue.ToString().Trim()) || pk.PropertyType.IsPrimitive && pkValue.Equals(Convert.ChangeType(0, pkValue.GetType()))) continue;
 
-                        // Get the property type of the foreign key
+                        // Obtém o tipo da chave estrangeira
                         Type? fkEntityType = propertyToUpdate.PropertyType;
 
-                        // Check if it is a generic collection type
+                        // Verifica se é um tipo de coleção genérica
                         bool isCollection = typeof(ICollection<>).IsAssignableFrom(fkEntityType);
 
-                        // Get the actual type of the elements in the collection (if applicable)
+                        // Obtém o tipo real dos elementos na coleção (se aplicável)
                         Type elementType = isCollection ? fkEntityType.GetGenericArguments()[0] : fkEntityType;
 
-                        // Use the correct generic type for the Get method
+                        // Usa o tipo genérico correto para o método Get
                         MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(elementType);
 
-                        // Retrieve the foreign key entities
+                        // Recupera as entidades da chave estrangeira
                         IEnumerable<object> entityFKList = (IEnumerable<object>)genericGetMethod.Invoke(_enttityHelper, new object[] { true, $"{pk.Name}='{pkValue}'", null });
 
-                        // Cast each entity to the actual type
+                        // Converte cada entidade para o tipo real
                         IEnumerable<object> castEntityFKList = entityFKList.Cast<object>();
 
-                        // Handle collections and single entities
+                        // Manipula coleções e entidades individuais
                         if (isCollection)
                         {
-                            // Iterate through the casted entity list and add each entity to the collection
+                            // Itera pela lista de entidades convertidas e adiciona cada entidade à coleção
                             foreach (var entityFK in castEntityFKList)
                             {
                                 if (propertyToUpdate.GetValue(entity) is ICollection<object> collection)
@@ -149,7 +149,7 @@ namespace EH.Entities
                         }
                         else
                         {
-                            // Assign the first element of the casted entity list to the property
+                            // Atribui o primeiro elemento da lista de entidades convertidas à propriedade
                             var entityFK = castEntityFKList.FirstOrDefault();
                             propertyToUpdate.SetValue(entity, entityFK);
                         }
