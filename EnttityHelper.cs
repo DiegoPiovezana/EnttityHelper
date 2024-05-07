@@ -241,11 +241,24 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public DataTable? ExecuteSelectDt<TEntity>(string? query)
+        public DataTable? ExecuteSelectDt(string? query)
         {
             try
             {
-                return _features.ExecuteSelectDt<TEntity>(query);
+                return _features.ExecuteSelectDt(query);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? ExecuteSelectScalar(string? query)
+        {
+            try
+            {
+                return _features.ExecuteSelectScalar(query);
             }
             catch (Exception)
             {

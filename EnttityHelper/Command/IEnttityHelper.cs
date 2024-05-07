@@ -185,7 +185,19 @@ namespace EH.Command
         /// <returns>
         /// A DataTable containing the result of the query, or null if the query execution fails.
         /// </returns>
-        public DataTable? ExecuteSelectDt<TEntity>(string? query);
+        public DataTable? ExecuteSelectDt(string? query);
+
+        /// <summary>
+        /// Executes a SQL query and returns the scalar result as a string.
+        /// </summary>
+        /// <param name="query">The SQL query to execute.</param>
+        /// <returns>
+        /// A string representing the scalar result of the query. Returns an empty string if the result is null.
+        /// Returns null if the connection to the database cannot be established.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">Thrown when the provided query is null or empty.</exception>
+        /// <exception cref="Exception">Thrown when an error occurs during query execution.</exception>
+        public string? ExecuteSelectScalar(string? query);
 
         /// <summary>
         /// Include all FK entities.

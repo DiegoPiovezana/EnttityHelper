@@ -313,26 +313,49 @@ namespace EH.Command
 
         public DataTable? ExecuteSelectDt(string? query)
         {
-            if (Commands.Execute.ExecuteCommand<IDataReader>(_enttityHelper.DbContext, query, false, true) is not IDataReader resultSelect) return null;
-            DataTable dtResult = resultSelect.ToDataTable();
-            resultSelect.Close();
-            _enttityHelper.DbContext.CloseConnection();
-            return dtResult;
+            try
+            {
+                if (Commands.Execute.ExecuteCommand<IDataReader>(_enttityHelper.DbContext, query, false, true) is not IDataReader resultSelect) return null;
+                DataTable dtResult = resultSelect.ToDataTable();
+                resultSelect.Close();
+                _enttityHelper.DbContext.CloseConnection();
+                return dtResult;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                if (_enttityHelper.DbContext?.IDbConnection is not null && _enttityHelper.DbContext.IDbConnection.State == ConnectionState.Open) _enttityHelper.DbContext.IDbConnection.Close();
+            }
         }
 
-        public string? ExecuteSelectScalar(Database database, string query)
+        public string? ExecuteSelectScalar(string? query)
         {
-           var connection = database.CreateOpenConnection();
-
-            if (connection != null)
+            try
             {
-                var commando = connection.CreateCommand();
-                commando.CommandText = query;
-                var result = commando.ExecuteScalar();
-                connection.Close();
-                return result?.ToString() ?? "";              
+                if (string.IsNullOrEmpty(query?.Trim())) throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
+                var connection = _enttityHelper.DbContext.CreateOpenConnection();
+
+                if (connection != null)
+                {
+                    var commando = connection.CreateCommand();
+                    commando.CommandText = query;
+                    var result = commando.ExecuteScalar();
+                    connection.Close();
+                    return result?.ToString() ?? "";
+                }
+                return null;
             }
-            return null;
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                if (_enttityHelper.DbContext.IDbConnection is not null && _enttityHelper.DbContext.IDbConnection.State == ConnectionState.Open) _enttityHelper.DbContext.IDbConnection.Close();
+            }
         }
 
         public bool IncludeAll<TEntity>(TEntity entity)
