@@ -232,6 +232,12 @@ namespace EH.Command
         public string? GetTableName<TEntity>();
 
         /// <summary>
+        /// Gets the table name associated with the specified entity.
+        /// </summary>      
+        /// <returns>The name of the table associated with the entity.</returns>
+        public string? GetTableName<TEntity>(TEntity entity);
+
+        /// <summary>
         /// Gets the name of the primary key for the specified entity.
         /// </summary>
         /// <typeparam name="TEntity">The type of the entity.</typeparam>
