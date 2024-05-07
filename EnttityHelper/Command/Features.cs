@@ -311,15 +311,28 @@ namespace EH.Command
             return (List<TEntity>?)Commands.Execute.ExecuteCommand<TEntity>(_enttityHelper.DbContext, query);
         }
 
-        public DataTable? ExecuteSelectDt<TEntity>(string? query)
+        public DataTable? ExecuteSelectDt(string? query)
         {
-            if (Commands.Execute.ExecuteCommand<TEntity>(_enttityHelper.DbContext, query, false, true) is not IDataReader resultSelect) return null;
-
+            if (Commands.Execute.ExecuteCommand<IDataReader>(_enttityHelper.DbContext, query, false, true) is not IDataReader resultSelect) return null;
             DataTable dtResult = resultSelect.ToDataTable();
-
             resultSelect.Close();
             _enttityHelper.DbContext.CloseConnection();
             return dtResult;
+        }
+
+        public string? ExecuteSelectScalar(Database database, string query)
+        {
+           var connection = database.CreateOpenConnection();
+
+            if (connection != null)
+            {
+                var commando = connection.CreateCommand();
+                commando.CommandText = query;
+                var result = commando.ExecuteScalar();
+                connection.Close();
+                return result?.ToString() ?? "";              
+            }
+            return null;
         }
 
         public bool IncludeAll<TEntity>(TEntity entity)
@@ -330,7 +343,7 @@ namespace EH.Command
         public bool IncludeAll<TEntity>(List<TEntity>? entities)
         {
             if (entities == null || entities.Count == 0) return false;
-            Entities.Inclusions? inclusions = new (_enttityHelper);
+            Entities.Inclusions? inclusions = new(_enttityHelper);
             foreach (TEntity entity in entities)
             {
                 inclusions.IncludeForeignKeyEntities(entity);
