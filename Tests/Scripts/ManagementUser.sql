@@ -338,9 +338,36 @@ SELECT * FROM SHEET8;
 SELECT * FROM TEST_LINKSELECT;
 
 
+SELECT 
+    object_name AS nome_tabela,
+    created AS data_criacao
+FROM 
+    all_objects
+WHERE 
+    object_type = 'TABLE'
+    AND created >= SYSDATE - INTERVAL '10' MINUTE;
+
+
 ---------------------------------------------------------------------------------------------------
 
 -- MxN
+
+
+-- PK em uso
+SELECT
+    uc.constraint_name AS nome_constraint,
+    uc.table_name AS tabela_referenciante,
+    ucc.column_name AS coluna_referenciante
+FROM
+    all_cons_columns ucc
+JOIN
+    all_constraints uc ON ucc.constraint_name = uc.constraint_name
+WHERE
+    uc.constraint_type = 'R' -- Apenas chaves estrangeiras
+    AND uc.r_owner = (SELECT owner FROM all_tables WHERE table_name = 'TB_USER') -- Proprietário da tabela TB_USER
+    AND uc.r_constraint_name = (SELECT constraint_name FROM all_constraints WHERE constraint_type = 'P' AND table_name = 'TB_USER'); -- Nome da constraint da chave primária da tabela TB_USER
+
+
 
 ---------------------
 -- Create table
@@ -373,6 +400,8 @@ DELETE FROM TB_USERtoTB_GROUP_USERS;
 INSERT INTO TB_USERtoTB_GROUP_USERS (ID_ID1,ID_ID2) VALUES ('1','1');
 INSERT INTO TB_USERtoTB_GROUP_USERS (ID_ID1,ID_ID2) VALUES ('1','2');
 DROP TABLE TB_USERtoTB_GROUP_USERS;
+DROP TABLE TB_USER;
+ALTER TABLE TB_USER DISABLE CONSTRAINT ID;
 
 ROLLBACK;
 
@@ -380,7 +409,8 @@ ROLLBACK;
 ---------------------
 -- Get
 
-SELECT * FROM TB_USERtoTB_GROUP_USERS WHERE (ID_Id1='1');
+SELECT * FROM TB_USER;
+SELECT * FROM TB_USERtoTB_GROUP_USERS;
 
 
 

@@ -145,11 +145,13 @@ namespace EH.Properties
                             //var selectMethod = features.GetType().GetMethod("ExecuteSelect").MakeGenericMethod(entityType);
 
                             string nameTable = GetTableNameManyToMany(GetTableName<T>(), entityType);
+                            string columnName1 = GetTableName(objectEntity.GetType());
+
                             string idName1 = GetPK((object)objectEntity).Name;
                             PropertyInfo idProp1 = objectEntity.GetType().GetProperty(idName1);
                             object idValue1 = idProp1.GetValue(objectEntity);
 
-                            var entitiesToAdd = (IEnumerable<object>)getMethod.Invoke(features, new object[] { false, $"ID_{idName1}1='{idValue1}'", nameTable }); // ID_{pkEntity1}1
+                            var entitiesToAdd = (IEnumerable<object>)getMethod.Invoke(features, new object[] { false, $"ID_{columnName1}='{idValue1}'", nameTable }); // ID_{pkEntity1}1
 
                             var addMethod = collectionType.GetMethod("Add");
 
@@ -239,7 +241,7 @@ namespace EH.Properties
             //return default;
 
             return type.GetCustomAttributes(typeof(TableAttribute), true).FirstOrDefault() as TableAttribute;
-        }
+        }                
 
         internal static string GetTableName<TEntity>(Dictionary<string, string>? replacesTableName = null)
         {
@@ -250,12 +252,12 @@ namespace EH.Properties
             return $"{schema}{tableName}";
         }
 
-        internal static string GetTableName<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName = null)
+        internal static string GetTableName(Type entity, Dictionary<string, string>? replacesTableName = null)
         {
             if (entity is null) return null;
-            TableAttribute? ta = GetTableAttribute(typeof(TEntity));
+            TableAttribute? ta = GetTableAttribute(entity);
             string schema = ta?.Schema != null ? $"{ta.Schema}." : "";
-            string tableName = ta?.Name ?? typeof(TEntity).Name;
+            string tableName = ta?.Name ?? entity.Name;
             if (replacesTableName is not null) tableName = replacesTableName.Aggregate(tableName, (text, replace) => text.Replace(replace.Key, replace.Value));
             return $"{schema}{tableName}";
         }

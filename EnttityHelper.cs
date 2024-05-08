@@ -319,19 +319,6 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public string? GetTableName<TEntity>(TEntity entity)
-        {
-            try
-            {
-                return _features.GetTableName(entity);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        /// <inheritdoc/>
         public string? GetPKName<TEntity>(TEntity entity) where TEntity : class
         {
             try

@@ -50,7 +50,7 @@ namespace EH.Connection
 
                 if (invProp.Value.IsCollection != true) { throw new InvalidOperationException("The InverseProperty property must be a collection."); }
 
-                var tableName2 = ToolsProp.GetTableName(entity, replacesTableName);
+                var tableName2 = ToolsProp.GetTableName(entity2Type, replacesTableName);
 
                 string idName1 = ToolsProp.GetPK((object)entity).Name; // Ex: User
                 string idName2 = ToolsProp.GetPK((object)entity2Type).Name;  // Ex: Group
@@ -244,34 +244,7 @@ namespace EH.Connection
                 else // IsCollection
                 {
                     if (onlyPrimaryTable) { continue; }
-
-                    var pkEntity1 = pk.Name;
-                    string tableEntity1 = tableName;
-
-                    var propEntity2 = properties[prop.Value.Name];
-                    Type collection2Type = propEntity2.PropertyInfo.PropertyType;
-                    Type entity2Type = collection2Type.GetGenericArguments()[0];
-
-                    var propsEntity2 = entity2Type.GetProperties();
-                    var propPkEntity2 = propsEntity2.Where(prop => Attribute.IsDefined(prop, typeof(System.ComponentModel.DataAnnotations.KeyAttribute)));
-                    var pkEntity2 = propPkEntity2?.FirstOrDefault()?.Name ?? propsEntity2.FirstOrDefault().Name;
-
-                    TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
-                    string tableEntity2 = table2Attribute.Name ?? entity2Type.Name;
-
-                    string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(tableEntity1, entity2Type, replacesTableName);
-
-                    string idTb1 = tableEntity1.Substring(0, Math.Min(tableEntity1.Length, 27));
-                    string idTb2 = tableEntity2.Substring(0, Math.Min(tableEntity2.Length, 27));
-
-                    string queryCollection =
-                        $"CREATE TABLE {tableNameManyToMany} (" +
-                        $"ID_{tableEntity1} INT, ID_{tableEntity2} INT, " +
-                        $"PRIMARY KEY (ID_{idTb1}, ID_{idTb2}), " +
-                        $"FOREIGN KEY (ID_{idTb1}) REFERENCES {idTb1}({pkEntity1}), " +
-                        $"FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2}({pkEntity2}) " +
-                        $")";
-
+                    string queryCollection = CreateTableFromCollectionProp(replacesTableName, tableName, properties, pk, prop);
                     createsTable.Add(queryCollection);
                 }
             }
@@ -281,6 +254,38 @@ namespace EH.Connection
             createsTable.Add(queryBuilderPrincipal.ToString());
             return createsTable;
         }
+
+        private static string CreateTableFromCollectionProp(Dictionary<string, string>? replacesTableName, string? tableName, Dictionary<string, Property> properties, PropertyInfo? pk, KeyValuePair<string, Property> prop)
+        {
+            var pkEntity1 = pk.Name;
+            string tableEntity1 = tableName;
+
+            var propEntity2 = properties[prop.Value.Name];
+            Type collection2Type = propEntity2.PropertyInfo.PropertyType;
+            Type entity2Type = collection2Type.GetGenericArguments()[0];
+
+            var propsEntity2 = entity2Type.GetProperties();
+            var propPkEntity2 = propsEntity2.Where(prop => Attribute.IsDefined(prop, typeof(System.ComponentModel.DataAnnotations.KeyAttribute)));
+            var pkEntity2 = propPkEntity2?.FirstOrDefault()?.Name ?? propsEntity2.FirstOrDefault().Name;
+
+            TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
+            string tableEntity2 = table2Attribute.Name ?? entity2Type.Name;
+
+            string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(tableEntity1, entity2Type, replacesTableName);
+
+            string idTb1 = tableEntity1.Substring(0, Math.Min(tableEntity1.Length, 27));
+            string idTb2 = tableEntity2.Substring(0, Math.Min(tableEntity2.Length, 27));
+
+            string queryCollection =
+                $"CREATE TABLE {tableNameManyToMany} (" +
+                $"ID_{tableEntity1} INT, ID_{tableEntity2} INT, " +
+                $"PRIMARY KEY (ID_{idTb1}, ID_{idTb2}), " +
+                $"FOREIGN KEY (ID_{idTb1}) REFERENCES {idTb1}({pkEntity1}), " +
+                $"FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2}({pkEntity2}) " +
+                $")";
+
+            return queryCollection;
+        }        
 
         /// <summary>
         /// Retrieves the SQL query for creating a table based on the structure of a DataTable.

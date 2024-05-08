@@ -295,6 +295,27 @@ namespace EH.Command
             return CreateTable(dataTable, tableName);
         }
 
+        //public bool CreateTableInverseProperty<TEntity>(TEntity entity, string inversePropertyName, string? tableName = null)
+        //{
+        //    if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
+
+        //    var createsTableQuery = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, ignoreProps, null, _enttityHelper.ReplacesTableName, tableName);
+
+        //    foreach (string? createTableQuery in createsTableQuery.Reverse()) // The last table is the main table
+        //    {
+        //        if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
+        //        {
+        //            Debug.WriteLine("Table created!");
+        //        }
+        //        else
+        //        {
+        //            throw new InvalidOperationException("Table not created!");
+        //        }
+        //        //if (createOnlyPrimaryTable) { break; }
+        //    }
+        //    return true;
+        //}
+
         public int Delete<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class
         {
             string? deleteQuery = _enttityHelper.GetQuery.Delete(entity, nameId, _enttityHelper.ReplacesTableName, tableName);
@@ -390,8 +411,6 @@ namespace EH.Command
         }
 
         public string? GetTableName<TEntity>() => ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
-
-        public string? GetTableName<TEntity>(TEntity entity) => ToolsProp.GetTableName(entity, _enttityHelper.ReplacesTableName);
 
         public string? GetPKName<TEntity>(TEntity entity) where TEntity : class => ToolsProp.GetPK(entity)?.Name;
 
