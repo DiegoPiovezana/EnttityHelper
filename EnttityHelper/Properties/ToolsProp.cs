@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -115,7 +116,7 @@ namespace EH.Properties
         /// <summary>
         /// Gets InverseProperty entities.
         /// </summary>   
-        internal static Dictionary<object, object>? GetInverseProperties<T>(this T objectEntity, EnttityHelper eh)
+        internal static Dictionary<object, object>? GetInverseProperties<T>(this T objectEntity, Dictionary<string, string>? replacesTableName, EnttityHelper eh)
         {
             try
             {
@@ -131,41 +132,52 @@ namespace EH.Properties
                     Type collectionType = prop.PropertyType;
                     if (collectionType.IsGenericType && collectionType.GetGenericTypeDefinition() == typeof(ICollection<>))
                     {
-                        Type entityType = collectionType.GetGenericArguments()[0];
+                        Type entity2Type = collectionType.GetGenericArguments()[0];
 
-                        if (entityType.IsClass && !entityType.IsAbstract)
+                        if (entity2Type.IsClass && !entity2Type.IsAbstract)
                         {
-                            Type listType = typeof(List<>).MakeGenericType(entityType);
+                            Type listType = typeof(List<>).MakeGenericType(entity2Type);
                             var listInstance = Activator.CreateInstance(listType);
 
                             Features features = new(eh);
-                            var getMethod = typeof(Features).GetMethod("Get").MakeGenericMethod(entityType);
-                            //var entitiesToAdd = (IEnumerable<object>)getMethod.Invoke(features, new object[] { true, $"{prop.GetCustomAttribute<InversePropertyAttribute>().Property}='{prop.GetValue(objectEntity)}'", null });
+                            //var getMethod = typeof(Features).GetMethod("Get").MakeGenericMethod(entityType);
+                            var selectMethod = features.GetType().GetMethod("ExecuteSelectDt");
 
-                            //var selectMethod = features.GetType().GetMethod("ExecuteSelect").MakeGenericMethod(entityType);
-
-                            string nameTable = GetTableNameManyToMany(GetTableName<T>(), entityType);
+                            string nameTable = GetTableNameManyToMany(GetTableName<T>(), entity2Type);
+                            string nameTable2 = GetTableName(entity2Type, replacesTableName);
                             string columnName1 = GetTableName(objectEntity.GetType());
+                            string columnName2 = nameTable2;
 
-                            string idName1 = GetPK((object)objectEntity).Name;
+                            string idName1 = GetPK(objectEntity.GetType()).Name;
+                            string idName2 = GetPK(entity2Type).Name;
                             PropertyInfo idProp1 = objectEntity.GetType().GetProperty(idName1);
                             object idValue1 = idProp1.GetValue(objectEntity);
 
-                            var entitiesToAdd = (IEnumerable<object>)getMethod.Invoke(features, new object[] { false, $"ID_{columnName1}='{idValue1}'", nameTable }); // ID_{pkEntity1}1
+                            //var entitiesToAdd = (IEnumerable<object>)getMethod.Invoke(features, new object[] { false, $"ID_{columnName1}='{idValue1}'", nameTable });
+                            var entitiesToAdd = (DataTable)selectMethod.Invoke(features, new object[] { $"SELECT ID_{columnName2} FROM {nameTable} WHERE ID_{columnName1}='{idValue1}'" });
 
-                            var addMethod = collectionType.GetMethod("Add");
+                            var getMethod = typeof(Features).GetMethod("Get").MakeGenericMethod(entity2Type);
 
-                            foreach (var item in entitiesToAdd)
+                            Type typeCollection = typeof(ICollection<>).MakeGenericType(entity2Type);
+                            dynamic collectionInstance = Activator.CreateInstance(typeCollection);
+
+                            //var addMethod = collectionType.GetMethod("Add");
+                            //foreach (var item in entitiesToAdd) { addMethod.Invoke(listInstance, new object[] { item }); }
+                            for (int i = 0; i < entitiesToAdd.Rows.Count; i++)
                             {
-                                addMethod.Invoke(listInstance, new object[] { item });
+                                object idValue2 = entitiesToAdd.Rows[i][0];
+                                var entity2ToAdd = getMethod.Invoke(features, new object[] { false, $"{idName2}='{idValue2}'", nameTable2 });
+                                //collectionInstance.add(entity2ToAdd);
                             }
+
 
                             //var collectionInstance = (ICollection<object>)prop.GetValue(objectEntity);
                             //var collectionInstance = Activator.CreateInstance(entityType);
                             //var collectionGroupInstance = (ICollection<Group>)listInstance;
-                            var collectionInstance = (ICollection<object>)listInstance;
+                            //var collectionInstance = (ICollection<object>)listInstance;
 
-                            propertiesInverseProperty.Add(prop.Name, collectionInstance);
+                            
+                            //propertiesInverseProperty.Add(prop.Name, collectionInstance);
                         }
                     }
                 }
@@ -199,7 +211,7 @@ namespace EH.Properties
             catch (Exception)
             {
                 //throw;
-                return null;
+                return null; // TODO: throw new InvalidOperationException("Error getting InverseProperty entities.");
             }
         }
 
@@ -241,7 +253,7 @@ namespace EH.Properties
             //return default;
 
             return type.GetCustomAttributes(typeof(TableAttribute), true).FirstOrDefault() as TableAttribute;
-        }                
+        }
 
         internal static string GetTableName<TEntity>(Dictionary<string, string>? replacesTableName = null)
         {

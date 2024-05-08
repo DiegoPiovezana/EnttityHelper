@@ -391,7 +391,7 @@ namespace EH.Command
             foreach (TEntity entity in entities)
             {
                 inclusions.IncludeForeignKeyEntities(entity);
-                inclusions.IncludeInverseProperties(entity);
+                inclusions.IncludeInverseProperties(entity, _enttityHelper.ReplacesTableName);
             }
             return true;
         }
@@ -406,7 +406,7 @@ namespace EH.Command
         public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyOnly)
         {
             if (entity == null) return false;
-            new Entities.Inclusions(_enttityHelper).IncludeInverseProperties(entity, inversePropertyOnly);
+            new Entities.Inclusions(_enttityHelper).IncludeInverseProperties(entity, _enttityHelper.ReplacesTableName, inversePropertyOnly);
             return true;
         }
 

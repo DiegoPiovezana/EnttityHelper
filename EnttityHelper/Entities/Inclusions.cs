@@ -87,11 +87,11 @@ namespace EH.Entities
             }
         }
 
-        internal void IncludeInverseProperties<TEntity>(TEntity entity, string? InversePropertyOnly = null)
+        internal void IncludeInverseProperties<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, string ? InversePropertyOnly = null)
         {
             if (entity == null) return;
 
-            var propertiesInverse = ToolsProp.GetInverseProperties(entity, _enttityHelper);
+            var propertiesInverse = ToolsProp.GetInverseProperties(entity, replacesTableName, _enttityHelper);
             if (propertiesInverse == null || propertiesInverse.Count == 0)
             {
                 Debug.WriteLine($"No inverse properties found in '{entity}'.");
