@@ -90,16 +90,21 @@ namespace EH.Entities
             }
         }
 
-        internal void IncludeInverseProperties<T>(T objectEntity, Dictionary<string, string>? replacesTableName, EnttityHelper enttityHelper)
+        internal void IncludeInverseProperties<T>(T objectEntity, Dictionary<string, string>? replacesTableName, EnttityHelper enttityHelper, string? inversePropertyNameOnly = null)
         {
-            List<PropertyInfo>? propertiesInverseProperty = ToolsProp.GetInverseProperties(objectEntity);
-            if (propertiesInverseProperty == null || propertiesInverseProperty.Count == 0)
+            List<PropertyInfo>? propertiesInverse = ToolsProp.GetInverseProperties(objectEntity);
+            if (propertiesInverse == null || propertiesInverse.Count == 0)
             {
                 Debug.WriteLine($"No inverse properties found in '{objectEntity}'.");
                 return;
             }
 
-            foreach (var prop in propertiesInverseProperty)
+            if (!string.IsNullOrEmpty(inversePropertyNameOnly)) // If not all
+            {
+                propertiesInverse = propertiesInverse.Where(p => p.Name == inversePropertyNameOnly).ToList();
+            }
+
+            foreach (var prop in propertiesInverse)
             {
                 Type collectionType = prop.PropertyType;
 

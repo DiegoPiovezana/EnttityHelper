@@ -391,7 +391,7 @@ namespace EH.Command
             foreach (TEntity entity in entities)
             {
                 inclusions.IncludeForeignKeyEntities(entity);
-                inclusions.IncludeInverseProperties(entity, _enttityHelper.ReplacesTableName, _enttityHelper);
+                inclusions.IncludeInverseProperties(entity, _enttityHelper.ReplacesTableName, _enttityHelper, null);
             }
             return true;
         }
@@ -403,10 +403,10 @@ namespace EH.Command
             return true;
         }
 
-        public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyOnly)
+        public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyNameOnly)
         {
             if (entity == null) return false;
-            new Entities.Inclusions(_enttityHelper).IncludeInverseProperties(entity, _enttityHelper.ReplacesTableName, _enttityHelper);
+            new Entities.Inclusions(_enttityHelper).IncludeInverseProperties(entity, _enttityHelper.ReplacesTableName, _enttityHelper, inversePropertyNameOnly);
             return true;
         }
 
