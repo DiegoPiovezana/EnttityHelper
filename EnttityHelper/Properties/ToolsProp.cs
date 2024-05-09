@@ -7,7 +7,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace EH.Properties
 {
@@ -158,25 +157,25 @@ namespace EH.Properties
 
                             var getMethod = typeof(Features).GetMethod("Get").MakeGenericMethod(entity2Type);
 
-                            Type typeCollection = typeof(ICollection<>).MakeGenericType(entity2Type);
-                            dynamic collectionInstance = Activator.CreateInstance(typeCollection);
+                            Type typeCollection = typeof(List<>).MakeGenericType(entity2Type);
+                            var collectionInstance = Activator.CreateInstance(typeCollection);
 
-                            //var addMethod = collectionType.GetMethod("Add");
-                            //foreach (var item in entitiesToAdd) { addMethod.Invoke(listInstance, new object[] { item }); }
                             for (int i = 0; i < entitiesToAdd.Rows.Count; i++)
                             {
                                 object idValue2 = entitiesToAdd.Rows[i][0];
-                                var entity2ToAdd = getMethod.Invoke(features, new object[] { false, $"{idName2}='{idValue2}'", nameTable2 });
-                                //collectionInstance.add(entity2ToAdd);
+                                var entity2ToAddList = (IEnumerable)getMethod.Invoke(features, new object[] { false, $"{idName2}='{idValue2}'", nameTable2 });
+                                foreach (var entity in entity2ToAddList) { ((IList)collectionInstance).Add(entity); }
                             }
 
+                            //var addMethod = collectionType.GetMethod("Add");
+                            //foreach (var item in entitiesToAdd) { addMethod.Invoke(listInstance, new object[] { item }); }
 
                             //var collectionInstance = (ICollection<object>)prop.GetValue(objectEntity);
                             //var collectionInstance = Activator.CreateInstance(entityType);
                             //var collectionGroupInstance = (ICollection<Group>)listInstance;
                             //var collectionInstance = (ICollection<object>)listInstance;
 
-                            
+
                             //propertiesInverseProperty.Add(prop.Name, collectionInstance);
                         }
                     }
