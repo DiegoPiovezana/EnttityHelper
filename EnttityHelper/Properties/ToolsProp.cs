@@ -201,30 +201,30 @@ namespace EH.Properties
 
         internal static string GetTableNameManyToMany(string nameTbEntity1, Type entity2, Dictionary<string, string>? replacesTableName = null)
         {
-            string tb = nameTbEntity1;
-            //TableAttribute? ta2 = GetTableAttribute(entity2);
-            //string tableName2 = ta2?.Name ?? entity2.Name;
+            string nameTbEntity2 = GetTableName(entity2);
+            string tableName1 = string.Compare(nameTbEntity1, nameTbEntity2) > 0 ? nameTbEntity1 : nameTbEntity2;
+            string tableName2 = string.Compare(nameTbEntity1, nameTbEntity2) > 0 ? nameTbEntity2 : nameTbEntity1;
 
-            string tableName2 = GetTableName(entity2);
+            //string tableNameResult = tableName1;
 
-            if (tb.Length + tableName2.Length <= 30)
-            {
-                tb = $"{tb.ToUpper()}to{tableName2.ToUpper()}";
-            }
-            else if (tb.Length + entity2.Name.Length <= 30)
-            {
-                tb = $"{tb.ToUpper()}to{entity2.Name.ToUpper()}";
-            }
-            else
-            {
-                string entity2Name = entity2.Name.ToUpper();
-                tb = $"{tb.ToUpper()}to{entity2Name}";
-            }
+            //if (tableNameResult.Length + tableName2.Length <= 30)
+            //{
+            string tableNameResult = $"{tableName1.ToUpper()}to{tableName2.ToUpper()}";
+            //}
+            //else if (tableNameResult.Length + entity2.Name.Length <= 30)
+            //{
+            //    tableNameResult = $"{tableNameResult.ToUpper()}to{entity2.Name.ToUpper()}";
+            //}
+            //else
+            //{
+            //    string entity2Name = entity2.Name.ToUpper();
+            //    tableNameResult = $"{tableNameResult.ToUpper()}to{entity2Name}";
+            //}
 
-            if (replacesTableName is not null) tb = replacesTableName.Aggregate(tb, (text, replace) => text.Replace(replace.Key, replace.Value));
-            tb = tb.Substring(0, Math.Min(tb.Length, 30));
+            if (replacesTableName is not null) tableNameResult = replacesTableName.Aggregate(tableNameResult, (text, replace) => text.Replace(replace.Key, replace.Value));
+            tableNameResult = tableNameResult.Substring(0, Math.Min(tableNameResult.Length, 30));
 
-            return tb;
+            return tableNameResult;
         }
 
 

@@ -403,10 +403,10 @@ namespace EH.Command
             return true;
         }
 
-        public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyNameOnly)
+        public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyName)
         {
             if (entity == null) return false;
-            new Entities.Inclusions(_enttityHelper).IncludeInverseProperties(entity, _enttityHelper.ReplacesTableName, _enttityHelper, inversePropertyNameOnly);
+            new Entities.Inclusions(_enttityHelper).IncludeInverseProperties(entity, _enttityHelper.ReplacesTableName, _enttityHelper, inversePropertyName);
             return true;
         }
 
