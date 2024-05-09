@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml;
 
 namespace EH.Connection
 {
@@ -124,32 +125,34 @@ namespace EH.Connection
             //return queryBuilder.ToString();
             queries.Add(queryBuilder.ToString());
 
-            if (!ignoreInversePropertyProperties) UpdateInverseProperty(entity, replacesTableName, tableName, queries, properties);
+            //if (!ignoreInversePropertyProperties) UpdateInverseProperty(entity, replacesTableName, tableName, queries);
             return queries;
         }
 
-        private static void UpdateInverseProperty<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, string? tableName, List<string?> queries, Dictionary<string, Property> properties) where TEntity : class
+        private static void UpdateInverseProperty<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, string? tableName, List<string?> queries) where TEntity : class
         {
-            Dictionary<string, Property>? inverseProperties = properties.Where(p => p.Value.InverseProperty != null)
-                            .ToDictionary(p => p.Key, p => p.Value);
+            var inverseProperties = ToolsProp.GetInverseProperties(entity);
 
-            foreach (var invProp in inverseProperties)
+            foreach (PropertyInfo invProp in inverseProperties)
             {
-                Type collectionType = invProp.Value.PropertyInfo.PropertyType;
+                Type collectionType = invProp.PropertyType;
                 Type entity2Type = collectionType.GetGenericArguments()[0];
                 string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(tableName, entity2Type, replacesTableName);
-
-                if (invProp.Value.IsCollection != true) { throw new InvalidOperationException("The InverseProperty property must be a collection."); }
 
                 var tableName2 = ToolsProp.GetTableName(entity2Type, replacesTableName);
 
                 string idName1 = ToolsProp.GetPK((object)entity).Name; // Ex: User
                 string idName2 = ToolsProp.GetPK((object)entity2Type).Name;  // Ex: Group
 
-                var itemsCollection = (IEnumerable<object>)invProp.Value.Value;
-                if (itemsCollection is null) { continue; } // If the collection is null, there is no need to insert anything.
+                IEnumerable<object>? itemsCollectionNew = invProp.GetValue(entity) as IEnumerable<object>;
+                IEnumerable<object>? itemsCollectionOld = null;
 
-                foreach (var item in itemsCollection)
+
+
+
+                if (itemsCollectionNew is null) { continue; } // If the collection is null, there is no need to insert anything.
+
+                foreach (var item in itemsCollectionNew)
                 {
                     PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
                     PropertyInfo prop2 = item.GetType().GetProperty(idName2);
