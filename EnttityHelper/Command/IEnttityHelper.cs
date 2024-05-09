@@ -80,8 +80,9 @@ namespace EH.Command
         /// <param name="entity">Entity to be updated in the database.</param>
         /// <param name="nameId">(Optional) Entity Id column name.</param>      
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
+        /// <param name="ignoreInversePropertyProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
         /// <returns>Number of entities updated in the database.</returns>
-        public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class;
+        public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class;
 
 
         /// <summary>

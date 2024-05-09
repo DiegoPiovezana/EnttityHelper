@@ -249,8 +249,8 @@ namespace TestEnttityHelper
                 //Group group2 = new() { Id = 2, Name = "Testers", Description = "Tester Group" };
                 //eh.Insert(group2);
 
-                Group group3 = new() { Id = 3, Name = "Operation", Description = "Operation Group" };
-                eh.Insert(group3);
+                //Group group3 = new() { Id = 3, Name = "Operation", Description = "Operation Group" };
+                //eh.Insert(group3);
 
                 //eh.ExecuteNonQuery("DELETE FROM TB_USER");
                 //User user = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
@@ -272,11 +272,11 @@ namespace TestEnttityHelper
 
                 // UPDATE
                 User userUpdate = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                eh.Update(userUpdate);
 
 
 
-
-
+                var usersUpdated = eh.Get<User>();
 
                 Assert.Pass();
             }

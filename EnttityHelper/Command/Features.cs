@@ -181,10 +181,14 @@ namespace EH.Command
             return inserts;
         }
 
-        public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class
+        public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
         {
-            string? updateQuery = _enttityHelper.GetQuery.Update(entity, nameId, _enttityHelper.ReplacesTableName, tableName);
-            return ExecuteNonQuery(updateQuery, 1);
+            //string? updateQuery = _enttityHelper.GetQuery.Update(entity, nameId, _enttityHelper.ReplacesTableName, tableName);
+            //return ExecuteNonQuery(updateQuery, 1);
+
+            ICollection<string?> updatesQuery = _enttityHelper.GetQuery.Update(entity, nameId, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties);
+            int updates = updatesQuery.Sum(insertQuery => insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1));
+            return updates;
         }
 
         public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null)

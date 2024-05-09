@@ -98,7 +98,7 @@ namespace EH
         }
 
         /// <inheritdoc/> 
-        public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class
+        public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
         {
             try
             {

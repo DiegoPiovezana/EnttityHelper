@@ -39,8 +39,12 @@ namespace EH.Connection
             tableName1 ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
             queries.Add($"INSERT INTO {tableName1} ({columns}) VALUES ('{values}')");
 
-            if (ignoreInversePropertyProperties) { return queries; }
+            if (!ignoreInversePropertyProperties) InsertInverseProperty(entity, replacesTableName, tableName1, queries, properties);
+            return queries;
+        }
 
+        private static void InsertInverseProperty<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, string? tableName1, List<string?> queries, Dictionary<string, Property> properties)
+        {
             Dictionary<string, Property>? inverseProperties = properties.Where(p => p.Value.InverseProperty != null).ToDictionary(p => p.Key, p => p.Value);
             foreach (var invProp in inverseProperties)
             {
@@ -76,8 +80,6 @@ namespace EH.Connection
                     }
                 }
             }
-
-            return queries;
         }
 
         /// <summary>
@@ -88,9 +90,12 @@ namespace EH.Connection
         /// <param name="nameId">(Optional) Entity Id column name.</param>
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
+        /// <param name="ignoreInversePropertyProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
         /// <returns>String command.</returns>
-        public string? Update<TEntity>(TEntity entity, string? nameId = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null) where TEntity : class
+        public ICollection<string?> Update<TEntity>(TEntity entity, string? nameId = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
         {
+            List<string?> queries = new();
+
             StringBuilder queryBuilder = new();
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
 
@@ -100,7 +105,7 @@ namespace EH.Connection
 
             if (nameId is null)
             {
-                Debug.WriteLine("No primary key found!");
+                Debug.WriteLine("No primary key (or equivalent) found!");
                 return null;
             }
 
@@ -116,7 +121,51 @@ namespace EH.Connection
 
             queryBuilder.Length -= 2; // Remove the last comma and space
             queryBuilder.Append($" WHERE {nameId} = '{properties[nameId]}'");
-            return queryBuilder.ToString();
+            //return queryBuilder.ToString();
+            queries.Add(queryBuilder.ToString());
+
+            if (!ignoreInversePropertyProperties) UpdateInverseProperty(entity, replacesTableName, tableName, queries, properties);
+            return queries;
+        }
+
+        private static void UpdateInverseProperty<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, string? tableName, List<string?> queries, Dictionary<string, Property> properties) where TEntity : class
+        {
+            Dictionary<string, Property>? inverseProperties = properties.Where(p => p.Value.InverseProperty != null)
+                            .ToDictionary(p => p.Key, p => p.Value);
+
+            foreach (var invProp in inverseProperties)
+            {
+                Type collectionType = invProp.Value.PropertyInfo.PropertyType;
+                Type entity2Type = collectionType.GetGenericArguments()[0];
+                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(tableName, entity2Type, replacesTableName);
+
+                if (invProp.Value.IsCollection != true) { throw new InvalidOperationException("The InverseProperty property must be a collection."); }
+
+                var tableName2 = ToolsProp.GetTableName(entity2Type, replacesTableName);
+
+                string idName1 = ToolsProp.GetPK((object)entity).Name; // Ex: User
+                string idName2 = ToolsProp.GetPK((object)entity2Type).Name;  // Ex: Group
+
+                var itemsCollection = (IEnumerable<object>)invProp.Value.Value;
+                if (itemsCollection is null) { continue; } // If the collection is null, there is no need to insert anything.
+
+                foreach (var item in itemsCollection)
+                {
+                    PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
+                    PropertyInfo prop2 = item.GetType().GetProperty(idName2);
+
+                    if (prop2 != null)
+                    {
+                        string idTb1 = tableName.Substring(0, Math.Min(tableName.Length, 27));
+                        string idTb2 = tableName2.Substring(0, Math.Min(tableName2.Length, 27));
+
+                        object idValue1 = prop1.GetValue(entity);
+                        object idValue2 = prop2.GetValue(item);
+
+                        queries.Add($"UPDATE {tableNameInverseProperty} SET ID_{idTb1} = '{idValue1}', ID_{idTb2} = '{idValue2}'");
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -285,7 +334,7 @@ namespace EH.Connection
                 $")";
 
             return queryCollection;
-        }        
+        }
 
         /// <summary>
         /// Retrieves the SQL query for creating a table based on the structure of a DataTable.
