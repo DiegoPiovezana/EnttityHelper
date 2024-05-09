@@ -2,7 +2,6 @@
 using EH.Properties;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Diagnostics;
@@ -10,7 +9,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml;
 
 namespace EH.Connection
 {
@@ -40,22 +38,23 @@ namespace EH.Connection
             tableName1 ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
             queries.Add($"INSERT INTO {tableName1} ({columns}) VALUES ('{values}')");
 
-            if (!ignoreInversePropertyProperties) InsertInverseProperty(entity, replacesTableName, tableName1, queries, properties);
+            if (!ignoreInversePropertyProperties) InsertInverseProperty(entity, replacesTableName, queries, properties);
             return queries;
         }
 
-        private static void InsertInverseProperty<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, string? tableName1, List<string?> queries, Dictionary<string, Property> properties)
+        private static void InsertInverseProperty<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, List<string?> queries, Dictionary<string, Property> properties)
         {
             Dictionary<string, Property>? inverseProperties = properties.Where(p => p.Value.InverseProperty != null).ToDictionary(p => p.Key, p => p.Value);
             foreach (var invProp in inverseProperties)
             {
                 Type collectionType = invProp.Value.PropertyInfo.PropertyType;
                 Type entity2Type = collectionType.GetGenericArguments()[0];
-                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(tableName1, entity2Type, replacesTableName);
+                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(entity.GetType(), entity2Type, replacesTableName);
 
                 if (invProp.Value.IsCollection != true) { throw new InvalidOperationException("The InverseProperty property must be a collection."); }
 
-                var tableName2 = ToolsProp.GetTableName(entity2Type, replacesTableName);
+                string tableName1 = ToolsProp.GetTableName(entity.GetType(), replacesTableName);
+                string tableName2 = ToolsProp.GetTableName(entity2Type, replacesTableName);
 
                 string idName1 = ToolsProp.GetPK((object)entity).Name; // Ex: User
                 string idName2 = ToolsProp.GetPK((object)entity2Type).Name;  // Ex: Group
@@ -129,7 +128,7 @@ namespace EH.Connection
             return queries;
         }
 
-        private static void UpdateInverseProperty<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, string? tableName, List<string?> queries) where TEntity : class
+        private static void UpdateInverseProperty<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, List<string?> queries) where TEntity : class
         {
             var inverseProperties = ToolsProp.GetInverseProperties(entity);
 
@@ -137,8 +136,9 @@ namespace EH.Connection
             {
                 Type collectionType = invProp.PropertyType;
                 Type entity2Type = collectionType.GetGenericArguments()[0];
-                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(tableName, entity2Type, replacesTableName);
+                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(entity.GetType(), entity2Type, replacesTableName);
 
+                var tableName1 = ToolsProp.GetTableName(entity.GetType(), replacesTableName);
                 var tableName2 = ToolsProp.GetTableName(entity2Type, replacesTableName);
 
                 string idName1 = ToolsProp.GetPK((object)entity).Name; // Ex: User
@@ -159,7 +159,7 @@ namespace EH.Connection
 
                     if (prop2 != null)
                     {
-                        string idTb1 = tableName.Substring(0, Math.Min(tableName.Length, 27));
+                        string idTb1 = tableName1.Substring(0, Math.Min(tableName1.Length, 27));
                         string idTb2 = tableName2.Substring(0, Math.Min(tableName2.Length, 27));
 
                         object idValue1 = prop1.GetValue(entity);
@@ -296,7 +296,7 @@ namespace EH.Connection
                 else // IsCollection
                 {
                     if (onlyPrimaryTable) { continue; }
-                    string queryCollection = CreateTableFromCollectionProp(replacesTableName, tableName, properties, pk, prop);
+                    string queryCollection = CreateTableFromCollectionProp(prop.GetType(), replacesTableName, properties, pk, prop);
                     createsTable.Add(queryCollection);
                 }
             }
@@ -307,10 +307,10 @@ namespace EH.Connection
             return createsTable;
         }
 
-        private static string CreateTableFromCollectionProp(Dictionary<string, string>? replacesTableName, string? tableName, Dictionary<string, Property> properties, PropertyInfo? pk, KeyValuePair<string, Property> prop)
+        private static string CreateTableFromCollectionProp(Type entity, Dictionary<string, string>? replacesTableName, Dictionary<string, Property> properties, PropertyInfo? pk, KeyValuePair<string, Property> prop)
         {
             var pkEntity1 = pk.Name;
-            string tableEntity1 = tableName;
+            string tableEntity1 = ToolsProp.GetTableName(entity);
 
             var propEntity2 = properties[prop.Value.Name];
             Type collection2Type = propEntity2.PropertyInfo.PropertyType;
@@ -323,7 +323,7 @@ namespace EH.Connection
             TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
             string tableEntity2 = table2Attribute.Name ?? entity2Type.Name;
 
-            string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(tableEntity1, entity2Type, replacesTableName);
+            string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(entity, entity2Type, replacesTableName);
 
             string idTb1 = tableEntity1.Substring(0, Math.Min(tableEntity1.Length, 27));
             string idTb2 = tableEntity2.Substring(0, Math.Min(tableEntity2.Length, 27));

@@ -199,17 +199,27 @@ namespace EH.Properties
             return $"{schema}{tableName}";
         }
 
-        internal static string GetTableNameManyToMany(string nameTbEntity1, Type entity2, Dictionary<string, string>? replacesTableName = null)
+        internal static string GetTableNameManyToMany(Type entity1, Type entity2, Dictionary<string, string>? replacesTableName = null)
         {
-            string nameTbEntity2 = GetTableName(entity2);
-            string tableName1 = string.Compare(nameTbEntity1, nameTbEntity2) > 0 ? nameTbEntity1 : nameTbEntity2;
-            string tableName2 = string.Compare(nameTbEntity1, nameTbEntity2) > 0 ? nameTbEntity2 : nameTbEntity1;
+            string tableName1 = GetTableName(entity1);
+            string tableName2 = GetTableName(entity2);
+
+            if (string.Compare(tableName1, tableName2) < 0)
+            {
+                (entity2, entity1) = (entity1, entity2);
+                (tableName2, tableName1) = (tableName1, tableName2);                
+            }
+
+            string tableNameResult = $"{tableName1.ToUpper()}to{entity2.Name.ToUpper()}";
+
+            //string tableName1 = string.Compare(nameTbEntity1, nameTbEntity2) > 0 ? nameTbEntity1 : nameTbEntity2;
+            //string tableName2 = string.Compare(nameTbEntity1, nameTbEntity2) > 0 ? nameTbEntity2 : nameTbEntity1;
 
             //string tableNameResult = tableName1;
 
             //if (tableNameResult.Length + tableName2.Length <= 30)
             //{
-            string tableNameResult = $"{tableName1.ToUpper()}to{tableName2.ToUpper()}";
+            //string tableNameResult = $"{tableName1.ToUpper()}to{tableName2.ToUpper()}";
             //}
             //else if (tableNameResult.Length + entity2.Name.Length <= 30)
             //{
