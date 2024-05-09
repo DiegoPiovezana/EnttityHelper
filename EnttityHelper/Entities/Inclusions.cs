@@ -1,6 +1,9 @@
-﻿using EH.Properties;
+﻿using EH.Command;
+using EH.Properties;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -87,76 +90,141 @@ namespace EH.Entities
             }
         }
 
-        internal void IncludeInverseProperties<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, string ? InversePropertyOnly = null)
+        internal void IncludeInverseProperties<T>(T objectEntity, Dictionary<string, string>? replacesTableName, EnttityHelper enttityHelper)
         {
-            if (entity == null) return;
-
-            var propertiesInverse = ToolsProp.GetInverseProperties(entity, replacesTableName, _enttityHelper);
-            if (propertiesInverse == null || propertiesInverse.Count == 0)
+            List<PropertyInfo>? propertiesInverseProperty = ToolsProp.GetInverseProperties(objectEntity);
+            if (propertiesInverseProperty == null || propertiesInverseProperty.Count == 0)
             {
-                Debug.WriteLine($"No inverse properties found in '{entity}'.");
+                Debug.WriteLine($"No inverse properties found in '{objectEntity}'.");
                 return;
             }
 
-            if (!string.IsNullOrEmpty(InversePropertyOnly)) // If not all
+            foreach (var prop in propertiesInverseProperty)
             {
-                propertiesInverse = propertiesInverse.Where(x => x.Key.ToString() == InversePropertyOnly).ToDictionary(x => x.Key, x => x.Value);
-            }
+                Type collectionType = prop.PropertyType;
 
-            foreach (KeyValuePair<object, object> pair in propertiesInverse)
-            {
-                if (pair.Value != null)
+                if (collectionType.IsGenericType && collectionType.GetGenericTypeDefinition() == typeof(ICollection<>))
                 {
-                    var pk = ToolsProp.GetPK(pair.Value);
-                    if (pk == null) continue;
+                    Type entity2Type = collectionType.GetGenericArguments()[0];
 
-                    var propertyToUpdate = entity.GetType().GetProperty(pair.Key.ToString());
-
-                    if (propertyToUpdate != null)
+                    if (entity2Type.IsClass && !entity2Type.IsAbstract)
                     {
-                        var pkValue = pk.GetValue(pair.Value, null);
-                        if (pkValue == null || string.IsNullOrEmpty(pkValue.ToString().Trim()) || pk.PropertyType.IsPrimitive && pkValue.Equals(Convert.ChangeType(0, pkValue.GetType()))) continue;
+                        //Type listType = typeof(List<>).MakeGenericType(entity2Type);
+                        //var listInstance = Activator.CreateInstance(listType);
 
-                        // Obtém o tipo da chave estrangeira
-                        Type? fkEntityType = propertyToUpdate.PropertyType;
+                        Features features = new(enttityHelper);
+                        //var getMethod = typeof(Features).GetMethod("Get").MakeGenericMethod(entityType);
+                        var selectMethod = features.GetType().GetMethod("ExecuteSelectDt");
 
-                        // Verifica se é um tipo de coleção genérica
-                        bool isCollection = typeof(ICollection<>).IsAssignableFrom(fkEntityType);
+                        string nameTable = ToolsProp.GetTableNameManyToMany(ToolsProp.GetTableName<T>(), entity2Type);
+                        string nameTable2 = ToolsProp.GetTableName(entity2Type, replacesTableName);
+                        string columnName1 = ToolsProp.GetTableName(objectEntity.GetType());
+                        string columnName2 = nameTable2;
 
-                        // Obtém o tipo real dos elementos na coleção (se aplicável)
-                        Type elementType = isCollection ? fkEntityType.GetGenericArguments()[0] : fkEntityType;
+                        string idName1 = ToolsProp.GetPK(objectEntity.GetType()).Name;
+                        string idName2 = ToolsProp.GetPK(entity2Type).Name;
+                        PropertyInfo idProp1 = objectEntity.GetType().GetProperty(idName1);
+                        object idValue1 = idProp1.GetValue(objectEntity);
 
-                        // Usa o tipo genérico correto para o método Get
-                        MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(elementType);
+                        //var entitiesToAdd = (IEnumerable<object>)getMethod.Invoke(features, new object[] { false, $"ID_{columnName1}='{idValue1}'", nameTable });
+                        var entitiesToAdd = (DataTable)selectMethod.Invoke(features, new object[] { $"SELECT ID_{columnName2} FROM {nameTable} WHERE ID_{columnName1}='{idValue1}'" });
 
-                        // Recupera as entidades da chave estrangeira
-                        IEnumerable<object> entityFKList = (IEnumerable<object>)genericGetMethod.Invoke(_enttityHelper, new object[] { true, $"{pk.Name}='{pkValue}'", null });
+                        var getMethod = typeof(Features).GetMethod("Get").MakeGenericMethod(entity2Type);
 
-                        // Converte cada entidade para o tipo real
-                        IEnumerable<object> castEntityFKList = entityFKList.Cast<object>();
+                        Type typeCollection = typeof(List<>).MakeGenericType(entity2Type);
+                        var collectionInstance = Activator.CreateInstance(typeCollection);
 
-                        // Manipula coleções e entidades individuais
-                        if (isCollection)
+                        for (int i = 0; i < entitiesToAdd.Rows.Count; i++)
                         {
-                            // Itera pela lista de entidades convertidas e adiciona cada entidade à coleção
-                            foreach (var entityFK in castEntityFKList)
-                            {
-                                if (propertyToUpdate.GetValue(entity) is ICollection<object> collection)
-                                {
-                                    collection.Add(entityFK);
-                                }
-                            }
+                            object idValue2 = entitiesToAdd.Rows[i][0];
+                            var entity2ToAddList = (IEnumerable)getMethod.Invoke(features, new object[] { false, $"{idName2}='{idValue2}'", nameTable2 });
+                            foreach (var entity in entity2ToAddList) { ((IList)collectionInstance).Add(entity); }
                         }
-                        else
-                        {
-                            // Atribui o primeiro elemento da lista de entidades convertidas à propriedade
-                            var entityFK = castEntityFKList.FirstOrDefault();
-                            propertyToUpdate.SetValue(entity, entityFK);
-                        }
+
+                        prop.SetValue(objectEntity, collectionInstance);
+
+                        //var addMethod = collectionType.GetMethod("Add");
+                        //foreach (var item in entitiesToAdd) { addMethod.Invoke(listInstance, new object[] { item }); }
+
+                        //var collectionInstance = (ICollection<object>)prop.GetValue(objectEntity);
+                        //var collectionInstance = Activator.CreateInstance(entityType);
+                        //var collectionGroupInstance = (ICollection<Group>)listInstance;
+                        //var collectionInstance = (ICollection<object>)listInstance;
+
+
+                        //propertiesInverseProperty.Add(prop.Name, collectionInstance);
                     }
                 }
             }
         }
+
+
+        //internal void IncludeInverseProperties<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, string ? InversePropertyOnly = null)
+        //{
+        //    if (entity == null) return;
+
+        //    var propertiesInverse = ToolsProp.GetInverseProperties(entity, replacesTableName, _enttityHelper);
+        //    if (propertiesInverse == null || propertiesInverse.Count == 0)
+        //    {
+        //        Debug.WriteLine($"No inverse properties found in '{entity}'.");
+        //        return;
+        //    }
+
+        //    if (!string.IsNullOrEmpty(InversePropertyOnly)) // If not all
+        //    {
+        //        propertiesInverse = propertiesInverse.Where(x => x.Key.ToString() == InversePropertyOnly).ToDictionary(x => x.Key, x => x.Value);
+        //    }
+
+        //    foreach (KeyValuePair<Type, object> pair in propertiesInverse)
+        //    {
+        //        if (pair.Value != null)
+        //        {
+
+
+        //            if (collectionType.IsGenericType && collectionType.GetGenericTypeDefinition() == typeof(ICollection<>))
+        //            {
+        //                Type entity2Type = collectionType.GetGenericArguments()[0];
+
+        //                if (entity2Type.IsClass && !entity2Type.IsAbstract)
+        //                {
+        //                    Features features = new(eh);                           
+        //                    var selectMethod = features.GetType().GetMethod("ExecuteSelectDt");
+
+        //                    string nameTable = ToolsProp.GetTableNameManyToMany(ToolsProp.GetTableName<T>(), entity2Type);
+        //                    string nameTable2 = ToolsProp.GetTableName(entity2Type, replacesTableName);
+        //                    string columnName1 = ToolsProp.GetTableName(objectEntity.GetType());
+        //                    string columnName2 = nameTable2;
+
+        //                    string idName1 = ToolsProp.GetPK(objectEntity.GetType()).Name;
+        //                    string idName2 = ToolsProp.GetPK(entity2Type).Name;
+        //                    PropertyInfo idProp1 = objectEntity.GetType().GetProperty(idName1);
+        //                    object idValue1 = idProp1.GetValue(objectEntity);
+
+        //                    //var entitiesToAdd = (IEnumerable<object>)getMethod.Invoke(features, new object[] { false, $"ID_{columnName1}='{idValue1}'", nameTable });
+        //                    var entitiesToAdd = (DataTable)selectMethod.Invoke(features, new object[] { $"SELECT ID_{columnName2} FROM {nameTable} WHERE ID_{columnName1}='{idValue1}'" });
+
+        //                    var getMethod = typeof(Features).GetMethod("Get").MakeGenericMethod(entity2Type);
+
+        //                    Type typeCollection = typeof(List<>).MakeGenericType(entity2Type);
+        //                    var collectionInstance = Activator.CreateInstance(typeCollection);
+
+        //                    for (int i = 0; i < entitiesToAdd.Rows.Count; i++)
+        //                    {
+        //                        object idValue2 = entitiesToAdd.Rows[i][0];
+        //                        var entity2ToAddList = (IEnumerable)getMethod.Invoke(features, new object[] { false, $"{idName2}='{idValue2}'", nameTable2 });
+        //                        foreach (var entity in entity2ToAddList) { ((IList)collectionInstance).Add(entity); }
+        //                    }
+
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
+
+
+
+
+
 
 
 

@@ -115,97 +115,24 @@ namespace EH.Properties
         /// <summary>
         /// Gets InverseProperty entities.
         /// </summary>   
-        internal static Dictionary<object, object>? GetInverseProperties<T>(this T objectEntity, Dictionary<string, string>? replacesTableName, EnttityHelper eh)
+        internal static List<PropertyInfo>? GetInverseProperties<T>(this T objectEntity)
         {
             try
             {
                 if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
 
                 PropertyInfo[] properties = objectEntity.GetType().GetProperties();
-                Dictionary<object, object> propertiesInverseProperty = new();
+                List<PropertyInfo> propertiesInverseProperty = new();
 
                 foreach (PropertyInfo prop in properties)
                 {
                     if (prop.GetCustomAttribute<InversePropertyAttribute>() is null) { continue; }
+                    propertiesInverseProperty.Add(prop);
 
-                    Type collectionType = prop.PropertyType;
-                    if (collectionType.IsGenericType && collectionType.GetGenericTypeDefinition() == typeof(ICollection<>))
-                    {
-                        Type entity2Type = collectionType.GetGenericArguments()[0];
-
-                        if (entity2Type.IsClass && !entity2Type.IsAbstract)
-                        {
-                            Type listType = typeof(List<>).MakeGenericType(entity2Type);
-                            var listInstance = Activator.CreateInstance(listType);
-
-                            Features features = new(eh);
-                            //var getMethod = typeof(Features).GetMethod("Get").MakeGenericMethod(entityType);
-                            var selectMethod = features.GetType().GetMethod("ExecuteSelectDt");
-
-                            string nameTable = GetTableNameManyToMany(GetTableName<T>(), entity2Type);
-                            string nameTable2 = GetTableName(entity2Type, replacesTableName);
-                            string columnName1 = GetTableName(objectEntity.GetType());
-                            string columnName2 = nameTable2;
-
-                            string idName1 = GetPK(objectEntity.GetType()).Name;
-                            string idName2 = GetPK(entity2Type).Name;
-                            PropertyInfo idProp1 = objectEntity.GetType().GetProperty(idName1);
-                            object idValue1 = idProp1.GetValue(objectEntity);
-
-                            //var entitiesToAdd = (IEnumerable<object>)getMethod.Invoke(features, new object[] { false, $"ID_{columnName1}='{idValue1}'", nameTable });
-                            var entitiesToAdd = (DataTable)selectMethod.Invoke(features, new object[] { $"SELECT ID_{columnName2} FROM {nameTable} WHERE ID_{columnName1}='{idValue1}'" });
-
-                            var getMethod = typeof(Features).GetMethod("Get").MakeGenericMethod(entity2Type);
-
-                            Type typeCollection = typeof(List<>).MakeGenericType(entity2Type);
-                            var collectionInstance = Activator.CreateInstance(typeCollection);
-
-                            for (int i = 0; i < entitiesToAdd.Rows.Count; i++)
-                            {
-                                object idValue2 = entitiesToAdd.Rows[i][0];
-                                var entity2ToAddList = (IEnumerable)getMethod.Invoke(features, new object[] { false, $"{idName2}='{idValue2}'", nameTable2 });
-                                foreach (var entity in entity2ToAddList) { ((IList)collectionInstance).Add(entity); }
-                            }
-
-                            //var addMethod = collectionType.GetMethod("Add");
-                            //foreach (var item in entitiesToAdd) { addMethod.Invoke(listInstance, new object[] { item }); }
-
-                            //var collectionInstance = (ICollection<object>)prop.GetValue(objectEntity);
-                            //var collectionInstance = Activator.CreateInstance(entityType);
-                            //var collectionGroupInstance = (ICollection<Group>)listInstance;
-                            //var collectionInstance = (ICollection<object>)listInstance;
-
-
-                            //propertiesInverseProperty.Add(prop.Name, collectionInstance);
-                        }
-                    }
+                    //IncludeInverseProperties(objectEntity, prop.PropertyType, replacesTableName, eh);
                 }
 
                 return propertiesInverseProperty;
-
-
-                //if (prop.GetCustomAttribute<ForeignKeyAttribute>() is null)
-                //    {
-                //        var entityNameFk = prop.GetCustomAttribute<ForeignKeyAttribute>().Name;
-                //        var idFk = prop.GetValue(objectEntity, null);
-                //        propertiesInverseProperty.Add(entityNameFk, idFk);
-                //    }
-
-                //    if (prop.GetGetMethod().IsVirtual)
-                //    {
-                //        var obj = Activator.CreateInstance(prop.PropertyType);
-                //        if (obj != null) propertiesInverseProperty.Add(prop.Name, obj);
-                //    }
-                //}
-
-                //foreach (var propFkKey in propertiesInverseProperty.Keys.ToList())
-                //{
-                //    var propFk = propertiesVirtual[propFkKey];
-                //    propFk.GetType().GetProperty(GetPK(propFk).Name).SetValue(propFk, propertiesInverseProperty[propFkKey]);
-                //    propertiesObj.Add(propFkKey, propFk);
-                //}
-
-                //return propertiesObj;
             }
             catch (Exception)
             {
@@ -213,7 +140,6 @@ namespace EH.Properties
                 return null; // TODO: throw new InvalidOperationException("Error getting InverseProperty entities.");
             }
         }
-
 
         /// <summary>
         /// Gets the primary key of an entity (class or object).
