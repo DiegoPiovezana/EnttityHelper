@@ -226,11 +226,28 @@ namespace EH.Command
         public bool IncludeEntityFK<TEntity>(TEntity entity, string fkName);
 
         /// <summary>
+        /// Includes the inverse entity specified by the inverse property name for the given entity.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <param name="entity">The entity to include the inverse entity for.</param>
+        /// <param name="inversePropertyName">The name of the inverse property to include.</param>
+        /// <returns>True if the inverse entity was successfully included; otherwise, false.</returns>
+        public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyName);        
+
+        /// <summary>
         /// Gets the table name associated with the specified entity.
         /// </summary>
         /// <typeparam name="TEntity">The type of the entity.</typeparam>
         /// <returns>The name of the table associated with the entity.</returns>
         public string? GetTableName<TEntity>();
+
+        /// <summary>
+        /// Gets the name of the table representing a many-to-many relationship between two entities.
+        /// </summary>
+        /// <param name="entity1">The type of the first entity.</param>
+        /// <param name="entity2">The type of the second entity.</param>
+        /// <returns>The name of the many-to-many table.</returns>
+        public string? GetTableNameManyToMany(Type entity1, Type entity2);
 
         /// <summary>
         /// Gets the name of the primary key for the specified entity.

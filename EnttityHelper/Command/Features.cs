@@ -416,6 +416,8 @@ namespace EH.Command
 
         public string? GetTableName<TEntity>() => ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
 
+        public string? GetTableNameManyToMany(Type entity1, Type entity2) => ToolsProp.GetTableNameManyToMany(entity1, entity2, _enttityHelper.ReplacesTableName);
+
         public string? GetPKName<TEntity>(TEntity entity) where TEntity : class => ToolsProp.GetPK(entity)?.Name;
 
 

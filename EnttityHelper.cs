@@ -306,11 +306,37 @@ namespace EH
         }
 
         /// <inheritdoc/>
+        public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyName)
+        {
+            try
+            {
+                return _features.IncludeInverseEntity(entity, inversePropertyName);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <inheritdoc/>
         public string? GetTableName<TEntity>()
         {
             try
             {
                 return _features.GetTableName<TEntity>();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? GetTableNameManyToMany(Type entity1, Type entity2)
+        {
+            try
+            {
+                return _features.GetTableNameManyToMany(entity1, entity2);
             }
             catch (Exception)
             {
