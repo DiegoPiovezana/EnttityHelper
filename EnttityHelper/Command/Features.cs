@@ -186,7 +186,7 @@ namespace EH.Command
             //string? updateQuery = _enttityHelper.GetQuery.Update(entity, nameId, _enttityHelper.ReplacesTableName, tableName);
             //return ExecuteNonQuery(updateQuery, 1);
 
-            ICollection<string?> updatesQuery = _enttityHelper.GetQuery.Update(entity, nameId, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties);
+            ICollection<string?> updatesQuery = _enttityHelper.GetQuery.Update(entity, _enttityHelper, nameId, tableName, ignoreInversePropertyProperties);
             int updates = updatesQuery.Sum(insertQuery => insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1));
             return updates;
         }

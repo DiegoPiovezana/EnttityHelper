@@ -1,6 +1,7 @@
 ﻿using EH.Command;
 using EH.Properties;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
@@ -62,20 +63,18 @@ namespace EH.Connection
                 var itemsCollection = (IEnumerable<object>)invProp.Value.Value;
                 if (itemsCollection is null) { continue; } // If the collection is null, there is no need to insert anything.
 
+                PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
+                string idTb1 = tableName1.Substring(0, Math.Min(tableName1.Length, 27));
+                string idTb2 = tableName2.Substring(0, Math.Min(tableName2.Length, 27));
+                object idValue1 = prop1.GetValue(entity);
+
                 foreach (var item in itemsCollection)
                 {
-                    PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
                     PropertyInfo prop2 = item.GetType().GetProperty(idName2);
 
                     if (prop2 != null)
                     {
-                        string idTb1 = tableName1.Substring(0, Math.Min(tableName1.Length, 27));
-                        string idTb2 = tableName2.Substring(0, Math.Min(tableName2.Length, 27));
-
-                        object idValue1 = prop1.GetValue(entity);
                         object idValue2 = prop2.GetValue(item);
-
-                        //queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idName1}1, ID_{idName2}2) VALUES ('{idValue1}', '{idValue2}')"); // ID_{pkEntity1}1 INT, ID_{pkEntity2}2 INT
                         queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
                     }
                 }
@@ -87,17 +86,19 @@ namespace EH.Connection
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entity">Entity to be updated in the database.</param>
-        /// <param name="nameId">(Optional) Entity Id column name.</param>
-        /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>
+        /// <param name="enttityHelper">(Optional) Used to perform replacements on the table name and to perform additional queries to check whether or not a specific item is already in the table and then create the query.</param>
+        /// <param name="nameId">(Optional) Name of the column in which the entity will be identified to be updated.</param>
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <param name="ignoreInversePropertyProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
         /// <returns>String command.</returns>
-        public ICollection<string?> Update<TEntity>(TEntity entity, string? nameId = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
+        public ICollection<string?> Update<TEntity>(TEntity entity, EnttityHelper? enttityHelper = null, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
         {
+            if (enttityHelper is null) { throw new ArgumentNullException(nameof(enttityHelper)); }
+
             List<string?> queries = new();
 
             StringBuilder queryBuilder = new();
-            tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
+            tableName ??= ToolsProp.GetTableName<TEntity>(enttityHelper.ReplacesTableName);
 
             queryBuilder.Append($"UPDATE {tableName} SET ");
 
@@ -105,8 +106,7 @@ namespace EH.Connection
 
             if (nameId is null)
             {
-                Debug.WriteLine("No primary key (or equivalent) found!");
-                return null;
+                throw new InvalidOperationException("No primary key found!");
             }
 
             var properties = ToolsProp.GetProperties(entity, true, false);
@@ -124,51 +124,86 @@ namespace EH.Connection
             //return queryBuilder.ToString();
             queries.Add(queryBuilder.ToString());
 
-            //if (!ignoreInversePropertyProperties) UpdateInverseProperty(entity, replacesTableName, tableName, queries);
+            if (!ignoreInversePropertyProperties) queries.AddRange(UpdateInverseProperty(entity, enttityHelper));
             return queries;
         }
 
-        private static void UpdateInverseProperty<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, List<string?> queries) where TEntity : class
+        private static ICollection<string?> UpdateInverseProperty<TEntity>(TEntity entity, EnttityHelper enttityHelper) where TEntity : class
         {
+            List<string?> queries = new();
+
             var inverseProperties = ToolsProp.GetInverseProperties(entity);
 
             foreach (PropertyInfo invProp in inverseProperties)
             {
                 Type collectionType = invProp.PropertyType;
                 Type entity2Type = collectionType.GetGenericArguments()[0];
-                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(entity.GetType(), entity2Type, replacesTableName);
+                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(entity.GetType(), entity2Type, enttityHelper.ReplacesTableName);
 
-                var tableName1 = ToolsProp.GetTableName(entity.GetType(), replacesTableName);
-                var tableName2 = ToolsProp.GetTableName(entity2Type, replacesTableName);
+                var tableName1 = ToolsProp.GetTableName(entity.GetType(), enttityHelper.ReplacesTableName);
+                var tableName2 = ToolsProp.GetTableName(entity2Type, enttityHelper.ReplacesTableName);
 
-                string idName1 = ToolsProp.GetPK((object)entity).Name; // Ex: User
+                var pk1 = ToolsProp.GetPK((object)entity);
+                var pk2 = ToolsProp.GetPK((object)entity2Type);
+                string idName1 = pk1.Name; // Ex: User
                 string idName2 = ToolsProp.GetPK((object)entity2Type).Name;  // Ex: Group
 
-                IEnumerable<object>? itemsCollectionNew = invProp.GetValue(entity) as IEnumerable<object>;
-                IEnumerable<object>? itemsCollectionOld = null;
+                MethodInfo selectMethod = typeof(EnttityHelper).GetMethod("ExecuteSelectDt");
+                var itemsBd = (DataTable)selectMethod.Invoke(enttityHelper, new object[] { $"SELECT ID_{tableName2} FROM {tableNameInverseProperty} WHERE ID_{tableName1}='{pk1.GetValue(entity)}'" });
 
+                var getMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(entity2Type);
 
-
-
-                if (itemsCollectionNew is null) { continue; } // If the collection is null, there is no need to insert anything.
-
-                foreach (var item in itemsCollectionNew)
+                List<object>? itemsCollectionBd = new(itemsBd.Rows.Count);
+                foreach (DataRow row in itemsBd.Rows)
                 {
-                    PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
-                    PropertyInfo prop2 = item.GetType().GetProperty(idName2);
+                    object idItemEntity2 = row[0];
+                    var entity2InCollectionBd = (IEnumerable)getMethod.Invoke(enttityHelper, new object[] { false, $"{pk2.Name} = '{idItemEntity2}'", null }); // Error here
+                    foreach (var entity2 in entity2InCollectionBd) { itemsCollectionBd.Add(entity2); }
+                }
 
-                    if (prop2 != null)
+                IEnumerable<object>? itemsCollectionNew = invProp.GetValue(entity) as IEnumerable<object>;
+                IEnumerable<object>? itemsCollectionOld = itemsCollectionBd;
+
+                IEnumerable<object>? itemsInsert = itemsCollectionNew?.Except(itemsCollectionOld);
+                IEnumerable<object>? itemsDelete = itemsCollectionOld?.Except(itemsCollectionNew);
+
+                PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
+                string idTb1 = tableName1.Substring(0, Math.Min(tableName1.Length, 27));
+                string idTb2 = tableName2.Substring(0, Math.Min(tableName2.Length, 27));
+                object idValue1 = prop1.GetValue(entity);
+
+                if (itemsInsert != null)
+                {
+                    foreach (var itemInsert in itemsInsert)
                     {
-                        string idTb1 = tableName1.Substring(0, Math.Min(tableName1.Length, 27));
-                        string idTb2 = tableName2.Substring(0, Math.Min(tableName2.Length, 27));
+                        PropertyInfo prop2 = itemInsert.GetType().GetProperty(idName2);
 
-                        object idValue1 = prop1.GetValue(entity);
-                        object idValue2 = prop2.GetValue(item);
+                        if (prop2 != null)
+                        {
+                            object idValue2 = prop2.GetValue(itemInsert);
+                            queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
+                        }
+                    }
+                }
 
-                        queries.Add($"UPDATE {tableNameInverseProperty} SET ID_{idTb1} = '{idValue1}', ID_{idTb2} = '{idValue2}'");
+                if (itemsDelete != null)
+                {
+                    foreach (var itemDelete in itemsDelete)
+                    {
+                        PropertyInfo prop2 = itemDelete.GetType().GetProperty(idName2);
+
+                        if (prop2 != null)
+                        {
+                            object idValue2 = prop2.GetValue(itemDelete);
+                            //queries.Add($"UPDATE {tableNameInverseProperty} SET ID_{idTb1} = '{idValue1}', ID_{idTb2} = '{idValue2}'");
+                            //$"DELETE FROM {tableName} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')"
+                            queries.Add($"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = '{idValue1}' AND ID_{idTb2} = '{idValue2}'");
+                        }
                     }
                 }
             }
+
+            return queries;
         }
 
         /// <summary>
@@ -313,7 +348,7 @@ namespace EH.Connection
         }
 
         private static string CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, string? pkEntity1, Dictionary<string, string>? replacesTableName)
-        {           
+        {
             string tableEntity1 = ToolsProp.GetTableName(entity1Type, replacesTableName);
 
             Type collection2Type = propEntity2.PropertyInfo.PropertyType;
