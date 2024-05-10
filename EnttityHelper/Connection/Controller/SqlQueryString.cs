@@ -50,7 +50,7 @@ namespace EH.Connection
             {
                 Type collectionType = invProp.Value.PropertyInfo.PropertyType;
                 Type entity2Type = collectionType.GetGenericArguments()[0];
-                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(entity.GetType(), entity2Type, replacesTableName);
+                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(entity.GetType(), invProp.Value.PropertyInfo, replacesTableName);
 
                 if (invProp.Value.IsCollection != true) { throw new InvalidOperationException("The InverseProperty property must be a collection."); }
 
@@ -138,7 +138,7 @@ namespace EH.Connection
             {
                 Type collectionType = invProp.PropertyType;
                 Type entity2Type = collectionType.GetGenericArguments()[0];
-                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(entity.GetType(), entity2Type, enttityHelper.ReplacesTableName);
+                string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(entity.GetType(), invProp, enttityHelper.ReplacesTableName);
 
                 var tableName1 = ToolsProp.GetTableName(entity.GetType(), enttityHelper.ReplacesTableName);
                 var tableName2 = ToolsProp.GetTableName(entity2Type, enttityHelper.ReplacesTableName);
@@ -401,7 +401,7 @@ namespace EH.Connection
             TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
             string tableEntity2 = table2Attribute.Name ?? entity2Type.Name;
 
-            string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(entity1Type, entity2Type, replacesTableName);
+            string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(entity1Type, propEntity2.PropertyInfo, replacesTableName);
 
             string idTb1 = tableEntity1.Substring(0, Math.Min(tableEntity1.Length, 27));
             string idTb2 = tableEntity2.Substring(0, Math.Min(tableEntity2.Length, 27));

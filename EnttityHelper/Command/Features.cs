@@ -7,6 +7,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 
 namespace EH.Command
 {
@@ -416,7 +417,11 @@ namespace EH.Command
 
         public string? GetTableName<TEntity>() => ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
 
-        public string? GetTableNameManyToMany(Type entity1, Type entity2) => ToolsProp.GetTableNameManyToMany(entity1, entity2, _enttityHelper.ReplacesTableName);
+        public string? GetTableNameManyToMany(Type entity1, string namePropCollection)
+        {
+            PropertyInfo propCollection = entity1.GetType().GetProperty(namePropCollection);
+            return ToolsProp.GetTableNameManyToMany(entity1, propCollection, _enttityHelper.ReplacesTableName);
+        }
 
         public string? GetPKName<TEntity>(TEntity entity) where TEntity : class => ToolsProp.GetPK(entity)?.Name;
 

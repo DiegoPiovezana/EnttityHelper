@@ -320,11 +320,11 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public string? GetTableNameManyToMany(Type entity1, Type entity2)
+        public string? GetTableNameManyToMany(Type entity1, string propCollectionName)
         {
             try
             {
-                return _features.GetTableNameManyToMany(entity1, entity2);
+                return _features.GetTableNameManyToMany(entity1, propCollectionName);
             }
             catch (Exception)
             {

@@ -119,7 +119,7 @@ namespace EH.Entities
                         Features features = new(enttityHelper);              
                         var selectMethod = features.GetType().GetMethod("ExecuteSelectDt");
 
-                        string nameTable = ToolsProp.GetTableNameManyToMany(objectEntity.GetType(), entity2Type, replacesTableName);
+                        string nameTable = ToolsProp.GetTableNameManyToMany(objectEntity.GetType(), prop, replacesTableName);
                         string nameTable2 = ToolsProp.GetTableName(entity2Type, replacesTableName);
                         string columnName1 = ToolsProp.GetTableName(objectEntity.GetType(), replacesTableName);
                         string columnName2 = nameTable2;

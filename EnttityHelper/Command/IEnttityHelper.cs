@@ -1,6 +1,8 @@
-﻿using System;
+﻿using EH.Properties;
+using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Reflection;
 
 namespace EH.Command
 {
@@ -245,9 +247,9 @@ namespace EH.Command
         /// Gets the name of the table representing a many-to-many relationship between two entities.
         /// </summary>
         /// <param name="entity1">The type of the first entity.</param>
-        /// <param name="entity2">The type of the second entity.</param>
+        /// <param name="propCollectionName">The name of collection with the second entity.</param>
         /// <returns>The name of the many-to-many table.</returns>
-        public string? GetTableNameManyToMany(Type entity1, Type entity2);
+        public string? GetTableNameManyToMany(Type entity1, string propCollectionName);
 
         /// <summary>
         /// Gets the name of the primary key for the specified entity.
