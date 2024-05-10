@@ -109,7 +109,7 @@ namespace EH.Connection
                 return null;
             }
 
-            var properties = ToolsProp.GetProperties(entity);
+            var properties = ToolsProp.GetProperties(entity, true, false);
 
             foreach (KeyValuePair<string, Property> pair in properties)
             {
@@ -254,7 +254,7 @@ namespace EH.Connection
 
             foreach (KeyValuePair<string, Property> prop in properties)
             {
-                if (prop.Value?.Type is null) { throw new InvalidOperationException($"Error mapping entity '{nameof(entity)}' property types!"); }
+                if (prop.Value?.Type is null) { throw new InvalidOperationException($"Error mapping entity '{nameof(entity)}' string?string?string?string?string?string?perty types!"); }
 
                 if (ignoreProps.Contains(prop.Value.Name)) { continue; }
 
@@ -296,7 +296,12 @@ namespace EH.Connection
                 else // IsCollection
                 {
                     if (onlyPrimaryTable) { continue; }
-                    string queryCollection = CreateTableFromCollectionProp(prop.GetType(), replacesTableName, properties, pk, prop);
+
+                    Type entity1Type = entity.GetType(); // User
+                    Property? propEntity2 = properties[prop.Value.Name]; // Group
+                    string? pkEntity1 = pk.Name;
+
+                    string queryCollection = CreateTableFromCollectionProp(entity1Type, propEntity2, pkEntity1, replacesTableName);
                     createsTable.Add(queryCollection);
                 }
             }
@@ -307,12 +312,10 @@ namespace EH.Connection
             return createsTable;
         }
 
-        private static string CreateTableFromCollectionProp(Type entity, Dictionary<string, string>? replacesTableName, Dictionary<string, Property> properties, PropertyInfo? pk, KeyValuePair<string, Property> prop)
-        {
-            var pkEntity1 = pk.Name;
-            string tableEntity1 = ToolsProp.GetTableName(entity);
+        private static string CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, string? pkEntity1, Dictionary<string, string>? replacesTableName)
+        {           
+            string tableEntity1 = ToolsProp.GetTableName(entity1Type, replacesTableName);
 
-            var propEntity2 = properties[prop.Value.Name];
             Type collection2Type = propEntity2.PropertyInfo.PropertyType;
             Type entity2Type = collection2Type.GetGenericArguments()[0];
 
@@ -323,7 +326,7 @@ namespace EH.Connection
             TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
             string tableEntity2 = table2Attribute.Name ?? entity2Type.Name;
 
-            string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(entity, entity2Type, replacesTableName);
+            string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(entity1Type, entity2Type, replacesTableName);
 
             string idTb1 = tableEntity1.Substring(0, Math.Min(tableEntity1.Length, 27));
             string idTb2 = tableEntity2.Substring(0, Math.Min(tableEntity2.Length, 27));

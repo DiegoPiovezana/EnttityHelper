@@ -243,24 +243,26 @@ namespace TestEnttityHelper
 
 
                 // INSERT
-                //Group group1 = new() { Id = 1, Name = "Developers", Description = "Developer Group" };
+                Group group1 = new() { Id = 1, Name = "Developers", Description = "Developer Group" };
                 //eh.Insert(group1);
 
-                //Group group2 = new() { Id = 2, Name = "Testers", Description = "Tester Group" };
+                Group group2 = new() { Id = 2, Name = "Testers", Description = "Tester Group" };
                 //eh.Insert(group2);
 
-                //Group group3 = new() { Id = 3, Name = "Operation", Description = "Operation Group" };
+                Group group3 = new() { Id = 3, Name = "Operation", Description = "Operation Group" };
                 //eh.Insert(group3);
 
                 //eh.ExecuteNonQuery("DELETE FROM TB_USER");
-                //User user = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                //List<Group> groupsUser = new() { group1, group2 };
-                //foreach (var group in groupsUser) { user.Groups.Add(group); }
-                //eh.Insert(user);
+                User user = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                List<Group> groupsUser = new() { group1, group2 };
+                foreach (var group in groupsUser) { user.Groups.Add(group); }
+                eh.Insert(user);
 
                 // TODO: Entity FK necessary only for the Get (include)
                 //eh.CreateTableIfNotExist<Career>();
                 //Career carrer = new() { IdCareer = 1, Name = "Pleno", CareerLevel = 2, Active = true };
+                //eh.Insert(carrer);
+                //Career carrer = new() { IdCareer = 3, Name = "Trainee", CareerLevel = 0, Active = true };
                 //eh.Insert(carrer);
                 //var carrers = eh.Get<Career>();
 

@@ -114,7 +114,7 @@ namespace EH.Command
             {
                 if (!string.IsNullOrEmpty(namePropUnique))
                 {
-                    var properties = ToolsProp.GetProperties(entity);
+                    var properties = ToolsProp.GetProperties(entity, true, false);
                     tableName ??= ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
 
                     if (CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))

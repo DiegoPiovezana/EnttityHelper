@@ -72,18 +72,6 @@ namespace EH
             }
         }
 
-        //public int Insert(DataTable dataTable, bool createTable = false, string? tableName = null)
-        //{        
-        //}
-
-        //public int Insert<TEntity>(DataRow[] dataRow, string? tableName = null)
-        //{       
-        //}       
-
-        //public bool Insert<TEntity>(IDataReader dataReader, string? tableName = null)
-        //{        
-        //}
-
         /// <inheritdoc/> 
         public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName)
         {

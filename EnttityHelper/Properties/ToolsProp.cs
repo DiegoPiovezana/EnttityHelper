@@ -12,7 +12,7 @@ namespace EH.Properties
 {
     internal static class ToolsProp
     {
-        internal static Dictionary<string, Property> GetProperties<T>(this T objectEntity, bool ignoreVirtual = true, bool includeNotMapped = false)
+        internal static Dictionary<string, Property> GetProperties<T>(this T objectEntity, bool ignoreVirtual, bool includeNotMapped)
         {
             if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
 
@@ -180,7 +180,7 @@ namespace EH.Properties
             return type.GetCustomAttributes(typeof(TableAttribute), true).FirstOrDefault() as TableAttribute;
         }
 
-        internal static string GetTableName<TEntity>(Dictionary<string, string>? replacesTableName = null)
+        internal static string GetTableName<TEntity>(Dictionary<string, string>? replacesTableName)
         {
             TableAttribute? ta = GetTableAttribute(typeof(TEntity));
             string schema = ta?.Schema != null ? $"{ta.Schema}." : "";
@@ -189,7 +189,7 @@ namespace EH.Properties
             return $"{schema}{tableName}";
         }
 
-        internal static string GetTableName(Type entity, Dictionary<string, string>? replacesTableName = null)
+        internal static string GetTableName(Type entity, Dictionary<string, string>? replacesTableName)
         {
             if (entity is null) return null;
             TableAttribute? ta = GetTableAttribute(entity);
@@ -199,10 +199,10 @@ namespace EH.Properties
             return $"{schema}{tableName}";
         }
 
-        internal static string GetTableNameManyToMany(Type entity1, Type entity2, Dictionary<string, string>? replacesTableName = null)
+        internal static string GetTableNameManyToMany(Type entity1, Type entity2, Dictionary<string, string>? replacesTableName)
         {
-            string tableName1 = GetTableName(entity1);
-            string tableName2 = GetTableName(entity2);
+            string tableName1 = GetTableName(entity1, replacesTableName);
+            string tableName2 = GetTableName(entity2, replacesTableName);
 
             if (string.Compare(tableName1, tableName2) < 0)
             {
