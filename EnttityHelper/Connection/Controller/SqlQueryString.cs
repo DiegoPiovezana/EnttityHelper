@@ -161,46 +161,86 @@ namespace EH.Connection
                     foreach (var entity2 in entity2InCollectionBd) { itemsCollectionBd.Add(entity2); }
                 }
 
-                IEnumerable<object>? itemsCollectionNew = invProp.GetValue(entity) as IEnumerable<object>;
-                IEnumerable<object>? itemsCollectionOld = itemsCollectionBd;
+                //IEnumerable<object>? itemsCollectionNew = invProp.GetValue(entity) as IEnumerable<object>;
+                //IEnumerable<object>? itemsCollectionOld = itemsCollectionBd;
 
-                IEnumerable<object>? itemsInsert = itemsCollectionNew?.Except(itemsCollectionOld);
-                IEnumerable<object>? itemsDelete = itemsCollectionOld?.Except(itemsCollectionNew);
+                List<string>? itemsCollectionNew = new();
+                List<string>? itemsCollectionOld = new();
+
+                foreach (var itemNew in invProp.GetValue(entity) as IEnumerable<object>)
+                {
+                    PropertyInfo prop2 = itemNew.GetType().GetProperty(idName2);
+                    if (prop2 != null) { itemsCollectionNew.Add(prop2.GetValue(itemNew).ToString()); }
+                }
+
+                foreach (var itemOld in itemsCollectionBd)
+                {
+                    PropertyInfo prop2 = itemOld.GetType().GetProperty(idName2);
+                    if (prop2 != null) { itemsCollectionOld.Add(prop2.GetValue(itemOld).ToString()); }
+                }
 
                 PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
                 string idTb1 = tableName1.Substring(0, Math.Min(tableName1.Length, 27));
                 string idTb2 = tableName2.Substring(0, Math.Min(tableName2.Length, 27));
                 object idValue1 = prop1.GetValue(entity);
 
-                if (itemsInsert != null)
+                if (itemsCollectionNew != null && itemsCollectionNew.Any())
                 {
-                    foreach (var itemInsert in itemsInsert)
+                    foreach (object itemInsert in itemsCollectionNew)
                     {
-                        PropertyInfo prop2 = itemInsert.GetType().GetProperty(idName2);
-
-                        if (prop2 != null)
+                        if (!itemsCollectionOld.Contains(itemInsert))
                         {
-                            object idValue2 = prop2.GetValue(itemInsert);
-                            queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
+                            queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{itemInsert}')");
+                        }
+
+                    }
+                }
+
+                if (itemsCollectionOld != null && itemsCollectionOld.Any())
+                {
+                    foreach (object itemDelete in itemsCollectionOld)
+                    {
+                        if (!itemsCollectionNew.Contains(itemDelete))
+                        {
+                            queries.Add($"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = '{idValue1}' AND ID_{idTb2} = '{itemDelete}'");
                         }
                     }
                 }
 
-                if (itemsDelete != null)
-                {
-                    foreach (var itemDelete in itemsDelete)
-                    {
-                        PropertyInfo prop2 = itemDelete.GetType().GetProperty(idName2);
+                
 
-                        if (prop2 != null)
-                        {
-                            object idValue2 = prop2.GetValue(itemDelete);
-                            //queries.Add($"UPDATE {tableNameInverseProperty} SET ID_{idTb1} = '{idValue1}', ID_{idTb2} = '{idValue2}'");
-                            //$"DELETE FROM {tableName} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')"
-                            queries.Add($"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = '{idValue1}' AND ID_{idTb2} = '{idValue2}'");
-                        }
-                    }
-                }
+                //IEnumerable<object>? itemsInsert = itemsCollectionNew?.Except(itemsCollectionOld);
+                //IEnumerable<object>? itemsDelete = itemsCollectionOld?.Except(itemsCollectionNew);
+
+                //if (itemsInsert != null)
+                //{
+                //    foreach (var itemInsert in itemsInsert)
+                //    {
+                //        PropertyInfo prop2 = itemInsert.GetType().GetProperty(idName2);
+
+                //        if (prop2 != null)
+                //        {
+                //            object idValue2 = prop2.GetValue(itemInsert);
+                //            queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
+                //        }
+                //    }
+                //}
+
+                //if (itemsDelete != null)
+                //{
+                //    foreach (var itemDelete in itemsDelete)
+                //    {
+                //        PropertyInfo prop2 = itemDelete.GetType().GetProperty(idName2);
+
+                //        if (prop2 != null)
+                //        {
+                //            object idValue2 = prop2.GetValue(itemDelete);
+                //            //queries.Add($"UPDATE {tableNameInverseProperty} SET ID_{idTb1} = '{idValue1}', ID_{idTb2} = '{idValue2}'");
+                //            //$"DELETE FROM {tableName} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')"
+                //            queries.Add($"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = '{idValue1}' AND ID_{idTb2} = '{idValue2}'");
+                //        }
+                //    }
+                //}
             }
 
             return queries;
