@@ -3,9 +3,9 @@ using EH;
 using EH.Connection;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Net.Mail;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 #nullable enable
@@ -17,10 +17,12 @@ namespace EH_WindowsFormsApp
         readonly Database db = new(stringConnection);
         private bool _isUpdate = false;
         private User? _userSelected;
+        private List<DataRow> _checkedUsers = new();
 
         public FrmUsers()
         {
             InitializeComponent();
+            TxtSearch.TextChanged += TxtSearch_TextChanged;
         }
 
         private void FrmUsuario_Load(object sender, EventArgs e)
@@ -46,14 +48,10 @@ namespace EH_WindowsFormsApp
         {
             var eh = new EnttityHelper(db);
             if (!eh.DbContext.ValidateConnection()) { MessageBox.Show("Unable to establish a connection to the database!", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error); return false; };
-                   
+
             eh.CreateTableIfNotExist<User>();
             eh.CreateTableIfNotExist<Career>();
             eh.CreateTableIfNotExist<Group>();
-
-            // USERS
-            User user = new() { Id = "admin", Name = "Diêgo Piovezana", Login = "admin", Email = "diego.piov@abc.com" };
-            eh.Insert(user, nameof(user.Id));
 
             // CAREERS
             Career career = new() { IdCareer = 1, Name = "Administrador", CareerLevel = 1, Active = true };
@@ -67,26 +65,49 @@ namespace EH_WindowsFormsApp
 
             // GROUPS
             Group group = new() { IdGroup = 1, Name = "Administração", Active = true };
-            eh.Insert(group, nameof(group.IdGroup)); 
+            eh.Insert(group, nameof(group.IdGroup));
             group = new() { IdGroup = 2, Name = "Operação", Active = true };
-            eh.Insert(group, nameof(group.IdGroup)); 
+            eh.Insert(group, nameof(group.IdGroup));
             group = new() { IdGroup = 3, Name = "Supervisão", Active = true };
-            eh.Insert(group, nameof(group.IdGroup)); 
+            eh.Insert(group, nameof(group.IdGroup));
             group = new() { IdGroup = 4, Name = "Liderança", Active = true };
             eh.Insert(group, nameof(group.IdGroup));
+
+            // USERS
+            User user = new() { Id = "admin", Name = "Diêgo Piovezana", Login = "admin", Email = "diego.piov@abc.com", Active = true, DtCreation = DateTime.Now, IdCareer = 1, IdGroup = 1 };
+            eh.Insert(user, nameof(user.Id));
+
+            for (int i = 1; i <= 10; i++)
+            {
+                string userId = $"user{i}";
+                string userName = $"Usuário Teste {i}";
+                string userLogin = $"login{i}";
+                string userEmail = $"usuario{i}@example.com";
+
+                User userTest = new User { Id = userId, Name = userName, Login = userLogin, Email = userEmail, Active = true, DtCreation = DateTime.Now, IdCareer = 2, IdGroup = 2, IdSupervisor = "admin" };
+                eh.Insert(userTest, nameof(User.Id));
+            }
 
             return true;
         }
 
         private void GetUsers()
         {
-            //bs = new() { DataSource = UserDTO.SearchAllUser(false, db) };
-            bs = new() { DataSource = new EnttityHelper(db).Get<User>().Where(u => !false || u.Active).ToList() };
+            //bs = new() { DataSource = new EnttityHelper(db).Get<User>().ToList() };
+            bs = new() { DataSource = new EnttityHelper(db).ExecuteSelectDt("SELECT * FROM TB_USERS") };
+
             GridUsers.DataSource = bs;
+            //GridUsers.DisplayedRowCount(true);
+
+            CklbUsers.DataSource = bs;
+            CklbUsers.DisplayMember = "Login";
+            CklbUsers.ValueMember = "Id";
+
             CbSupervisor.DataSource = null;
 
             if (bs?.List is null || bs.List.Count <= 0) return;
-            CbSupervisor.DataSource = (IEnumerable<User>)bs.List;
+            //CbSupervisor.DataSource = (IEnumerable<User>)bs.List;
+            CbSupervisor.DataSource = bs;
             CbSupervisor.DisplayMember = "Id";
         }
 
@@ -108,8 +129,6 @@ namespace EH_WindowsFormsApp
 
 
 
-
-
         private void GridUsers_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             BtnClear_Click(sender, e);
@@ -125,8 +144,29 @@ namespace EH_WindowsFormsApp
 
         private void FillData(int index)
         {
-            _userSelected = (User)GridUsers.Rows[index].DataBoundItem;
-            if (_userSelected is null) return;
+            //_userSelected = (User)GridUsers.Rows[index].DataBoundItem;
+            //_userSelected = bs.Current as User;
+
+            //if (_userSelected is null) return;
+
+            _userSelected = new User
+            {
+                Id = GridUsers.Rows[index].Cells["Id"].Value.ToString(),
+                Email = GridUsers.Rows[index].Cells["Email"].Value.ToString(),
+                Login = GridUsers.Rows[index].Cells["Login"].Value.ToString(),
+                Name = GridUsers.Rows[index].Cells["Name"].Value.ToString(),
+                Active = GridUsers.Rows[index].Cells["Active"].Value.Equals(1),
+                DtCreation = (DateTime)GridUsers.Rows[index].Cells["DtCreation"].Value,
+                DtLastLogin = string.IsNullOrWhiteSpace(GridUsers.Rows[index].Cells["DtLastLogin"].Value?.ToString()) ? null : (DateTime?)GridUsers.Rows[index].Cells["DtLastLogin"].Value,
+                DtActivation = string.IsNullOrWhiteSpace(GridUsers.Rows[index].Cells["DtActivation"].Value?.ToString()) ? null : (DateTime?)GridUsers.Rows[index].Cells["DtActivation"].Value,
+                DtDeactivation = string.IsNullOrWhiteSpace(GridUsers.Rows[index].Cells["DtDeactivation"].Value?.ToString()) ? null : (DateTime?)GridUsers.Rows[index].Cells["DtDeactivation"].Value,
+                DtAlteration = string.IsNullOrWhiteSpace(GridUsers.Rows[index].Cells["DtAlteration"].Value?.ToString()) ? null : (DateTime?)GridUsers.Rows[index].Cells["DtAlteration"].Value,
+                DtRevision = string.IsNullOrWhiteSpace(GridUsers.Rows[index].Cells["DtRevision"].Value?.ToString()) ? null : (DateTime?)GridUsers.Rows[index].Cells["DtRevision"].Value,
+                InternalUser = GridUsers.Rows[index].Cells["InternalUser"].Value?.ToString(),
+                IdSupervisor = string.IsNullOrWhiteSpace(GridUsers.Rows[index].Cells["IdSupervisor"].Value?.ToString()) ? null : GridUsers.Rows[index].Cells["IdSupervisor"].Value.ToString(),
+                IdCareer = Convert.ToInt64(GridUsers.Rows[index].Cells["IdCareer"].Value),
+                IdGroup = string.IsNullOrWhiteSpace(GridUsers.Rows[index].Cells["IdGroup"].Value?.ToString()) ? null : Convert.ToInt64(GridUsers.Rows[index].Cells["IdGroup"].Value)
+            };  
 
             TxtEmail.Text = _userSelected.Email;
             TxtLogin.Text = _userSelected.Login;
@@ -137,7 +177,7 @@ namespace EH_WindowsFormsApp
             CbGroup.Text = _userSelected.Group?.Name;
 
             CkbActive.Checked = _userSelected.Active;
-            CkbInternal.Checked = _userSelected.InternalUser == "Y";  
+            CkbInternal.Checked = _userSelected.InternalUser == "Y";
         }
 
         private bool FillUser(User? user)
@@ -185,7 +225,7 @@ namespace EH_WindowsFormsApp
         {
             TxtEmail.Text = "";
             TxtLogin.Text = "";
-            TxtName.Text = "";   
+            TxtName.Text = "";
             CbCareer.SelectedIndex = -1;
             CbGroup.SelectedIndex = -1;
             CbSupervisor.SelectedIndex = -1;
@@ -310,7 +350,6 @@ namespace EH_WindowsFormsApp
             }
             catch (Exception)
             {
-
                 throw;
             }
         }
@@ -348,6 +387,46 @@ namespace EH_WindowsFormsApp
             else
             {
                 MessageBox.Show($"User '{_userSelected?.Id}' has not been deleted!", "Failed to delete!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void TxtSearch_TextChanged(object sender, EventArgs e)
+        {            
+            //_checkedUsers.Clear();
+            foreach (DataRowView rowView in CklbUsers.CheckedItems)
+            {
+                _checkedUsers.Add(rowView.Row);
+            }
+                       
+            ((DataView)bs.List).RowFilter = $"Name like '%{TxtSearch.Text}%' OR Login like '%{TxtSearch.Text}%' OR Email like '%{TxtSearch.Text}%'";
+            //bs.Filter = $"Name like '%{TxtSearch.Text}%' OR Login like '%{TxtSearch.Text}%' OR Email like '%{TxtSearch.Text}%'";
+                        
+            foreach (DataRow row in _checkedUsers)
+            {                
+                bool rowFound = false;
+                foreach (DataRowView filteredRowView in bs.List)
+                {
+                    if (row == filteredRowView.Row)
+                    {
+                        rowFound = true;
+                        break;
+                    }
+                }
+                               
+                if (rowFound)
+                {                   
+                    for (int i = 0; i < CklbUsers.Items.Count; i++)
+                    {
+                        DataRowView item = (DataRowView)CklbUsers.Items[i];
+                        if (item.Row == row)
+                        {
+                            CklbUsers.SetItemChecked(i, true);
+                            break;
+                        }
+                    }
+                }
+
+                //GridUsers.Refresh();    
             }
         }
 

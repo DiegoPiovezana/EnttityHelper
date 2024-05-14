@@ -71,6 +71,10 @@
 		<None Include="LICENSE.txt" Pack="true" PackagePath="" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Reference Include="System.Data.DataSetExtensions" />
+	</ItemGroup>
+
 	
 
 </Project>

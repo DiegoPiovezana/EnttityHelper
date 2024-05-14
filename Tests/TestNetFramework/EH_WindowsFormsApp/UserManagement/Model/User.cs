@@ -25,9 +25,7 @@ namespace DiegoPiov.UserManagement
         public virtual Career Career { get; internal set; }
         [ForeignKey(nameof(Group))] public Int64? IdGroup { get; internal set; }
         public virtual Group Group { get; internal set; }
-
-
-        [NotMapped] public string AdminTest { get; internal set; }
+       
 
         public override string ToString()
         {

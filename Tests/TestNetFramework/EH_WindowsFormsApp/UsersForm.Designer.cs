@@ -52,6 +52,8 @@
             this.GridUsers = new ADGV.AdvancedDataGridView();
             this.bs = new System.Windows.Forms.BindingSource(this.components);
             this.BtnDelete = new System.Windows.Forms.Button();
+            this.TxtSearch = new System.Windows.Forms.TextBox();
+            this.CklbUsers = new System.Windows.Forms.CheckedListBox();
             this.PanelUsuario.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.GridUsers)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.bs)).BeginInit();
@@ -270,18 +272,22 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.GridUsers.AutoGenerateContextFilters = true;
-            this.GridUsers.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.GridUsers.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.DisplayedCells;
             this.GridUsers.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
             this.GridUsers.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.GridUsers.DateWithTime = false;
-            this.GridUsers.Location = new System.Drawing.Point(12, 12);
+            this.GridUsers.Location = new System.Drawing.Point(12, 48);
             this.GridUsers.Name = "GridUsers";
             this.GridUsers.RowHeadersWidth = 51;
             this.GridUsers.RowTemplate.Height = 24;
-            this.GridUsers.Size = new System.Drawing.Size(1095, 741);
+            this.GridUsers.Size = new System.Drawing.Size(829, 705);
             this.GridUsers.TabIndex = 8;
             this.GridUsers.TimeFilter = false;
             this.GridUsers.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.GridUsers_CellClick);
+            // 
+            // bs
+            // 
+            this.bs.AllowNew = false;
             // 
             // BtnDelete
             // 
@@ -298,12 +304,29 @@
             this.BtnDelete.UseVisualStyleBackColor = true;
             this.BtnDelete.Click += new System.EventHandler(this.BtnDelete_Click);
             // 
+            // TxtSearch
+            // 
+            this.TxtSearch.Location = new System.Drawing.Point(12, 20);
+            this.TxtSearch.Name = "TxtSearch";
+            this.TxtSearch.Size = new System.Drawing.Size(669, 22);
+            this.TxtSearch.TabIndex = 9;
+            // 
+            // CklbUsers
+            // 
+            this.CklbUsers.FormattingEnabled = true;
+            this.CklbUsers.Location = new System.Drawing.Point(848, 48);
+            this.CklbUsers.Name = "CklbUsers";
+            this.CklbUsers.Size = new System.Drawing.Size(259, 701);
+            this.CklbUsers.TabIndex = 10;
+            // 
             // FrmUsers
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(1366, 765);
+            this.Controls.Add(this.CklbUsers);
+            this.Controls.Add(this.TxtSearch);
             this.Controls.Add(this.GridUsers);
             this.Controls.Add(this.BtnDelete);
             this.Controls.Add(this.BtnClear);
@@ -319,6 +342,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.GridUsers)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.bs)).EndInit();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -337,7 +361,6 @@
         private System.Windows.Forms.Button BtnUpdate;
         private System.Windows.Forms.Button BtnClear;
         private ADGV.AdvancedDataGridView GridUsers;
-        private System.Windows.Forms.BindingSource bs;
         private System.Windows.Forms.Label lblLogin;
         private System.Windows.Forms.TextBox TxtLogin;
         private System.Windows.Forms.ComboBox CbGroup;
@@ -345,6 +368,9 @@
         private System.Windows.Forms.Label LblGroup;
         private System.Windows.Forms.Label LblCarrier;
         private System.Windows.Forms.Button BtnDelete;
+        private System.Windows.Forms.TextBox TxtSearch;
+        private System.Windows.Forms.CheckedListBox CklbUsers;
+        private System.Windows.Forms.BindingSource bs;
     }
 }
 
