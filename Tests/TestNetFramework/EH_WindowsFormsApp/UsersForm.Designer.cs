@@ -318,6 +318,7 @@
             this.CklbUsers.Name = "CklbUsers";
             this.CklbUsers.Size = new System.Drawing.Size(259, 701);
             this.CklbUsers.TabIndex = 10;
+            this.CklbUsers.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.CklbUsers_ItemCheck);
             // 
             // FrmUsers
             // 

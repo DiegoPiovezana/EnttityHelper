@@ -166,7 +166,7 @@ namespace EH_WindowsFormsApp
                 IdSupervisor = string.IsNullOrWhiteSpace(GridUsers.Rows[index].Cells["IdSupervisor"].Value?.ToString()) ? null : GridUsers.Rows[index].Cells["IdSupervisor"].Value.ToString(),
                 IdCareer = Convert.ToInt64(GridUsers.Rows[index].Cells["IdCareer"].Value),
                 IdGroup = string.IsNullOrWhiteSpace(GridUsers.Rows[index].Cells["IdGroup"].Value?.ToString()) ? null : Convert.ToInt64(GridUsers.Rows[index].Cells["IdGroup"].Value)
-            };  
+            };
 
             TxtEmail.Text = _userSelected.Email;
             TxtLogin.Text = _userSelected.Login;
@@ -390,44 +390,61 @@ namespace EH_WindowsFormsApp
             }
         }
 
-        private void TxtSearch_TextChanged(object sender, EventArgs e)
-        {            
-            //_checkedUsers.Clear();
-            foreach (DataRowView rowView in CklbUsers.CheckedItems)
+        private void CklbUsers_ItemCheck(object sender, ItemCheckEventArgs e)
+        {
+            DataRowView checkedRowView = (DataRowView)CklbUsers.Items[e.Index];
+            DataRow checkedRow = checkedRowView.Row;
+
+            if (e.NewValue == CheckState.Checked)
             {
-                _checkedUsers.Add(rowView.Row);
+                _checkedUsers.Add(checkedRow);
             }
-                       
+            else
+            {
+                _checkedUsers.Remove(checkedRow);
+            }
+        }
+
+        private void TxtSearch_TextChanged(object sender, EventArgs e)
+        {
+            //_checkedUsers.Clear();
+            //foreach (DataRowView rowView in CklbUsers.CheckedItems)
+            //{
+            //    _checkedUsers.Add(rowView.Row);
+            //}
+
             ((DataView)bs.List).RowFilter = $"Name like '%{TxtSearch.Text}%' OR Login like '%{TxtSearch.Text}%' OR Email like '%{TxtSearch.Text}%'";
             //bs.Filter = $"Name like '%{TxtSearch.Text}%' OR Login like '%{TxtSearch.Text}%' OR Email like '%{TxtSearch.Text}%'";
-                        
+
+            CklbUsers.ItemCheck -= CklbUsers_ItemCheck;
             foreach (DataRow row in _checkedUsers)
-            {                
-                bool rowFound = false;
-                foreach (DataRowView filteredRowView in bs.List)
+            {
+                //bool rowFound = false;
+                //foreach (DataRowView filteredRowView in bs.List)
+                //{
+                //    if (row == filteredRowView.Row)
+                //    {
+                //        rowFound = true;
+                //        break;
+                //    }
+                //}
+
+                //if (rowFound)
+                //{                   
+                for (int i = 0; i < CklbUsers.Items.Count; i++)
                 {
-                    if (row == filteredRowView.Row)
+                    DataRowView item = (DataRowView)CklbUsers.Items[i];
+                    if (item.Row == row)
                     {
-                        rowFound = true;
+                        CklbUsers.SetItemChecked(i, true);
                         break;
                     }
                 }
-                               
-                if (rowFound)
-                {                   
-                    for (int i = 0; i < CklbUsers.Items.Count; i++)
-                    {
-                        DataRowView item = (DataRowView)CklbUsers.Items[i];
-                        if (item.Row == row)
-                        {
-                            CklbUsers.SetItemChecked(i, true);
-                            break;
-                        }
-                    }
-                }
+                //}
 
                 //GridUsers.Refresh();    
             }
+            CklbUsers.ItemCheck += CklbUsers_ItemCheck;
         }
 
 
