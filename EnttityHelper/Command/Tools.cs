@@ -88,6 +88,32 @@ namespace EH.Command
             return dtResult;
         }
 
+        public static DataTable ToDataTable<T>(this IEnumerable<T> items) 
+        { 
+            DataTable dataTable = new (typeof(T).Name); 
+        
+            PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance); 
+        
+            foreach (PropertyInfo prop in props) 
+            {               
+                dataTable.Columns.Add(prop.Name, Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType); 
+            } 
+        
+            foreach (T item in items) 
+            { 
+                DataRow row = dataTable.NewRow(); 
+        
+                foreach (PropertyInfo prop in props) 
+                {                     
+                    row[prop.Name] = prop.GetValue(item) ?? DBNull.Value; 
+                } 
+        
+                dataTable.Rows.Add(row); 
+            } 
+        
+            return dataTable; 
+        }
+
         /// <summary>
         /// Normalizes the input text by removing diacritics and replacing spaces with the specified character.
         /// </summary>
