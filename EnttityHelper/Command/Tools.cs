@@ -88,30 +88,30 @@ namespace EH.Command
             return dtResult;
         }
 
-        public static DataTable ToDataTable<T>(this IEnumerable<T> items) 
-        { 
-            DataTable dataTable = new (typeof(T).Name); 
-        
-            PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance); 
-        
-            foreach (PropertyInfo prop in props) 
-            {               
-                dataTable.Columns.Add(prop.Name, Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType); 
-            } 
-        
-            foreach (T item in items) 
-            { 
-                DataRow row = dataTable.NewRow(); 
-        
-                foreach (PropertyInfo prop in props) 
-                {                     
-                    row[prop.Name] = prop.GetValue(item) ?? DBNull.Value; 
-                } 
-        
-                dataTable.Rows.Add(row); 
-            } 
-        
-            return dataTable; 
+        public static DataTable ToDataTable<T>(this IEnumerable<T> items)
+        {
+            DataTable dataTable = new(typeof(T).Name);
+
+            PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (PropertyInfo prop in props)
+            {
+                dataTable.Columns.Add(prop.Name, Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType);
+            }
+
+            foreach (T item in items)
+            {
+                DataRow row = dataTable.NewRow();
+
+                foreach (PropertyInfo prop in props)
+                {
+                    row[prop.Name] = prop.GetValue(item) ?? DBNull.Value;
+                }
+
+                dataTable.Rows.Add(row);
+            }
+
+            return dataTable;
         }
 
         /// <summary>
@@ -191,6 +191,16 @@ namespace EH.Command
             }
 
             return dataTable;
+        }
+
+        public static string? FixValueToString(this object value)
+        {
+            if (value is string vString)
+            {
+                if (string.IsNullOrEmpty(vString) || !vString.Contains("'")) { return vString; }
+                return vString.Replace("'''", "'").Replace("'", "''");
+            }
+            return "NULL";
         }
 
 
