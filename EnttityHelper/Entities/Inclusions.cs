@@ -62,7 +62,7 @@ namespace EH.Entities
                         MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(elementType);
 
                         // Retrieve the foreign key entities
-                        IEnumerable<object> entityFKList = (IEnumerable<object>)genericGetMethod.Invoke(_enttityHelper, new object[] { true, $"{pk.Name}='{pkValue}'", null });
+                        IEnumerable<object> entityFKList = (IEnumerable<object>)genericGetMethod.Invoke(_enttityHelper, new object[] { false, $"{pk.Name}='{pkValue}'", null });
 
                         // Cast each entity to the actual type
                         IEnumerable<object> castEntityFKList = entityFKList.Cast<object>();
