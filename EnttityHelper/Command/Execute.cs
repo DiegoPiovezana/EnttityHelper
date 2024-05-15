@@ -1,13 +1,11 @@
 ﻿using EH.Command;
 using EH.Connection;
-using EH.Properties;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
-using System.Text;
 
 namespace EH.Commands
 {

@@ -70,13 +70,16 @@ namespace EH.Connection
 
                 foreach (var item in itemsCollection)
                 {
-                    PropertyInfo prop2 = item.GetType().GetProperty(idName2);
-
-                    if (prop2 != null)
+                    if(item != null)
                     {
-                        object idValue2 = prop2.GetValue(item);
-                        queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
-                    }
+                        PropertyInfo prop2 = item.GetType().GetProperty(idName2);
+
+                        if (prop2 != null)
+                        {
+                            object idValue2 = prop2.GetValue(item);
+                            queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
+                        }
+                    }                    
                 }
             }
         }
