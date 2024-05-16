@@ -79,7 +79,7 @@ namespace EH.Command
             }
         }
 
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false)
+        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
         {
             if (entity is DataTable dataTable)
             {
@@ -130,14 +130,29 @@ namespace EH.Command
                     }
                 }
 
-                ICollection<string?> insertsQuery = _enttityHelper.GetQuery.Insert(entity, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties);
+                List<string?> insertsQuery = _enttityHelper.GetQuery.Insert(entity, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();
 
-                //int inserts = 0;
+                int inserts = 0;
                 //foreach (string? insertQuery in insertsQuery)
                 //{
                 //    inserts += insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1);
                 //}
-                int inserts = insertsQuery.Sum(insertQuery => insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1));
+
+                //int inserts = insertsQuery.Sum(insertQuery => insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1));                
+
+                if (insertsQuery is null) throw new Exception($"EH-000: Error!");
+                for (int i = 0; i < insertsQuery.Count; i++)
+                {
+                    if (insertsQuery[i] is null) throw new Exception($"EH-000: Error!");
+
+                    if (i >= 1) // TODO: Refactor
+                    {
+                        string? id = GetPKValueOfLastInsert(entity);
+                        insertsQuery[i] = insertsQuery[i].Replace("'0'", $"'{id}'"); 
+                    }
+
+                    inserts += ExecuteNonQuery(insertsQuery[i], 1);
+                }
 
                 return inserts;
             }
@@ -192,7 +207,7 @@ namespace EH.Command
             return updates;
         }
 
-        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null)
+        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null) where TEntity : class
         {
             string? querySelect = _enttityHelper.GetQuery.Get<TEntity>(filter, _enttityHelper.ReplacesTableName, tableName);
             var entities = ExecuteSelect<TEntity>(querySelect);
@@ -425,7 +440,14 @@ namespace EH.Command
 
         public string? GetPKName<TEntity>(TEntity entity) where TEntity : class => ToolsProp.GetPK(entity)?.Name;
 
+        public string? GetPKValueOfLastInsert<TEntity>(TEntity entity) where TEntity : class
+        {
+            string? nameTable = GetTableName<TEntity>();
+            string? pkName = ToolsProp.GetPK(entity)?.Name;
 
+            var idLastInsert = ExecuteSelectScalar($"SELECT {pkName} FROM (SELECT {pkName} FROM {nameTable} ORDER BY {pkName} DESC) WHERE ROWNUM = 1");
+            return idLastInsert;
+        }
 
 
     }

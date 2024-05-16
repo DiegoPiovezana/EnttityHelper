@@ -21,7 +21,7 @@ namespace EH.Command
         /// True, if one or more entities are inserted into the database.
         /// <para>If the return is negative, it indicates that the insertion did not happen due to some established criteria.</para>
         /// </returns>
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false);
+        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class;
 
         ///// <summary>
         ///// Inserts data from a DataTable into the specified database table.
@@ -95,7 +95,7 @@ namespace EH.Command
         /// <param name="filter">(Optional) Entity search criteria.</param>     
         /// <param name="tableName">(Optional) Name of the table where the entities are inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>Entities list.</returns>
-        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null);
+        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null) where TEntity : class;
 
         /// <summary>
         /// Search the specific entity by <paramref name="idPropName"/>

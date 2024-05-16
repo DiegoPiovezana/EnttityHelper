@@ -60,7 +60,7 @@ namespace EH
 
 
         /// <inheritdoc/>  
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false)
+        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
         {
             try
             {
@@ -99,7 +99,7 @@ namespace EH
         }
 
         /// <inheritdoc/> 
-        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null)
+        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null) where TEntity : class
         {
             try
             {
