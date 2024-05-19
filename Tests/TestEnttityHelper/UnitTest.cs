@@ -235,13 +235,17 @@ namespace TestEnttityHelper
                 /////////////////////////////////////////////////// 
                 // CREATE TABLE
 
+                if (eh.CheckIfExist("TB_GROUP_USERSTOGROUPS")) eh.ExecuteNonQuery("DROP TABLE TB_GROUP_USERSTOGROUPS");
                 if (eh.CheckIfExist(eh.GetTableName<Group>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Group>()}");
-                eh.CreateTableIfNotExist<Group>(true);
-
-                //eh.ExecuteNonQuery("DROP TABLE TB_USERtoTB_GROUP_USERS");
                 if (eh.CheckIfExist(eh.GetTableName<User>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<User>()}");
-                eh.CreateTableIfNotExist<User>(false);
-                
+                if (eh.CheckIfExist(eh.GetTableName<Career>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Career>()}");
+
+                //eh.CreateTableIfNotExist<Group>(true);
+                //eh.CreateTableIfNotExist<User>(false);
+
+                eh.CreateTableIfNotExist<User>(true);
+                eh.CreateTableIfNotExist<Group>(false);
+
                 // TODO: Entity FK necessary only for the Get (include)
                 eh.CreateTableIfNotExist<Career>();
 
@@ -266,7 +270,9 @@ namespace TestEnttityHelper
                 foreach (var group in groupsUser) { user.Groups.Add(group); }
                 eh.Insert(user);
 
-                User user2 = new() { Id = 1, Name = "John Victor", GitHub = "@JohnVictor", DtCreation = DateTime.Now, IdCareer = 3 };
+
+                User user2 = new() { Id = 2, Name = "John Victor", GitHub = "@JohnVictor", DtCreation = DateTime.Now, IdCareer = 3 };
+                eh.Insert(user2);
 
                 Group group3 = new() { Id = 3, Name = "Operation", Description = "Operation Group" };
                 group3.Users.Add(user2);

@@ -1,6 +1,4 @@
-﻿using EH.Command;
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -205,19 +203,19 @@ namespace EH.Properties
             Type entity2Type = collection2Type.GetGenericArguments()[0];
 
             IEnumerable<CustomAttributeData>? attributeProp1Collection = prop2Collection.CustomAttributes.Where(a => a.AttributeType.Name == "InversePropertyAttribute");
-            CustomAttributeTypedArgument customAttribute = attributeProp1Collection.FirstOrDefault().ConstructorArguments[0];            
-            string nameProp2Collection = customAttribute.Value.ToString();            
+            CustomAttributeTypedArgument customAttribute = attributeProp1Collection.FirstOrDefault().ConstructorArguments[0];
+            string nameProp2Collection = customAttribute.Value.ToString();
 
             PropertyInfo? prop1Collection = null; // Entity 1 in entity 2
             if (!string.IsNullOrEmpty(nameProp2Collection)) { prop1Collection = entity2Type.GetProperty(nameProp2Collection); }
 
-            Type? collection1Type = null;
-            if (prop1Collection != null) { collection1Type = prop2Collection.PropertyType; }
+            //Type? collection1Type = null;
+            //if (prop1Collection != null) { collection1Type = prop2Collection.PropertyType; }
 
-            string nameProp1Collection = "";
+            string nameProp1Collection = prop2Collection.Name;
 
             string tableName1 = GetTableName(entity1Type, replacesTableName);
-            string tableName2 = GetTableName(entity2Type, replacesTableName);                        
+            string tableName2 = GetTableName(entity2Type, replacesTableName);
 
             if (string.Compare(nameProp1Collection, nameProp2Collection) < 0)
             {
@@ -226,7 +224,7 @@ namespace EH.Properties
                 (nameProp2Collection, nameProp1Collection) = (nameProp1Collection, nameProp2Collection);
             }
 
-            string tableNameResult = $"{tableName1.ToUpper()}to{prop2Collection.Name.ToUpper()}";
+            string tableNameResult = $"{tableName1.ToUpper()}to{nameProp2Collection.ToUpper()}";
 
             //string tableName1 = string.Compare(nameTbEntity1, nameTbEntity2) > 0 ? nameTbEntity1 : nameTbEntity2;
             //string tableName2 = string.Compare(nameTbEntity1, nameTbEntity2) > 0 ? nameTbEntity2 : nameTbEntity1;

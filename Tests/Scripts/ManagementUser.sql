@@ -413,13 +413,21 @@ ROLLBACK;
 
 ---------------------
 -- Get
+SELECT * FROM TB_USERtoTB_GROUP_USERS;
+
+SELECT * FROM TB_GROUP_USERSTOGROUPS;
 
 SELECT * FROM TB_USER;
+
 SELECT * FROM TB_GROUP_USERS;
-SELECT * FROM TB_USERtoTB_GROUP_USERS;
+
 SELECT * FROM TB_USERtoGROUP;
+
 SELECT * FROM TB_USERtoGROUP WHERE (ID_TB_USER='1');
+
 SELECT * FROM TB_CAREERS;
+
+
 
 ----------------------
 -- UPDATE
@@ -434,3 +442,35 @@ SELECT * FROM TB_CAREERS;
 
 select * from TB_CAREERS;
 select * from TB_USER;
+
+
+
+
+
+--------------------------------------------------------------
+-- Many to Many
+
+-- ENTITY 1 - Group
+-- Type: ................... "Group";
+-- Table: .................. "TB_GROUP_USERS";
+-- NameProp: ............... "Users".
+
+-- ENTITY 2 - User
+-- Type: ................... "User"; 
+-- Table: .................. "TB_USER";
+-- NameProp: ............... "Groups".
+
+
+-- TB_GROUP_USERStoGROUPS
+-- TB_GROUP_USERStoUSERS
+
+
+SELECT * FROM TB_USERtoTB_GROUP_USERS;
+
+SELECT * FROM TB_GROUP_USERSTOGROUPS;
+
+SELECT * FROM TB_USER;
+
+SELECT * FROM TB_GROUP_USERS;
+
+SELECT * FROM TB_USERtoGROUP;
