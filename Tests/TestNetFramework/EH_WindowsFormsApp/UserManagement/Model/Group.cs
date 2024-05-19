@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -42,6 +43,8 @@ namespace DiegoPiov.UserManagement
         //public virtual Origin Origin { get; internal set; }
 
         [Required] public bool Active { get; internal set; }
+
+        [InverseProperty(nameof(User.Groups))] public virtual IEnumerable<User> Users { get; internal set; }
 
         /// <summary>
         /// Permissions regarding the application's functionalities

@@ -74,7 +74,7 @@ namespace EH_WindowsFormsApp
             eh.Insert(group, nameof(group.IdGroup));
 
             // USERS
-            User user = new() { Id = "admin", Name = "Diêgo Piovezana", Login = "admin", Email = "diego.piov@abc.com", Active = true, DtCreation = DateTime.Now, IdCareer = 1, IdGroup = 1 };
+            User user = new() { Id = "admin", Name = "Diêgo Piovezana", Login = "admin", Email = "diego.piov@abc.com", Active = true, DtCreation = DateTime.Now, IdCareer = 1};
             eh.Insert(user, nameof(user.Id));
 
             for (int i = 1; i <= 10; i++)
@@ -84,7 +84,7 @@ namespace EH_WindowsFormsApp
                 string userLogin = $"login{i}";
                 string userEmail = $"usuario{i}@example.com";
 
-                User userTest = new User { Id = userId, Name = userName, Login = userLogin, Email = userEmail, Active = true, DtCreation = DateTime.Now, IdCareer = 2, IdGroup = 2, IdSupervisor = "admin" };
+                User userTest = new User { Id = userId, Name = userName, Login = userLogin, Email = userEmail, Active = true, DtCreation = DateTime.Now, IdCareer = 2, IdSupervisor = "admin" };
                 eh.Insert(userTest, nameof(User.Id));
             }
 
@@ -165,7 +165,7 @@ namespace EH_WindowsFormsApp
                 InternalUser = GridUsers.Rows[index].Cells["InternalUser"].Value?.ToString(),
                 IdSupervisor = string.IsNullOrWhiteSpace(GridUsers.Rows[index].Cells["IdSupervisor"].Value?.ToString()) ? null : GridUsers.Rows[index].Cells["IdSupervisor"].Value.ToString(),
                 IdCareer = Convert.ToInt64(GridUsers.Rows[index].Cells["IdCareer"].Value),
-                IdGroup = string.IsNullOrWhiteSpace(GridUsers.Rows[index].Cells["IdGroup"].Value?.ToString()) ? null : Convert.ToInt64(GridUsers.Rows[index].Cells["IdGroup"].Value)
+                //IdGroup = string.IsNullOrWhiteSpace(GridUsers.Rows[index].Cells["IdGroup"].Value?.ToString()) ? null : Convert.ToInt64(GridUsers.Rows[index].Cells["IdGroup"].Value)
             };
 
             TxtEmail.Text = _userSelected.Email;
@@ -174,7 +174,7 @@ namespace EH_WindowsFormsApp
 
             CbSupervisor.SelectedIndex = CbSupervisor.FindStringExact(_userSelected.Supervisor?.Id);
             CbCareer.Text = _userSelected.Career?.Name;
-            CbGroup.Text = _userSelected.Group?.Name;
+            //CbGroup.Text = _userSelected.Group?.Name;
 
             CkbActive.Checked = _userSelected.Active;
             CkbInternal.Checked = _userSelected.InternalUser == "Y";
@@ -191,8 +191,8 @@ namespace EH_WindowsFormsApp
             user.Career = (Career)CbCareer.SelectedItem;
             user.IdCareer = string.IsNullOrEmpty(CbCareer.Text) ? 0 : ((Career)CbCareer.SelectedItem).IdCareer;
             user.Career = string.IsNullOrEmpty(CbCareer.Text) ? null : (Career)CbCareer.SelectedItem;
-            user.IdGroup = string.IsNullOrEmpty(CbGroup.Text) ? 0 : ((Group)CbGroup.SelectedItem).IdGroup;
-            user.Group = string.IsNullOrEmpty(CbGroup.Text) ? null : (Group)CbGroup.SelectedItem;
+            //user.IdGroup = string.IsNullOrEmpty(CbGroup.Text) ? 0 : ((Group)CbGroup.SelectedItem).IdGroup;
+            //user.Group = string.IsNullOrEmpty(CbGroup.Text) ? null : (Group)CbGroup.SelectedItem;
             user.IdSupervisor = string.IsNullOrEmpty(CbSupervisor.Text) ? null : ((User)CbSupervisor.SelectedItem).Id;
             user.Supervisor = string.IsNullOrEmpty(CbSupervisor.Text) ? null : (User)CbSupervisor.SelectedItem;
             user.InternalUser = CkbInternal.Checked ? "Y" : "N";

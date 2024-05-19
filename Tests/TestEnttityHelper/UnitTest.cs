@@ -232,52 +232,59 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
-
+                /////////////////////////////////////////////////// 
                 // CREATE TABLE
-                //if (eh.CheckIfExist(eh.GetTableName<Group>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Group>()}");
-                //eh.CreateTableIfNotExist<Group>(true);
+
+                if (eh.CheckIfExist(eh.GetTableName<Group>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Group>()}");
+                eh.CreateTableIfNotExist<Group>(true);
 
                 //eh.ExecuteNonQuery("DROP TABLE TB_USERtoTB_GROUP_USERS");
-                //eh.ExecuteNonQuery("DROP TABLE TB_USER");
-                //eh.CreateTableIfNotExist<User>(false);
+                if (eh.CheckIfExist(eh.GetTableName<User>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<User>()}");
+                eh.CreateTableIfNotExist<User>(false);
+                
+                // TODO: Entity FK necessary only for the Get (include)
+                eh.CreateTableIfNotExist<Career>();
 
-
+                /////////////////////////////////////////////////// 
                 // INSERT
-                //Group group1 = new() { Id = 1, Name = "Developers", Description = "Developer Group" };
-                //eh.Insert(group1);
+
+                Career carrer = new() { IdCareer = 1, Name = "Pleno", CareerLevel = 2, Active = true };
+                eh.Insert(carrer);
+                
+                Career carrer2 = new() { IdCareer = 3, Name = "Trainee", CareerLevel = 0, Active = true };
+                eh.Insert(carrer2);                                
+                
+                Group group1 = new() { Id = 1, Name = "Developers", Description = "Developer Group" };
+                eh.Insert(group1);
 
                 Group group2 = new() { Id = 2, Name = "Testers", Description = "Tester Group" };
-                //eh.Insert(group2);
-
-                //Group group3 = new() { Id = 3, Name = "Operation", Description = "Operation Group" };
-                //eh.Insert(group3);
+                eh.Insert(group2);
 
                 //eh.ExecuteNonQuery("DELETE FROM TB_USER");
-                //User user = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                //List<Group> groupsUser = new() { group1, group2 };
-                //foreach (var group in groupsUser) { user.Groups.Add(group); }
-                //eh.Insert(user);
+                User user = new() { Id = 1, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                List<Group> groupsUser = new() { group1, group2 };
+                foreach (var group in groupsUser) { user.Groups.Add(group); }
+                eh.Insert(user);
 
-                // TODO: Entity FK necessary only for the Get (include)
-                //eh.CreateTableIfNotExist<Career>();
-                //Career carrer = new() { IdCareer = 1, Name = "Pleno", CareerLevel = 2, Active = true };
-                //eh.Insert(carrer);
-                //Career carrer = new() { IdCareer = 3, Name = "Trainee", CareerLevel = 0, Active = true };
-                //eh.Insert(carrer);
-                //var carrers = eh.Get<Career>();
+                User user2 = new() { Id = 1, Name = "John Victor", GitHub = "@JohnVictor", DtCreation = DateTime.Now, IdCareer = 3 };
+
+                Group group3 = new() { Id = 3, Name = "Operation", Description = "Operation Group" };
+                group3.Users.Add(user2);
+                eh.Insert(group3);
 
 
+                /////////////////////////////////////////////////// 
                 // GET
-                //var users = eh.Get<User>();
-                //var groups = eh.Get<Group>();
+                var carrers = eh.Get<Career>();
+                var users = eh.Get<User>();
+                var groups = eh.Get<Group>();
 
 
+                /////////////////////////////////////////////////// 
                 // UPDATE
-                User userUpdate = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                User userUpdate = new() { Id = 1, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
                 userUpdate.Groups.Add(group2);
                 eh.Update(userUpdate);
-
-
 
                 var usersUpdated = eh.Get<User>();
 

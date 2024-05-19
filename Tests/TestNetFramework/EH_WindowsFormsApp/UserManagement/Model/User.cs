@@ -23,9 +23,11 @@ namespace DiegoPiov.UserManagement
         public virtual User? Supervisor { get; internal set; }
         [ForeignKey(nameof(Career))] public long IdCareer { get; internal set; }
         public virtual Career Career { get; internal set; }
-        [ForeignKey(nameof(Group))] public Int64? IdGroup { get; internal set; }
-        public virtual Group Group { get; internal set; }
-       
+        //[ForeignKey(nameof(Group))] public Int64? IdGroup { get; internal set; }
+        //public virtual Group Group { get; internal set; }
+
+        [InverseProperty(nameof(Group.Users))] public virtual Group Groups { get; internal set; }
+
 
         public override string ToString()
         {
