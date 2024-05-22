@@ -148,8 +148,8 @@ namespace EH.Connection
 
                 var pk1 = ToolsProp.GetPK((object)entity);
                 var pk2 = ToolsProp.GetPK((object)entity2Type);
-                string idName1 = pk1.Name; // Ex: User
-                string idName2 = ToolsProp.GetPK((object)entity2Type).Name;  // Ex: Group
+                string idName1 = pk1.Name; // Ex: IdUser
+                string idName2 = ToolsProp.GetPK((object)entity2Type).Name;  // Ex: IdGroup
 
                 MethodInfo selectMethod = typeof(EnttityHelper).GetMethod("ExecuteSelectDt");
                 var itemsBd = (DataTable)selectMethod.Invoke(enttityHelper, new object[] { $"SELECT ID_{tableName2} FROM {tableNameInverseProperty} WHERE ID_{tableName1}='{pk1.GetValue(entity)}'" });
@@ -172,12 +172,14 @@ namespace EH.Connection
 
                 foreach (var itemNew in invProp.GetValue(entity) as IEnumerable<object>)
                 {
+                    if(itemNew is null) continue;
                     PropertyInfo prop2 = itemNew.GetType().GetProperty(idName2);
                     if (prop2 != null) { itemsCollectionNew.Add(prop2.GetValue(itemNew).ToString()); }
                 }
 
                 foreach (var itemOld in itemsCollectionBd)
                 {
+                    if (itemOld is null) continue;
                     PropertyInfo prop2 = itemOld.GetType().GetProperty(idName2);
                     if (prop2 != null) { itemsCollectionOld.Add(prop2.GetValue(itemOld).ToString()); }
                 }
