@@ -60,7 +60,7 @@ namespace EH
 
 
         /// <inheritdoc/>  
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
+        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class
         {
             try
             {
@@ -73,7 +73,7 @@ namespace EH
         }
 
         /// <inheritdoc/> 
-        public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName)
+        public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds = 600)
         {
             try
             {

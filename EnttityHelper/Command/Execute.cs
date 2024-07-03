@@ -96,7 +96,7 @@ namespace EH.Commands
             }
         }
 
-        internal static bool PerformBulkCopyOperation(this Database dbContext, object inputDataToCopy, string tableName)
+        internal static bool PerformBulkCopyOperation(this Database dbContext, object inputDataToCopy, string tableName, int bulkCopyTimeout)
         {
             // dataToCopy: DataRow[], DataTable, IDataReader
 
@@ -126,6 +126,7 @@ namespace EH.Commands
                 {
                     case OracleBulkCopy oracleBulkCopy:
                         oracleBulkCopy.DestinationTableName = tableName;
+                        oracleBulkCopy.BulkCopyTimeout = bulkCopyTimeout;
                         if (inputDataToCopy is DataRow[] dataRowsOracle) { oracleBulkCopy.WriteToServer(dataRowsOracle); }
                         else if (inputDataToCopy is DataTable dataTable) { oracleBulkCopy.WriteToServer(dataTable); }
                         else if (inputDataToCopy is IDataReader dataReader) { oracleBulkCopy.WriteToServer(dataReader); }
@@ -134,6 +135,7 @@ namespace EH.Commands
 
                     case SqlBulkCopy sqlBulkCopy:
                         sqlBulkCopy.DestinationTableName = tableName;
+                        sqlBulkCopy.BulkCopyTimeout = bulkCopyTimeout;
                         if (inputDataToCopy is DataRow[] dataRowsSql) { sqlBulkCopy.WriteToServer(dataRowsSql); }
                         else if (inputDataToCopy is DataTable dataTable) { sqlBulkCopy.WriteToServer(dataTable); }
                         else if (inputDataToCopy is IDataReader dataReader) { sqlBulkCopy.WriteToServer(dataReader); }

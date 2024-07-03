@@ -79,7 +79,7 @@ namespace EH.Command
             }
         }
 
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
+        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class
         {
             if (entity is DataTable dataTable)
             {
@@ -91,7 +91,7 @@ namespace EH.Command
                     CreateTable(dataTable, tableName);
                 }
 
-                return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataTable, tableName) ? dataTable.Rows.Count : 0;
+                return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataTable, tableName, timeOutSeconds) ? dataTable.Rows.Count : 0;
             }
             else if (entity is IDataReader dataReader)
             {
@@ -101,15 +101,16 @@ namespace EH.Command
                 {
                     _enttityHelper.DbContext.CreateOpenConnection();
                     CreateTable(dataReader.GetFirstRows(10), tableName);
+                    return -942; // Because IDataReader
                 }
 
-                return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataReader, tableName) ? 1 : 0;
+                return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataReader, tableName, timeOutSeconds) ? 1 : 0;
             }
             else if (entity is DataRow[] dataRow)
             {
                 if (dataRow.Length == 0) return 0;
                 if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
-                return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataRow, tableName) ? dataRow.Length : 0;
+                return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataRow, tableName, timeOutSeconds) ? dataRow.Length : 0;
             }
             else // Entity
             {
@@ -148,7 +149,7 @@ namespace EH.Command
                     if (i >= 1) // TODO: Refactor
                     {
                         string? id = GetPKValueOfLastInsert(entity);
-                        insertsQuery[i] = insertsQuery[i].Replace("'0'", $"'{id}'"); 
+                        insertsQuery[i] = insertsQuery[i].Replace("'0'", $"'{id}'");
                     }
 
                     inserts += ExecuteNonQuery(insertsQuery[i], 1);
@@ -184,12 +185,18 @@ namespace EH.Command
         //    return Commands.Execute.PerformBulkCopyOperation(DbContext, dataReader, tableName);
         //}
 
-        public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName)
+        public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds = 600)
         {
             var dataReaderSelect = (IDataReader?)Commands.Execute.ExecuteCommand<IDataReader>(_enttityHelper.DbContext, selectQuery, false, true);
             if (dataReaderSelect is null) return 0;
 
-            int inserts = db2.Insert(dataReaderSelect, tableName, true, tableName);
+            int inserts = db2.Insert(dataReaderSelect, tableName, true, tableName, false, timeOutSeconds);
+
+            if (inserts == -942)
+            {
+                dataReaderSelect = (IDataReader?)Commands.Execute.ExecuteCommand<IDataReader>(_enttityHelper.DbContext, selectQuery, false, true);
+                inserts = db2.Insert(dataReaderSelect, tableName, true, tableName, false, timeOutSeconds);
+            }
 
             dataReaderSelect.Close();
             _enttityHelper.DbContext.CloseConnection();

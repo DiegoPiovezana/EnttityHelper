@@ -1,8 +1,6 @@
-﻿using EH.Properties;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Reflection;
 
 namespace EH.Command
 {
@@ -17,11 +15,12 @@ namespace EH.Command
         /// <param name="createTable">(Optional) If the table that will receive the insertion does not exist, it can be created.</param> 
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <param name="ignoreInversePropertyProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
+        /// <param name="timeOutSeconds">(Optional) Maximum time (in seconds) to wait for the insertion to occur. By default, the maximum time is up to 10 minutes.</param>
         /// <returns>
         /// True, if one or more entities are inserted into the database.
         /// <para>If the return is negative, it indicates that the insertion did not happen due to some established criteria.</para>
         /// </returns>
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class;
+        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class;
 
         ///// <summary>
         ///// Inserts data from a DataTable into the specified database table.
@@ -71,8 +70,9 @@ namespace EH.Command
         /// <param name="selectQuery">The SELECT query to be executed.</param>
         /// <param name="db2">The instance of the EntityHelper representing the destination database.</param>
         /// <param name="tableName">The name of the table where the result will be inserted.</param>
+        /// <param name="timeOutSeconds">(Optional) Maximum time (in seconds) to wait for the insertion to occur. By default, the maximum time is up to 10 minutes.</param>
         /// <returns>The number of rows inserted into the destination table.</returns>
-        public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName);
+        public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds = 600);
 
 
         /// <summary>
@@ -234,7 +234,7 @@ namespace EH.Command
         /// <param name="entity">The entity to include the inverse entity for.</param>
         /// <param name="inversePropertyName">The name of the inverse property to include.</param>
         /// <returns>True if the inverse entity was successfully included; otherwise, false.</returns>
-        public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyName);        
+        public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyName);
 
         /// <summary>
         /// Gets the table name associated with the specified entity.
