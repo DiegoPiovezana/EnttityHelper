@@ -10,7 +10,7 @@
 		<AssemblyName>EnttityHelper</AssemblyName>
 		<PackageId>EnttityHelper</PackageId>
 		<Description>Allows easy manipulation of entities in different databases.</Description>
-		<Version>0.5.0-alpha-4</Version>
+		<Version>0.5.0-alpha-5</Version>
 		<Authors>Diêgo Piovezana</Authors>
 		<Company>DiegoPiov</Company>
 		<RepositoryUrl>https://github.com/DiegoPiovezana/EnttityHelper</RepositoryUrl>
