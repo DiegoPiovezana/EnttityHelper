@@ -62,14 +62,18 @@ namespace TestEnttityHelper
         [Test, Order(5)]
         public void TestInsertEntity()
         {
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 //bool result = eh.Insert(new { Id = 1, Name = "Test" }, null);
 
-                EntityTest entityTest = new() { Id = 90, Name = "Testando entidade 90 via C#", StartDate = DateTime.Now };
+                //EntityTest entityTest = new() { Id = 90, Name = "Testando entidade 90 via C#", StartDate = DateTime.Now };
+                User entityTest = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                
                 //bool result = eh.Insert(entityTest);
-                bool result = eh.Insert(entityTest, nameof(entityTest.Id)) == 1;
+                bool result = eh.Insert(entityTest, nameof(entityTest.Id), true) == 1;
+
+                if (result) { eh.Delete(entityTest); }
 
                 Assert.That(result, Is.EqualTo(true));
             }
@@ -308,19 +312,19 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
-                // Colunas vazias terão automaticamente o tipo Object. No banco de dados, o tipo Object será NVARCHAR2(100)
+                // Empty columns will automatically have the Object type. In the database, the Object type will be NVARCHAR2(100)
                 eh.TypesDefault.Add("Object", "NVARCHAR2(100)");
 
-                // Realiza a leitura da primeira aba do DataTable
+                // Reads the first tab of the DataTable
                 var dt = SheetHelper.GetDataTable(@"C:\Users\diego\Desktop\Tests\Converter\ColunasExcel.xlsx", "1");
 
-                // Se a tabela existir, ela será excluída
+                // If the table exists, it will be deleted
                 if (eh.CheckIfExist("TableX")) eh.ExecuteNonQuery($"DROP TABLE TableX");
 
-                // Possível inserir o DataTable considerando diversos cenários
+                // Possible to insert the DataTable considering different scenarios
                 eh.Insert(dt, null, true, "TableX");
-                //eh.Insert(dt, null, true); // O nome da tabela será automaticamente o nome da aba da planilha (retirando caracteres especiais)
-                //eh.Insert(dt, null, false); // A tabela não será criada e apenas ocorrerá a inserção do DataTable              
+                //eh.Insert(dt, null, true); // The table name will automatically be the name of the spreadsheet tab (removing special characters)
+                //eh.Insert(dt, null, false); // The table will not be created and only the DataTable will be inserted              
 
                 Assert.Pass();
             }
@@ -336,13 +340,13 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
-                // Select na tabela do banco de dados do banco de dados 1
+                // Select from database table from database 1
                 string query = "SELECT * FROM SHEET8";
 
-                // Cria uma nova conexão com o banco de dados 2
+                // Create a new connection to database 2
                 EnttityHelper eh2 = new($"Data Source=152.27.13.90:49262/xe2;User Id=system2;Password=oracle2");
 
-                // Insere o resultado do select na tabela do banco de dados 2
+                // Insert the result of the select into the database table 2
                 eh.InsertLinkSelect(query, eh2, "TEST_LINKSELECT");
 
                 Assert.Pass();
@@ -365,7 +369,7 @@ namespace TestEnttityHelper
                 eh.CreateTableIfNotExist<User>();
 
                 // Create new entity
-                User userD = new("Diego Piovezana") { Id = 0, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                User userD = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
 
                 // Insert in database
                 eh.Insert(userD);
@@ -393,7 +397,52 @@ namespace TestEnttityHelper
             }
         }
 
+        [Test, Order(17)]
+        public void TestManyInsertions()
+        {
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            if (eh.DbContext.ValidateConnection())
+            {
+                // Create many entities
+                User user1 = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                User user2 = new("User Test One") { Id = 2, GitHub = "@UserTestOne", DtCreation = DateTime.Now, IdCareer = 2 };
+                User user3 = new("User Test Two") { Id = 3, GitHub = "@UserTestTwo", DtCreation = DateTime.Now, IdCareer = 3 };
 
+                List<User>? users = new() { user1, user2, user3 };
 
+                // Inserts the entities
+                int result = eh.Insert(users); 
+                
+                Assert.That(result == 3, Is.EqualTo(true));                
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
+
+        [Test, Order(17)]
+        public void TestManyUpdates()
+        {
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            if (eh.DbContext.ValidateConnection())
+            {
+                // Create many entities
+                User user1 = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 3 };
+                User user2 = new("User Test One") { Id = 2, GitHub = "@UserTestOne", DtCreation = DateTime.Now, IdCareer = 1 };
+                User user3 = new("User Test Two") { Id = 3, GitHub = "@UserTestTwo", DtCreation = DateTime.Now, IdCareer = 1 };
+
+                List<User>? users = new() { user1, user2, user3 };
+
+                // Updates the entities
+                int result = eh.Update(users);
+
+                Assert.That(result == 3, Is.EqualTo(true));
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
     }
 }

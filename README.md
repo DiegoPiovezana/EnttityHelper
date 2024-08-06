@@ -33,7 +33,7 @@ https://bit.ly/FeedbackHappyHelper
 
 ## INSTALLATION:
 ```
- dotnet add package EnttityHelper --version 0.5.0-alpha-1
+ dotnet add package EnttityHelper
 ```
 
 <br/>
