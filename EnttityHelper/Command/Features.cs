@@ -2,7 +2,6 @@
 using EH.Properties;
 using Oracle.ManagedDataAccess.Client;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
@@ -117,23 +116,12 @@ namespace EH.Command
             else // Entity or IEnumerable<Entity>
             {
                 IEnumerable<object> entities;
-                if (entity is IEnumerable enumerable)
+                if (entity is IEnumerable<object> enumerable)
                 {
-                    //Type entityType = entity.GetType().GetGenericArguments().FirstOrDefault();
-                    IEnumerable<object>? objectCollection = enumerable.Cast<object>();
-                    //entities = objectCollection.OfType<TEntity>();
-                    entities = objectCollection;
+                    entities = enumerable;
 
-
-                    //Type entityType = entity.GetType().GetGenericArguments().FirstOrDefault();
-                    //if (entityType != null && typeof(TEntity).IsAssignableFrom(entityType))
-                    //{                        
-                    //    entities = ((IEnumerable)entity).Cast<TEntity>();
-                    //}
-                    //else
-                    //{
-                    //    throw new InvalidOperationException($"The collection is not of type {typeof(TEntity).Name}");
-                    //}                    
+                    //IEnumerable<object>? objectCollection = enumerable.Cast<object>();                    
+                    //entities = objectCollection;               
                 }
                 else
                 {
@@ -141,6 +129,8 @@ namespace EH.Command
                 }
 
                 int insertions = 0;
+                Dictionary<object, List<string?>?> insertsQuery = new();
+
                 foreach (var entityItem in entities)
                 {
                     if (!string.IsNullOrEmpty(namePropUnique))
@@ -160,28 +150,19 @@ namespace EH.Command
                         }
                     }
 
-                    List<string?> insertsQuery = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList()
-                        ?? throw new Exception($"EH-000: Error!");
+                    insertsQuery[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();
+                }
 
-                    //foreach (string? insertQuery in insertsQuery)
-                    //{
-                    //    inserts += insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1);
-                    //}
+                foreach (var insertQuery in insertsQuery)
+                {
+                    if (insertQuery.Value is null) throw new Exception($"EH-000: insert query does not exist!");
 
-                    //int inserts = insertsQuery.Sum(insertQuery => insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1));                
+                    string? id = GetPKValueOfLastInsert(insertQuery.Key, true);
+                    ToolsProp.GetPK(insertQuery.Key);
 
-                    for (int i = 0; i < insertsQuery.Count; i++)
-                    {
-                        if (insertsQuery[i] is null) throw new Exception($"EH-000: Error!");
+                    insertsQuery[insertQuery.Key] = insertQuery.Value.Replace("'-404'", $"'{id}'"); // Useful for MxN
 
-                        if (i >= 1) // TODO: Refactor
-                        {
-                            string? id = GetPKValueOfLastInsert(entityItem);
-                            insertsQuery[i] = insertsQuery[i].Replace("'0'", $"'{id}'");
-                        }
-
-                        insertions += ExecuteNonQuery(insertsQuery[i], 1);
-                    }
+                    insertions += ExecuteNonQuery(insertsQuery[i], 1);
                 }
 
                 return insertions;
@@ -498,12 +479,9 @@ namespace EH.Command
         public string? GetPKValueOfLastInsert<TEntity>(TEntity entity) where TEntity : class
         {
             string? nameTable = GetTableName<TEntity>();
-            string? pkName = ToolsProp.GetPK(entity)?.Name;
-
-            var idLastInsert = ExecuteSelectScalar($"SELECT {pkName} FROM (SELECT {pkName} FROM {nameTable} ORDER BY {pkName} DESC) WHERE ROWNUM = 1");
-            return idLastInsert;
+            string pkName = ToolsProp.GetPK(entity).Name;
+            return ExecuteSelectScalar($"SELECT {pkName} FROM (SELECT {pkName} FROM {nameTable} ORDER BY {pkName} DESC) WHERE ROWNUM = 1");
         }
-
 
     }
 }
