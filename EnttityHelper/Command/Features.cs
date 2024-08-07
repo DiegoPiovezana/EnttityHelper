@@ -2,7 +2,9 @@
 using EH.Properties;
 using Oracle.ManagedDataAccess.Client;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
@@ -112,50 +114,77 @@ namespace EH.Command
                 if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
                 return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataRow, tableName, timeOutSeconds) ? dataRow.Length : 0;
             }
-            else // Entity
+            else // Entity or IEnumerable<Entity>
             {
-                if (!string.IsNullOrEmpty(namePropUnique))
+                IEnumerable<object> entities;
+                if (entity is IEnumerable enumerable)
                 {
-                    var properties = ToolsProp.GetProperties(entity, true, false);
-                    tableName ??= ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
+                    //Type entityType = entity.GetType().GetGenericArguments().FirstOrDefault();
+                    IEnumerable<object>? objectCollection = enumerable.Cast<object>();
+                    //entities = objectCollection.OfType<TEntity>();
+                    entities = objectCollection;
 
-                    if (CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))
+
+                    //Type entityType = entity.GetType().GetGenericArguments().FirstOrDefault();
+                    //if (entityType != null && typeof(TEntity).IsAssignableFrom(entityType))
+                    //{                        
+                    //    entities = ((IEnumerable)entity).Cast<TEntity>();
+                    //}
+                    //else
+                    //{
+                    //    throw new InvalidOperationException($"The collection is not of type {typeof(TEntity).Name}");
+                    //}                    
+                }
+                else
+                {
+                    entities = new[] { entity };
+                }
+
+                int insertions = 0;
+                foreach (var entityItem in entities)
+                {
+                    if (!string.IsNullOrEmpty(namePropUnique))
                     {
-                        Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
-                        return -101;
+                        var properties = ToolsProp.GetProperties(entityItem, true, false);
+                        tableName ??= ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
+
+                        if (CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))
+                        {
+                            Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
+                            return -101;
+                        }
+
+                        if (!CheckIfExist(tableName) && createTable)
+                        {
+                            CreateTableIfNotExist<TEntity>(false, null, tableName);
+                        }
                     }
 
-                    if (!CheckIfExist(tableName) && createTable)
+                    List<string?> insertsQuery = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList()
+                        ?? throw new Exception($"EH-000: Error!");
+
+                    //foreach (string? insertQuery in insertsQuery)
+                    //{
+                    //    inserts += insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1);
+                    //}
+
+                    //int inserts = insertsQuery.Sum(insertQuery => insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1));                
+
+                    for (int i = 0; i < insertsQuery.Count; i++)
                     {
-                        CreateTableIfNotExist<TEntity>(false, null, tableName);
+                        if (insertsQuery[i] is null) throw new Exception($"EH-000: Error!");
+
+                        if (i >= 1) // TODO: Refactor
+                        {
+                            string? id = GetPKValueOfLastInsert(entityItem);
+                            insertsQuery[i] = insertsQuery[i].Replace("'0'", $"'{id}'");
+                        }
+
+                        insertions += ExecuteNonQuery(insertsQuery[i], 1);
                     }
                 }
 
-                List<string?> insertsQuery = _enttityHelper.GetQuery.Insert(entity, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();
-
-                int inserts = 0;
-                //foreach (string? insertQuery in insertsQuery)
-                //{
-                //    inserts += insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1);
-                //}
-
-                //int inserts = insertsQuery.Sum(insertQuery => insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1));                
-
-                if (insertsQuery is null) throw new Exception($"EH-000: Error!");
-                for (int i = 0; i < insertsQuery.Count; i++)
-                {
-                    if (insertsQuery[i] is null) throw new Exception($"EH-000: Error!");
-
-                    if (i >= 1) // TODO: Refactor
-                    {
-                        string? id = GetPKValueOfLastInsert(entity);
-                        insertsQuery[i] = insertsQuery[i].Replace("'0'", $"'{id}'");
-                    }
-
-                    inserts += ExecuteNonQuery(insertsQuery[i], 1);
-                }
-
-                return inserts;
+                return insertions;
             }
         }
 
@@ -209,8 +238,17 @@ namespace EH.Command
             //string? updateQuery = _enttityHelper.GetQuery.Update(entity, nameId, _enttityHelper.ReplacesTableName, tableName);
             //return ExecuteNonQuery(updateQuery, 1);
 
-            ICollection<string?> updatesQuery = _enttityHelper.GetQuery.Update(entity, _enttityHelper, nameId, tableName, ignoreInversePropertyProperties);
-            int updates = updatesQuery.Sum(insertQuery => insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1));
+            Collection<TEntity> entities;
+            if (entity is Collection<TEntity> collection) { entities = collection; }
+            else { entities = new Collection<TEntity> { entity }; }
+
+            int updates = 0;
+            foreach (var entityItem in entities)
+            {
+                ICollection<string?> updatesQuery = _enttityHelper.GetQuery.Update(entityItem, _enttityHelper, nameId, tableName, ignoreInversePropertyProperties);
+                updates += updatesQuery.Sum(insertQuery => insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1));
+            }
+
             return updates;
         }
 
@@ -345,8 +383,18 @@ namespace EH.Command
 
         public int Delete<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class
         {
-            string? deleteQuery = _enttityHelper.GetQuery.Delete(entity, nameId, _enttityHelper.ReplacesTableName, tableName);
-            return ExecuteNonQuery(deleteQuery, 1);
+            Collection<TEntity> entities;
+            if (entity is Collection<TEntity> collection) { entities = collection; }
+            else { entities = new Collection<TEntity> { entity }; }
+
+            int deletions = 0;
+            foreach (var entityItem in entities)
+            {
+                string? deleteQuery = _enttityHelper.GetQuery.Delete(entity, nameId, _enttityHelper.ReplacesTableName, tableName);
+                deletions += ExecuteNonQuery(deleteQuery, 1);
+            }
+
+            return deletions;
         }
 
         public int ExecuteNonQuery(string? query, int expectedChanges = -1)
