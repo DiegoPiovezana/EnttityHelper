@@ -403,6 +403,11 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
+
+                //User entityTest = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };                
+                //bool result1 = eh.Insert(entityTest, nameof(entityTest.Id), true) == 1; // Create the table
+                //if (result1) { eh.Delete(entityTest); }
+
                 // Create many entities
                 User user1 = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
                 User user2 = new("User Test One") { Id = 2, GitHub = "@UserTestOne", DtCreation = DateTime.Now, IdCareer = 2 };

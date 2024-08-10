@@ -23,7 +23,7 @@ namespace EH
         public Dictionary<string, string>? TypesDefault { get; set; }
 
         /// <summary>
-        /// (Optional) Terms that can be replaced in table names.
+        /// (Optional) Terms (or full names) that can be replaced in table names.
         /// </summary>
         public Dictionary<string, string>? ReplacesTableName { get; set; }
 
@@ -242,11 +242,11 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public string? ExecuteSelectScalar(string? query)
+        public string? ExecuteScalar(string? query)
         {
             try
             {
-                return _features.ExecuteSelectScalar(query);
+                return _features.ExecuteScalar(query);
             }
             catch (Exception)
             {

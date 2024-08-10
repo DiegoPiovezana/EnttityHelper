@@ -33,8 +33,8 @@ namespace EH.Connection
 
                 if (inicialCatalog != null) // SqlServer
                 {
-                    database.Service = inicialCatalog;
                     database.Ip = dataSource;
+                    database.Service = inicialCatalog;
                     database.Type = Enums.DbType.SQLServer;
                     return true;
                 }
@@ -67,8 +67,6 @@ namespace EH.Connection
 
             return null;
         }
-
-
 
     }
 }

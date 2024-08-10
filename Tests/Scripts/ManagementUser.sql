@@ -474,3 +474,32 @@ SELECT * FROM TB_USER;
 SELECT * FROM TB_GROUP_USERS;
 
 SELECT * FROM TB_USERtoGROUP;
+
+
+--------------------------------------
+-- Improve inserts
+
+SELECT * FROM TB_USER;
+
+INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer) VALUES ('1', 'Diego Piovezana', '@DiegoPiovezana', '10/08/2024 17:45:03', '1')
+RETURNING Id;
+
+
+
+SET SERVEROUTPUT ON;
+
+DECLARE
+    v_id TB_USER.Id%TYPE;
+BEGIN
+    INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer) VALUES ('2', 'Diego Piovezana', '@DiegoPiovezana', '10/08/2024 17:45:03', '1')
+    RETURNING Id INTO v_id;
+
+    -- Output the value to an Oracle parameter
+    :InsertedId := v_id;
+    DBMS_OUTPUT.PUT_LINE('ID: ' || v_id);
+END;
+
+
+COMMIT
+
+ROLLBACK;

@@ -23,12 +23,15 @@ namespace EH.Connection
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entity">Entity to be inserted into the database.</param>  
+        /// <param name="dbType">The type of database in which the information will be inserted. Example: Oracle.</param>  
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>
         /// <param name="tableName1">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <param name="ignoreInversePropertyProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
         /// <returns>String command.</returns>
-        public ICollection<string?> Insert<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName = null, string? tableName1 = null, bool ignoreInversePropertyProperties = false)
+        public ICollection<string?> Insert<TEntity>(TEntity entity, Enums.DbType? dbType, Dictionary<string, string>? replacesTableName = null, string? tableName1 = null, bool ignoreInversePropertyProperties = false)
         {
+            if (dbType == null) throw new ArgumentNullException("The type of database is invalid!");
+
             List<string?> queries = new();
 
             Dictionary<string, Property>? properties = ToolsProp.GetProperties(entity, false, false);
@@ -37,14 +40,30 @@ namespace EH.Connection
             string columns = string.Join(", ", filteredProperties.Keys);
             string values = string.Join("', '", filteredProperties.Values);
             tableName1 ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
-            queries.Add($"INSERT INTO {tableName1} ({columns}) VALUES ('{values}')");
 
-            if (!ignoreInversePropertyProperties) InsertInverseProperty(entity, replacesTableName, queries, properties);
+            switch (dbType)
+            {
+                case Enums.DbType.Oracle:
+                    queries.Add($"INSERT INTO {tableName1} ({columns}) VALUES ('{values}')");
+                    break;
+                case Enums.DbType.SQLServer:
+                    queries.Add($"INSERT INTO {tableName1} ({columns}) VALUES ('{values}')");
+                    break;
+                case Enums.DbType.SQLite:
+                    queries.Add($"INSERT INTO {tableName1} ({columns}) VALUES ('{values}')");
+                    break;
+                default:
+                    throw new NotSupportedException("Database type is not supported!");
+            }
+
+            if (!ignoreInversePropertyProperties) InsertInverseProperty(entity, dbType, replacesTableName, queries, properties);
             return queries;
         }
 
-        private static void InsertInverseProperty<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, List<string?> queries, Dictionary<string, Property> properties)
+        private static void InsertInverseProperty<TEntity>(TEntity entity, Enums.DbType? dbType, Dictionary<string, string>? replacesTableName, List<string?> queries, Dictionary<string, Property> properties)
         {
+            if (dbType == null) throw new ArgumentNullException("The type of database is invalid!");
+
             Dictionary<string, Property>? inverseProperties = properties.Where(p => p.Value.InverseProperty != null).ToDictionary(p => p.Key, p => p.Value);
             foreach (var invProp in inverseProperties)
             {
@@ -77,7 +96,21 @@ namespace EH.Connection
                         if (prop2 != null)
                         {
                             object idValue2 = prop2.GetValue(item);
-                            queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
+
+                            switch (dbType)
+                            {
+                                case Enums.DbType.Oracle:
+                                    queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
+                                    break;
+                                case Enums.DbType.SQLServer:
+                                    queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
+                                    break;
+                                case Enums.DbType.SQLite:
+                                    queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
+                                    break;
+                                default:
+                                    throw new NotSupportedException("Database type is not supported!");
+                            }                            
                         }
                     }                    
                 }

@@ -116,20 +116,11 @@ namespace EH.Command
             else // Entity or IEnumerable<Entity>
             {
                 IEnumerable<object> entities;
-                if (entity is IEnumerable<object> enumerable)
-                {
-                    entities = enumerable;
-
-                    //IEnumerable<object>? objectCollection = enumerable.Cast<object>();                    
-                    //entities = objectCollection;               
-                }
-                else
-                {
-                    entities = new[] { entity };
-                }
-
+                Dictionary<object, List<string?>?> insertsQueriesEntities = new();
                 int insertions = 0;
-                Dictionary<object, List<string?>?> insertsQueriesEntity = new();
+
+                if (entity is IEnumerable<object> enumerable) { entities = enumerable; }
+                else { entities = new[] { entity }; }
 
                 foreach (var entityItem in entities)
                 {
@@ -150,22 +141,22 @@ namespace EH.Command
                         }
                     }
 
-                    insertsQueriesEntity[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();
+                    insertsQueriesEntities[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.DbContext.Type, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();
                 }
 
-                foreach (var insertQueries in insertsQueriesEntity)
+                foreach (var insertQueriesEntity in insertsQueriesEntities)
                 {
-                    if (insertQueries.Value is null) throw new Exception($"EH-000: insert query does not exist!");
+                    if (insertQueriesEntity.Value is null) throw new Exception($"EH-000: insert query does not exist!");
 
-                    string? id = GetPKValueOfLastInsert(insertQueries.Key); // TODO: Refactor this
-                    ToolsProp.GetPK(insertQueries.Key);
+                    string? id = GetPKValueOfLastInsert(insertQueriesEntity.Key); // TODO: Refactor this
+                    ToolsProp.GetPK(insertQueriesEntity.Key);
 
                     // TODO: Refactor this
-                    for (int i = 0; i < insertQueries.Value.Count; i++)
+                    for (int i = 0; i < insertQueriesEntity.Value.Count; i++)
                     {
-                        insertQueries.Value[i] = insertQueries.Value[i].Replace("'-404'", $"'{id}'"); // Useful for MxN                         
-                        insertsQueriesEntity[insertQueries.Key] = insertQueries.Value;
-                        insertions += ExecuteNonQuery(insertQueries.Value[i], 1);
+                        insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'-404'", $"'{id}'"); // Useful for MxN                         
+                        insertsQueriesEntities[insertQueriesEntity.Key] = insertQueriesEntity.Value;
+                        insertions += ExecuteNonQuery(insertQueriesEntity.Value[i], 1);
                     }
                 }
 
@@ -201,14 +192,14 @@ namespace EH.Command
 
         public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds = 600)
         {
-            var dataReaderSelect = (IDataReader?)Commands.Execute.ExecuteCommand<IDataReader>(_enttityHelper.DbContext, selectQuery, false, true);
+            var dataReaderSelect = (IDataReader?)Commands.Execute.ExecuteReader<IDataReader>(_enttityHelper.DbContext, selectQuery, true);
             if (dataReaderSelect is null) return 0;
 
             int inserts = db2.Insert(dataReaderSelect, tableName, true, tableName, false, timeOutSeconds);
 
             if (inserts == -942)
             {
-                dataReaderSelect = (IDataReader?)Commands.Execute.ExecuteCommand<IDataReader>(_enttityHelper.DbContext, selectQuery, false, true);
+                dataReaderSelect = (IDataReader?)Commands.Execute.ExecuteReader<IDataReader>(_enttityHelper.DbContext, selectQuery, true);
                 inserts = db2.Insert(dataReaderSelect, tableName, true, tableName, false, timeOutSeconds);
             }
 
@@ -384,19 +375,24 @@ namespace EH.Command
 
         public int ExecuteNonQuery(string? query, int expectedChanges = -1)
         {
-            return (int?)Commands.Execute.ExecuteCommand<object>(_enttityHelper.DbContext, query, true, false, expectedChanges) ?? 0;
+            return ExecuteNonQuery(new List<string?>() { query }, expectedChanges).FirstOrDefault();
+        }
+
+        public ICollection<int> ExecuteNonQuery(ICollection<string?> queries, int expectedChanges = -1)
+        {
+            return Commands.Execute.ExecuteNonQuery<object>(_enttityHelper.DbContext, queries, expectedChanges);
         }
 
         public List<TEntity>? ExecuteSelect<TEntity>(string? query)
         {
-            return (List<TEntity>?)Commands.Execute.ExecuteCommand<TEntity>(_enttityHelper.DbContext, query);
+            return (List<TEntity>?)Commands.Execute.ExecuteReader<TEntity>(_enttityHelper.DbContext, query);
         }
 
         public DataTable? ExecuteSelectDt(string? query)
         {
             try
             {
-                if (Commands.Execute.ExecuteCommand<IDataReader>(_enttityHelper.DbContext, query, false, true) is not IDataReader resultSelect) return null;
+                if (Commands.Execute.ExecuteReader<IDataReader>(_enttityHelper.DbContext, query, true) is not IDataReader resultSelect) return null;
                 DataTable dtResult = resultSelect.ToDataTable();
                 resultSelect.Close();
                 _enttityHelper.DbContext.CloseConnection();
@@ -412,30 +408,28 @@ namespace EH.Command
             }
         }
 
-        public string? ExecuteSelectScalar(string? query)
+        public string? ExecuteScalar(string? query)
         {
             try
             {
-                if (string.IsNullOrEmpty(query?.Trim())) throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
-                var connection = _enttityHelper.DbContext.CreateOpenConnection();
+                //if (string.IsNullOrEmpty(query?.Trim())) throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
+                //var connection = _enttityHelper.DbContext.CreateOpenConnection();
 
-                if (connection != null)
-                {
-                    var commando = connection.CreateCommand();
-                    commando.CommandText = query;
-                    var result = commando.ExecuteScalar();
-                    connection.Close();
-                    return result?.ToString() ?? "";
-                }
-                return null;
+                //if (connection != null)
+                //{
+                //    var command = connection.CreateCommand();
+                //    command.CommandText = query;
+                //    var result = command.ExecuteScalar();
+                //    connection.Close();
+                //    return result?.ToString() ?? "";
+                //}
+                //return null;
+
+                return Commands.Execute.ExecuteScalar(_enttityHelper.DbContext, query);
             }
             catch (Exception)
             {
                 throw;
-            }
-            finally
-            {
-                if (_enttityHelper.DbContext.IDbConnection is not null && _enttityHelper.DbContext.IDbConnection.State == ConnectionState.Open) _enttityHelper.DbContext.IDbConnection.Close();
             }
         }
 
@@ -484,7 +478,7 @@ namespace EH.Command
         {
             string? nameTable = GetTableName<TEntity>();
             string pkName = ToolsProp.GetPK(entity).Name;
-            return ExecuteSelectScalar($"SELECT {pkName} FROM (SELECT {pkName} FROM {nameTable} ORDER BY {pkName} DESC) WHERE ROWNUM = 1");
+            return ExecuteScalar($"SELECT {pkName} FROM (SELECT {pkName} FROM {nameTable} ORDER BY {pkName} DESC) WHERE ROWNUM = 1");
         }
 
     }

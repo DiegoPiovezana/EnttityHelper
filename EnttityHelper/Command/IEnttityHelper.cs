@@ -200,7 +200,7 @@ namespace EH.Command
         /// </returns>
         /// <exception cref="ArgumentNullException">Thrown when the provided query is null or empty.</exception>
         /// <exception cref="Exception">Thrown when an error occurs during query execution.</exception>
-        public string? ExecuteSelectScalar(string? query);
+        public string? ExecuteScalar(string? query);
 
         /// <summary>
         /// Include all FK entities.
