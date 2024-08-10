@@ -148,11 +148,14 @@ namespace EH.Command
                 {
                     if (insertQueriesEntity.Value is null) throw new Exception($"EH-000: insert query does not exist!");
 
-                    string? id = GetPKValueOfLastInsert(insertQueriesEntity.Key); // TODO: Refactor this
-                    ToolsProp.GetPK(insertQueriesEntity.Key);
+                    //string? id = GetPKValueOfLastInsert(insertQueriesEntity.Key); // TODO: Refactor this
+                    var pk = ToolsProp.GetPK(insertQueriesEntity.Key);
 
-                    // TODO: Refactor this
-                    for (int i = 0; i < insertQueriesEntity.Value.Count; i++)
+                    var id = ExecuteScalar(insertQueriesEntity.Value.First()); // Inserts the main entity
+                    pk.SetValue(insertQueriesEntity.Key, id);
+                    insertions++;
+
+                    for (int i = 1; i < insertQueriesEntity.Value.Count; i++)
                     {
                         insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'-404'", $"'{id}'"); // Useful for MxN                         
                         insertsQueriesEntities[insertQueriesEntity.Key] = insertQueriesEntity.Value;
@@ -436,7 +439,7 @@ namespace EH.Command
         public ICollection<object?> ExecuteScalar(ICollection<string?> queries)
         {
             try
-            {               
+            {
                 return Commands.Execute.ExecuteScalar(_enttityHelper.DbContext, queries);
             }
             catch (Exception)
