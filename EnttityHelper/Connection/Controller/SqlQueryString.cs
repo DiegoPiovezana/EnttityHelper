@@ -44,13 +44,13 @@ namespace EH.Connection
             switch (dbType)
             {
                 case Enums.DbType.Oracle:
-                    queries.Add($"INSERT INTO {tableName1} ({columns}) VALUES ('{values}')");
+                    queries.Add(@$"INSERT INTO {tableName1} ({columns}) VALUES ('{values}')");
                     break;
                 case Enums.DbType.SQLServer:
-                    queries.Add($"INSERT INTO {tableName1} ({columns}) VALUES ('{values}')");
+                    queries.Add(@$"INSERT INTO {tableName1} ({columns}) VALUES ('{values}')");
                     break;
                 case Enums.DbType.SQLite:
-                    queries.Add($"INSERT INTO {tableName1} ({columns}) VALUES ('{values}')");
+                    queries.Add(@$"INSERT INTO {tableName1} ({columns}) VALUES ('{values}')");
                     break;
                 default:
                     throw new NotSupportedException("Database type is not supported!");
@@ -100,13 +100,13 @@ namespace EH.Connection
                             switch (dbType)
                             {
                                 case Enums.DbType.Oracle:
-                                    queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
+                                    queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
                                     break;
                                 case Enums.DbType.SQLServer:
-                                    queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
+                                    queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
                                     break;
                                 case Enums.DbType.SQLite:
-                                    queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
+                                    queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
                                     break;
                                 default:
                                     throw new NotSupportedException("Database type is not supported!");

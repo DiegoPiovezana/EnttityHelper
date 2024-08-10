@@ -242,7 +242,7 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public string? ExecuteScalar(string? query)
+        public object? ExecuteScalar(string? query)
         {
             try
             {

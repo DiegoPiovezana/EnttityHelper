@@ -408,7 +408,7 @@ namespace EH.Command
             }
         }
 
-        public string? ExecuteScalar(string? query)
+        public object? ExecuteScalar(string? query)
         {
             try
             {
@@ -425,7 +425,19 @@ namespace EH.Command
                 //}
                 //return null;
 
-                return Commands.Execute.ExecuteScalar(_enttityHelper.DbContext, query);
+                return ExecuteScalar(new List<string?>() { query }).FirstOrDefault();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public ICollection<object?> ExecuteScalar(ICollection<string?> queries)
+        {
+            try
+            {               
+                return Commands.Execute.ExecuteScalar(_enttityHelper.DbContext, queries);
             }
             catch (Exception)
             {
@@ -474,12 +486,12 @@ namespace EH.Command
 
         public string? GetPKName<TEntity>(TEntity entity) where TEntity : class => ToolsProp.GetPK(entity)?.Name;
 
-        public string? GetPKValueOfLastInsert<TEntity>(TEntity entity) where TEntity : class
-        {
-            string? nameTable = GetTableName<TEntity>();
-            string pkName = ToolsProp.GetPK(entity).Name;
-            return ExecuteScalar($"SELECT {pkName} FROM (SELECT {pkName} FROM {nameTable} ORDER BY {pkName} DESC) WHERE ROWNUM = 1");
-        }
+        //public string? GetPKValueOfLastInsert<TEntity>(TEntity entity) where TEntity : class
+        //{
+        //    string? nameTable = GetTableName<TEntity>();
+        //    string pkName = ToolsProp.GetPK(entity).Name;
+        //    return ExecuteScalar($"SELECT {pkName} FROM (SELECT {pkName} FROM {nameTable} ORDER BY {pkName} DESC) WHERE ROWNUM = 1");
+        //}
 
     }
 }
