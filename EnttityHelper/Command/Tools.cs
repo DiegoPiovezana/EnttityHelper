@@ -88,8 +88,17 @@ namespace EH.Command
             return dtResult;
         }
 
+        /// <summary>
+        /// Converts an enumerable collection of objects of type <typeparamref name="T"/> into a DataTable.
+        /// The DataTable columns are created based on the public properties of the type <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of objects in the enumerable collection.</typeparam>
+        /// <param name="items">The enumerable collection of objects to be converted to a DataTable.</param>
+        /// <returns>A DataTable with rows representing each object in the collection and columns corresponding to the public properties of type <typeparamref name="T"/>.</returns>
         public static DataTable ToDataTable<T>(this IEnumerable<T> items)
         {
+            if (items is null) return new DataTable();
+
             DataTable dataTable = new(typeof(T).Name);
 
             PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
@@ -98,6 +107,8 @@ namespace EH.Command
             {
                 dataTable.Columns.Add(prop.Name, Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType);
             }
+
+            dataTable.BeginLoadData(); // Suspend internal operations
 
             foreach (T item in items)
             {
@@ -110,6 +121,8 @@ namespace EH.Command
 
                 dataTable.Rows.Add(row);
             }
+
+            dataTable.EndLoadData(); // Resumes internal operations
 
             return dataTable;
         }
@@ -151,13 +164,13 @@ namespace EH.Command
         /// </summary>
         /// <param name="items">The string containing the items.</param>
         /// <returns>The fixed items string.</returns>
-        public static string FixItems(this string? items)
+        public static string? FixItems(this string? items)
         {
             try
             {
                 if (!string.IsNullOrEmpty(items))
                 {
-                    items = items.Replace("\n", ",").Replace(";", ","); // Replace line breaks and semicolons with commas
+                    items = items?.Replace("\n", ",").Replace(";", ","); // Replace line breaks and semicolons with commas
                     items = Regex.Replace(items, @"\s+|['""]+", ""); // Remove spaces, single quotes, and double quotes
                     items = Regex.Replace(items, ",{2,}", ",").Trim(','); // Remove repeated commas and excess spaces
                 }
