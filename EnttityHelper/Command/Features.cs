@@ -129,7 +129,7 @@ namespace EH.Command
                 }
 
                 int insertions = 0;
-                Dictionary<object, List<string?>?> insertsQuery = new();
+                Dictionary<object, List<string?>?> insertsQueriesEntity = new();
 
                 foreach (var entityItem in entities)
                 {
@@ -150,19 +150,23 @@ namespace EH.Command
                         }
                     }
 
-                    insertsQuery[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();
+                    insertsQueriesEntity[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();
                 }
 
-                foreach (var insertQuery in insertsQuery)
+                foreach (var insertQueries in insertsQueriesEntity)
                 {
-                    if (insertQuery.Value is null) throw new Exception($"EH-000: insert query does not exist!");
+                    if (insertQueries.Value is null) throw new Exception($"EH-000: insert query does not exist!");
 
-                    string? id = GetPKValueOfLastInsert(insertQuery.Key, true);
-                    ToolsProp.GetPK(insertQuery.Key);
+                    string? id = GetPKValueOfLastInsert(insertQueries.Key); // TODO: Refactor this
+                    ToolsProp.GetPK(insertQueries.Key);
 
-                    insertsQuery[insertQuery.Key] = insertQuery.Value.Replace("'-404'", $"'{id}'"); // Useful for MxN
-
-                    insertions += ExecuteNonQuery(insertsQuery[i], 1);
+                    // TODO: Refactor this
+                    for (int i = 0; i < insertQueries.Value.Count; i++)
+                    {
+                        insertQueries.Value[i] = insertQueries.Value[i].Replace("'-404'", $"'{id}'"); // Useful for MxN                         
+                        insertsQueriesEntity[insertQueries.Key] = insertQueries.Value;
+                        insertions += ExecuteNonQuery(insertQueries.Value[i], 1);
+                    }
                 }
 
                 return insertions;
