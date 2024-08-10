@@ -15,41 +15,33 @@ namespace EH.Commands
         /// Executes a SQL command, either non-query or select, based on the provided query.
         /// </summary>
         /// <typeparam name="TEntity">The type of entities to retrieve.</typeparam>
-        /// <param name="query">The SQL query to execute.</param>
-        /// <param name="DbContext">Database where the entities will be manipulated.</param>
-        /// <param name="isNonQuery">(Optional) Flag indicating whether the command is a non-query (true) or select (false).</param>  
-        /// <param name="getDataReader">(Optional) If true and it is a select, it will return a dataReader filled with the result obtained.</param> 
+        /// <param name="queries">The SQL query collection to execute.</param>
+        /// <param name="DbContext">Database where the entities will be manipulated.</param>        
         /// <param name="expectedChanges">(Optional) Expected amount of changes to the database. If the amount of changes is not expected, the change will be rolled back and an exception will be thrown.</param> 
         /// <returns>
-        /// - If the command is a non-query, returns the number of affected rows.
-        /// - If the command is a select, returns a list of entities retrieved from the database.
+        /// Returns the number of affected rows.       
         /// </returns>
-        internal static object? ExecuteCommand<TEntity>(this Database DbContext, string? query, bool isNonQuery = false, bool getDataReader = false, int expectedChanges = -1)
+        internal static ICollection<int> ExecuteNonQuery<TEntity>(this Database DbContext, ICollection<string?> queries, int expectedChanges = -1)
         {
             try
             {
-                if (string.IsNullOrEmpty(query?.Trim()))
-                {
-                    throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
-                }
+                if (DbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
+                if (queries is null) { throw new InvalidOperationException("Queries do not exist."); }
 
-                if (DbContext?.IDbConnection is null)
-                {
-                    throw new InvalidOperationException("Connection does not exist.");
-                }
-
-                IDbConnection connection = DbContext.CreateConnection();
-                connection.Open();
-
+                IDbConnection connection = DbContext.CreateOpenConnection();
                 IDbTransaction? transaction = DbContext.CreateTransaction() ?? throw new InvalidOperationException("Transaction is null.");
 
                 try
                 {
-                    using IDbCommand command = DbContext.CreateCommand(query);
-                    command.Transaction = transaction;
+                    ICollection<int> result = new List<int>();
 
-                    if (isNonQuery)
+                    foreach (var query in queries)
                     {
+                        if (string.IsNullOrEmpty(query?.Trim())) { throw new ArgumentNullException(nameof(query), "Query cannot be null or empty."); }
+
+                        using IDbCommand command = DbContext.CreateCommand(query);
+                        command.Transaction = transaction;
+
                         int rowsAffected = command.ExecuteNonQuery();
 
                         if (expectedChanges != -1 && rowsAffected != expectedChanges)
@@ -62,26 +54,10 @@ namespace EH.Commands
                         transaction.Commit();
                         connection.Close();
                         Debug.WriteLine($"Rows Affected: {rowsAffected}");
-                        return rowsAffected;
+                        result.Add(rowsAffected);
                     }
-                    else // isSelect
-                    {
-                        IDataReader? reader = command.ExecuteReader();
-                        transaction.Commit();
 
-                        if (getDataReader) { return reader; }
-
-                        if (reader != null)
-                        {
-                            List<TEntity> entities = Tools.ToListEntity<TEntity>(reader);
-                            reader.Close();
-                            connection.Close();
-                            Debug.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
-                            return entities;
-                        }
-
-                        return null;
-                    }
+                    return result;
                 }
                 catch (Exception)
                 {
@@ -93,6 +69,90 @@ namespace EH.Commands
             {
                 Debug.WriteLine(ex.Message);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Executes a SQL command, either non-query or select, based on the provided query.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of entities to retrieve.</typeparam>
+        /// <param name="queries">The SQL query collection to execute.</param>
+        /// <param name="DbContext">Database where the entities will be manipulated.</param>
+        /// <param name="isNonQuery">(Optional) Flag indicating whether the command is a non-query (true) or select (false).</param>  
+        /// <param name="getDataReader">(Optional) If true and it is a select, it will return a dataReader filled with the result obtained.</param> 
+        /// <param name="expectedChanges">(Optional) Expected amount of changes to the database. If the amount of changes is not expected, the change will be rolled back and an exception will be thrown.</param> 
+        /// <returns>
+        /// - If the command is a non-query, returns the number of affected rows.
+        /// - If the command is a select, returns a list of entities retrieved from the database.
+        /// </returns>
+        internal static object? ExecuteReader<TEntity>(this Database DbContext, string? query, bool getDataReader = false)
+        {
+            if (DbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
+            if (query is null) { throw new InvalidOperationException("Query does not exist."); }
+
+            IDbConnection connection = DbContext.CreateOpenConnection();
+            using IDbCommand command = DbContext.CreateCommand(query);
+            IDataReader? reader = command.ExecuteReader();
+
+            if (getDataReader) { return reader; }
+
+            if (reader != null)
+            {
+                List<TEntity> entities = Tools.ToListEntity<TEntity>(reader);
+                reader.Close();
+                connection.Close();
+                Debug.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
+                return entities;
+            }
+
+            return null;
+        }
+
+        internal static string ExecuteScalar(this Database DbContext, string? query)
+        {
+
+            if (string.IsNullOrEmpty(query?.Trim())) { throw new ArgumentNullException(nameof(query), "Query cannot be null or empty."); }
+            if (DbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
+
+            IDbConnection connection = DbContext.CreateConnection();
+            connection.Open();
+
+            IDbTransaction? transaction = DbContext.CreateTransaction() ?? throw new InvalidOperationException("Transaction is null.");
+
+            try
+            {
+                if (string.IsNullOrEmpty(query?.Trim())) throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
+
+                using IDbCommand command = DbContext.CreateCommand(query);
+                command.Transaction = transaction;
+
+                var resultScalar = command.ExecuteScalar();
+                string result = resultScalar?.ToString() ?? "";
+                transaction.Commit();
+                connection.Close();
+                Debug.WriteLine($"Result: {result}");
+                return result;
+
+                //var connection = _enttityHelper.DbContext.CreateOpenConnection();
+
+                //if (connection != null)
+                //{
+                //    var command = connection.CreateCommand();
+                //    command.CommandText = query;
+                //    var result = command.ExecuteScalar();
+                //    connection.Close();
+                //    return result?.ToString() ?? "";
+                //}
+                //return null;
+            }
+            catch (Exception)
+            {
+                transaction.Rollback();
+                throw;
+            }
+            finally
+            {
+                if (DbContext.IDbConnection is not null && DbContext.IDbConnection.State == ConnectionState.Open) DbContext.IDbConnection.Close();
             }
         }
 
