@@ -45,22 +45,20 @@ namespace EH.Connection
             switch (dbType)
             {
                 case Enums.DbType.Oracle:
-                    queries.Add(@$"                        
+                    queries.Add($@"                        
                         DECLARE
                             v_id {tableName1}.{pk.Name}%TYPE;
                         BEGIN
                             INSERT INTO {tableName1} ({columns}) VALUES ('{values}')
-                            RETURNING Id INTO v_id;
-                            
-                            :InsertedId := v_id;
+                            RETURNING Id INTO :InsertedId; 
                         END;
                         ");
                     break;
                 case Enums.DbType.SQLServer:
-                    queries.Add(@$"INSERT INTO {tableName1} OUTPUT INSERTED.{pk.Name} ({columns}) VALUES ('{values}')");
+                    queries.Add($@"INSERT INTO {tableName1} OUTPUT INSERTED.{pk.Name} ({columns}) VALUES ('{values}')");
                     break;
                 case Enums.DbType.SQLite:
-                    queries.Add(@$"INSERT INTO {tableName1} ({columns}) VALUES ('{values}') RETURNING {pk.Name}");
+                    queries.Add($@"INSERT INTO {tableName1} ({columns}) VALUES ('{values}') RETURNING {pk.Name}");
                     break;
                 default:
                     throw new NotSupportedException("Database type is not supported!");
@@ -130,7 +128,7 @@ namespace EH.Connection
             StringBuilder queryBuilder = new();
             tableName ??= ToolsProp.GetTableName<TEntity>(enttityHelper.ReplacesTableName);
 
-            queryBuilder.Append($"UPDATE {tableName} SET ");
+            queryBuilder.Append($@"UPDATE {tableName} SET ");
 
             nameId ??= ToolsProp.GetPK(entity)?.Name;
 
@@ -145,12 +143,12 @@ namespace EH.Connection
             {
                 if (pair.Key != nameId)
                 {
-                    queryBuilder.Append($"{pair.Key} = '{pair.Value.ValueSql}', ");
+                    queryBuilder.Append($@"{pair.Key} = '{pair.Value.ValueSql}', ");
                 }
             }
 
             queryBuilder.Length -= 2; // Remove the last comma and space
-            queryBuilder.Append($" WHERE {nameId} = '{properties[nameId]}'");
+            queryBuilder.Append($@" WHERE {nameId} = '{properties[nameId]}'");
             //return queryBuilder.ToString();
             queries.Add(queryBuilder.ToString());
 
@@ -179,7 +177,7 @@ namespace EH.Connection
                 string idName2 = ToolsProp.GetPK((object)entity2Type).Name;  // Ex: IdGroup
 
                 MethodInfo selectMethod = typeof(EnttityHelper).GetMethod("ExecuteSelectDt");
-                var itemsBd = (DataTable)selectMethod.Invoke(enttityHelper, new object[] { $"SELECT ID_{tableName2} FROM {tableNameInverseProperty} WHERE ID_{tableName1}='{pk1.GetValue(entity)}'" });
+                var itemsBd = (DataTable)selectMethod.Invoke(enttityHelper, new object[] { $@"SELECT ID_{tableName2} FROM {tableNameInverseProperty} WHERE ID_{tableName1}='{pk1.GetValue(entity)}'" });
 
                 var getMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(entity2Type);
 
@@ -222,7 +220,7 @@ namespace EH.Connection
                     {
                         if (!itemsCollectionOld.Contains(itemInsert))
                         {
-                            queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{itemInsert}')");
+                            queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{itemInsert}')");
                         }
 
                     }
@@ -234,45 +232,10 @@ namespace EH.Connection
                     {
                         if (!itemsCollectionNew.Contains(itemDelete))
                         {
-                            queries.Add($"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = '{idValue1}' AND ID_{idTb2} = '{itemDelete}'");
+                            queries.Add($@"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = '{idValue1}' AND ID_{idTb2} = '{itemDelete}'");
                         }
                     }
                 }
-
-                
-
-                //IEnumerable<object>? itemsInsert = itemsCollectionNew?.Except(itemsCollectionOld);
-                //IEnumerable<object>? itemsDelete = itemsCollectionOld?.Except(itemsCollectionNew);
-
-                //if (itemsInsert != null)
-                //{
-                //    foreach (var itemInsert in itemsInsert)
-                //    {
-                //        PropertyInfo prop2 = itemInsert.GetType().GetProperty(idName2);
-
-                //        if (prop2 != null)
-                //        {
-                //            object idValue2 = prop2.GetValue(itemInsert);
-                //            queries.Add($"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
-                //        }
-                //    }
-                //}
-
-                //if (itemsDelete != null)
-                //{
-                //    foreach (var itemDelete in itemsDelete)
-                //    {
-                //        PropertyInfo prop2 = itemDelete.GetType().GetProperty(idName2);
-
-                //        if (prop2 != null)
-                //        {
-                //            object idValue2 = prop2.GetValue(itemDelete);
-                //            //queries.Add($"UPDATE {tableNameInverseProperty} SET ID_{idTb1} = '{idValue1}', ID_{idTb2} = '{idValue2}'");
-                //            //$"DELETE FROM {tableName} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')"
-                //            queries.Add($"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = '{idValue1}' AND ID_{idTb2} = '{idValue2}'");
-                //        }
-                //    }
-                //}
             }
 
             return queries;
@@ -290,7 +253,7 @@ namespace EH.Connection
         {
             filter = string.IsNullOrEmpty(filter?.Trim()) ? "1 = 1" : filter;
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
-            return $"SELECT * FROM {tableName} WHERE ({filter})";
+            return $@"SELECT * FROM {tableName} WHERE ({filter})";
         }
 
         /// <summary>
@@ -307,7 +270,7 @@ namespace EH.Connection
             idPropName ??= ToolsProp.GetPK(entity)?.Name;
             if (idPropName is null) { return null; }
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
-            return $"SELECT * FROM {tableName} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')";
+            return $@"SELECT * FROM {tableName} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')";
         }
 
         /// <summary>
@@ -331,7 +294,7 @@ namespace EH.Connection
 
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
 
-            return $"DELETE FROM {tableName} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')";
+            return $@"DELETE FROM {tableName} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')";
         }
 
         /// <summary>
@@ -353,7 +316,7 @@ namespace EH.Connection
             StringBuilder queryBuilderPrincipal = new();
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
 
-            queryBuilderPrincipal.Append($"CREATE TABLE {tableName} (");
+            queryBuilderPrincipal.Append($@"CREATE TABLE {tableName} (");
 
             TEntity entity = Activator.CreateInstance<TEntity>() ?? throw new ArgumentNullException(nameof(entity));
             var properties = ToolsProp.GetProperties(entity, false, false);
@@ -387,17 +350,17 @@ namespace EH.Connection
                     // PK?                    
                     if (prop.Key == pk?.Name || prop.Key == pk?.GetCustomAttribute<ColumnAttribute>()?.Name)
                     {
-                        queryBuilderPrincipal.Append($"{prop.Key} {value} PRIMARY KEY, ");
+                        queryBuilderPrincipal.Append($@"{prop.Key} {value} PRIMARY KEY, ");
                     }
                     else
                     {
-                        queryBuilderPrincipal.Append($"{prop.Key} {value}, ");
+                        queryBuilderPrincipal.Append($@"{prop.Key} {value}, ");
                     }
 
                     // MinimumLength?
                     if (prop.Value.MinLength > 0)
                     {
-                        queryBuilderPrincipal.Append($"CHECK(LENGTH({prop.Key}) >= {prop.Value.MinLength}), ");
+                        queryBuilderPrincipal.Append($@"CHECK(LENGTH({prop.Key}) >= {prop.Value.MinLength}), ");
                     }
                 }
                 else // IsCollection
@@ -439,11 +402,11 @@ namespace EH.Connection
             string idTb2 = tableEntity2.Substring(0, Math.Min(tableEntity2.Length, 27));
 
             string queryCollection =
-                $"CREATE TABLE {tableNameManyToMany} (" +
-                $"ID_{tableEntity1} INT, ID_{tableEntity2} INT, " +
-                $"PRIMARY KEY (ID_{idTb1}, ID_{idTb2}), " +
-                $"FOREIGN KEY (ID_{idTb1}) REFERENCES {idTb1}({pkEntity1}), " +
-                $"FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2}({pkEntity2}) " +
+                $@"CREATE TABLE {tableNameManyToMany} (" +
+                $@"ID_{tableEntity1} INT, ID_{tableEntity2} INT, " +
+                $@"PRIMARY KEY (ID_{idTb1}, ID_{idTb2}), " +
+                $@"FOREIGN KEY (ID_{idTb1}) REFERENCES {idTb1}({pkEntity1}), " +
+                $@"FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2}({pkEntity2}) " +
                 $")";
 
             return queryCollection;
@@ -466,7 +429,7 @@ namespace EH.Connection
             StringBuilder queryBuilder = new();
             tableName ??= Define.NameTableFromDataTable(dataTable.TableName, replacesTableName);
 
-            queryBuilder.Append($"CREATE TABLE {tableName} (");
+            queryBuilder.Append($@"CREATE TABLE {tableName} (");
 
             var columns = dataTable.Columns;
             foreach (DataColumn column in columns)
@@ -510,7 +473,5 @@ namespace EH.Connection
 
             return sqlQuery;
         }
-
-
     }
 }

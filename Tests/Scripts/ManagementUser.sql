@@ -502,6 +502,21 @@ BEGIN
 END;
 
 
+SET SERVEROUTPUT ON;
+                        
+DECLARE
+    v_id TB_USER.Id%TYPE;
+BEGIN
+    INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer) VALUES ('1', 'Diego Piovezana', '@DiegoPiovezana', '11/08/2024 16:17:20', '1')
+    RETURNING Id INTO v_id;
+    
+    -- :InsertedId := v_id;
+    OPEN :result FOR SELECT v_id FROM DUAL;
+END;
+
+
+
+
 COMMIT
 
 ROLLBACK;

@@ -82,6 +82,9 @@ namespace EH.Command
 
         public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class
         {
+
+
+
             if (entity is DataTable dataTable)
             {
                 if (dataTable.Rows.Count == 0) return 0;
@@ -121,6 +124,10 @@ namespace EH.Command
 
                 if (entity is IEnumerable<object> enumerable) { entities = enumerable; }
                 else { entities = new[] { entity }; }
+
+                // TODO: If >100, use bulk insert - test performance
+
+
 
                 foreach (var entityItem in entities)
                 {

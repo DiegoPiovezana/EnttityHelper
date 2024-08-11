@@ -106,60 +106,42 @@ namespace EH.Commands
 
         internal static ICollection<object?> ExecuteScalar(this Database DbContext, ICollection<string?> queries)
         {
+            if (DbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
+            if (queries is null) throw new ArgumentNullException(nameof(queries), "Queries do not exist.");
+
+            IDbConnection connection = DbContext.CreateOpenConnection();
+            IDbTransaction? transaction = DbContext.CreateTransaction() ?? throw new InvalidOperationException("Transaction is null.");
+
             try
             {
-                if (DbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
-                if (queries is null) { throw new InvalidOperationException("Queries do not exist."); }
+                ICollection<object?> results = new List<object?>();
 
-                IDbConnection connection = DbContext.CreateOpenConnection();
-                IDbTransaction? transaction = DbContext.CreateTransaction() ?? throw new InvalidOperationException("Transaction is null.");
-
-                try
+                foreach (var query in queries)
                 {
-                    ICollection<object?> results = new List<object?>();
+                    if (string.IsNullOrEmpty(query?.Trim())) throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
 
-                    foreach (var query in queries)
-                    {
-                        if (string.IsNullOrEmpty(query?.Trim())) throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
+                    using IDbCommand command = DbContext.CreateCommand(query);
+                    command.Transaction = transaction;
 
-                        using IDbCommand command = DbContext.CreateCommand(query);
-                        command.Transaction = transaction;
-
-                        var resultScalar = command.ExecuteScalar();
-                        Debug.WriteLine($"Result: {resultScalar}");
-                        results.Add(resultScalar);
-                    }
-
-                    transaction.Commit();
-                    connection.Close();
-                    
-                    return results;
-
-                    //var connection = _enttityHelper.DbContext.CreateOpenConnection();
-
-                    //if (connection != null)
-                    //{
-                    //    var command = connection.CreateCommand();
-                    //    command.CommandText = query;
-                    //    var result = command.ExecuteScalar();
-                    //    connection.Close();
-                    //    return result?.ToString() ?? "";
-                    //}
-                    //return null;
+                    var resultScalar = command.ExecuteScalar();
+                    Debug.WriteLine($"Result: {resultScalar}");
+                    results.Add(resultScalar);
                 }
-                catch (Exception)
-                {
-                    transaction.Rollback();
-                    throw;
-                }
+
+                transaction.Commit();
+                connection.Close();
+
+                return results;
             }
             catch (Exception)
             {
+                transaction.Rollback();
                 throw;
-            }            
+            }
             finally
             {
-                if (DbContext.IDbConnection is not null && DbContext.IDbConnection.State == ConnectionState.Open) DbContext.IDbConnection.Close();
+                if (DbContext.IDbConnection is not null && DbContext.IDbConnection.State == ConnectionState.Open)
+                    DbContext.IDbConnection.Close();
             }
         }
 
