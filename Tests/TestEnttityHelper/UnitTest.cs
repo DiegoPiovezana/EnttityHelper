@@ -35,7 +35,7 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
-                bool result = eh.CreateTableIfNotExist<EntityTest>();
+                bool result = eh.CreateTableIfNotExist<EntityTest>(false);
                 Assert.That(result, Is.EqualTo(true));
             }
             else
@@ -51,7 +51,7 @@ namespace TestEnttityHelper
             if (eh.DbContext.ValidateConnection())
             {
                 // Oracle.ManagedDataAccess.Client.OracleException : ORA-00955: name is already used by an existing object
-                Assert.Throws<OracleException>(() => { eh.CreateTable<EntityTest>(); });
+                Assert.Throws<OracleException>(() => { eh.CreateTable<EntityTest>(false); });
             }
             else
             {
@@ -69,7 +69,7 @@ namespace TestEnttityHelper
 
                 //EntityTest entityTest = new() { Id = 90, Name = "Testando entidade 90 via C#", StartDate = DateTime.Now };
                 User entityTest = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                
+
                 //bool result = eh.Insert(entityTest);
                 bool result = eh.Insert(entityTest, nameof(entityTest.Id), true) == 1;
 
@@ -251,17 +251,17 @@ namespace TestEnttityHelper
                 eh.CreateTableIfNotExist<Group>(false);
 
                 // TODO: Entity FK necessary only for the Get (include)
-                eh.CreateTableIfNotExist<Career>();
+                eh.CreateTableIfNotExist<Career>(false);
 
                 /////////////////////////////////////////////////// 
                 // INSERT
 
                 Career carrer = new() { IdCareer = 1, Name = "Pleno", CareerLevel = 2, Active = true };
                 eh.Insert(carrer);
-                
+
                 Career carrer2 = new() { IdCareer = 3, Name = "Trainee", CareerLevel = 0, Active = true };
-                eh.Insert(carrer2);                                
-                
+                eh.Insert(carrer2);
+
                 Group group1 = new() { Id = 1, Name = "Developers", Description = "Developer Group" };
                 eh.Insert(group1);
 
@@ -366,7 +366,7 @@ namespace TestEnttityHelper
             if (eh.DbContext.ValidateConnection())
             {
                 // Create table - Object User     
-                eh.CreateTableIfNotExist<User>();
+                eh.CreateTableIfNotExist<User>(false);
 
                 // Create new entity
                 User userD = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
@@ -403,9 +403,11 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
+                eh.CreateTableIfNotExist<User>(false);
+
                 // Test for one entity
                 User entityTest = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                bool result1 = eh.Insert(entityTest, nameof(entityTest.Id), true) == 1; // Create the table
+                bool result1 = eh.Insert(entityTest, nameof(entityTest.Id), false) == 1;
                 if (result1) { eh.Delete(entityTest); }
 
                 // Create many entities
@@ -416,9 +418,9 @@ namespace TestEnttityHelper
                 List<User>? users = new() { user1, user2, user3 };
 
                 // Inserts the entities
-                int result = eh.Insert(users); 
-                
-                Assert.That(result == 3, Is.EqualTo(true));                
+                int result = eh.Insert(users);
+
+                Assert.That(result == 3, Is.EqualTo(true));
             }
             else
             {

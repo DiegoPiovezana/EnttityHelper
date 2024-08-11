@@ -129,6 +129,7 @@ namespace EH.Command
                         var properties = ToolsProp.GetProperties(entityItem, true, false);
                         tableName ??= ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
 
+                        // Check if entity exists (duplicates)
                         if (CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))
                         {
                             Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
@@ -285,11 +286,11 @@ namespace EH.Command
             }
         }
 
-        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable = false, ICollection<string>? ignoreProps = null, string? tableName = null)
+        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps = null, string? tableName = null)
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
-            var createsTableQuery = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, ignoreProps, createOnlyPrimaryTable, _enttityHelper.ReplacesTableName, tableName);
+            var createsTableQuery = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, createOnlyPrimaryTable, ignoreProps, _enttityHelper.ReplacesTableName, tableName);
 
             foreach (string? createTableQuery in createsTableQuery.Reverse()) // The last table is the main table
             {

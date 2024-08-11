@@ -339,12 +339,12 @@ namespace EH.Connection
         /// </summary>
         /// <typeparam name="TEntity">The type of main entity.</typeparam>
         /// <param name="typesSql">Dictionary containing types related to C# code and database data.</param>
-        /// <param name="ignoreProps">(Optional) The query to create table will ignore the listed properties.</param>
         /// <param name="onlyPrimaryTable">(Optional) If true, properties that do not belong to an auxiliary table will be ignored.</param>
+        /// <param name="ignoreProps">(Optional) The query to create table will ignore the listed properties.</param>
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>  
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>Table creation query. If it is necessary to create an auxiliary table, for an M:N relationship for example, more than one query will be returned.</returns>
-        public ICollection<string?> CreateTable<TEntity>(Dictionary<string, string>? typesSql, ICollection<string>? ignoreProps = null, bool onlyPrimaryTable = false, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
+        public ICollection<string?> CreateTable<TEntity>(Dictionary<string, string>? typesSql, bool onlyPrimaryTable, ICollection<string>? ignoreProps = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
         {
             if (typesSql is null) { throw new ArgumentNullException(nameof(typesSql)); }
             ignoreProps ??= new List<string>();

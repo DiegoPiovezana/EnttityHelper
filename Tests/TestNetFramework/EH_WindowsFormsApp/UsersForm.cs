@@ -49,9 +49,9 @@ namespace EH_WindowsFormsApp
             var eh = new EnttityHelper(db);
             if (!eh.DbContext.ValidateConnection()) { MessageBox.Show("Unable to establish a connection to the database!", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error); return false; };
 
-            eh.CreateTableIfNotExist<User>();
-            eh.CreateTableIfNotExist<Career>();
-            eh.CreateTableIfNotExist<Group>();
+            eh.CreateTableIfNotExist<User>(false);
+            eh.CreateTableIfNotExist<Career>(false);
+            eh.CreateTableIfNotExist<Group>(false);
 
             // CAREERS
             Career career = new() { IdCareer = 1, Name = "Administrador", CareerLevel = 1, Active = true };

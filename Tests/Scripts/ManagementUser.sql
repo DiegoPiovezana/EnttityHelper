@@ -479,6 +479,8 @@ SELECT * FROM TB_USERtoGROUP;
 --------------------------------------
 -- Improve inserts
 
+DROP TABLE TB_USER;
+
 SELECT * FROM TB_USER;
 
 INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer) VALUES ('1', 'Diego Piovezana', '@DiegoPiovezana', '10/08/2024 17:45:03', '1')
