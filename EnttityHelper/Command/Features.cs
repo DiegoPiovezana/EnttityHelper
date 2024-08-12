@@ -160,7 +160,9 @@ namespace EH.Command
                     var pk = ToolsProp.GetPK(insertQueriesEntity.Key);
 
                     var id = ExecuteScalar(insertQueriesEntity.Value.First()); // Inserts the main entity
-                    pk.SetValue(insertQueriesEntity.Key, id);
+                    var typePk = pk.PropertyType;
+                    var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id, typePk);
+                    pk.SetValue(insertQueriesEntity.Key, convertedId);
                     insertions++;
 
                     for (int i = 1; i < insertQueriesEntity.Value.Count; i++)

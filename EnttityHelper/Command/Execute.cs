@@ -15,6 +15,38 @@ namespace EH.Commands
         /// Executes a SQL command, either non-query or select, based on the provided query.
         /// </summary>
         /// <typeparam name="TEntity">The type of entities to retrieve.</typeparam>
+        /// <param name="DbContext">Database where the entities will be manipulated.</param>
+        /// <param name="getDataReader">(Optional) If true and it is a select, it will return a dataReader filled with the result obtained.</param>       
+        /// <returns>
+        /// If the command is a select, returns a list of entities retrieved from the database.
+        /// </returns>
+        internal static object? ExecuteReader<TEntity>(this Database DbContext, string? query, bool getDataReader = false)
+        {
+            if (DbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
+            if (query is null) { throw new InvalidOperationException("Query does not exist."); }
+
+            IDbConnection connection = DbContext.CreateOpenConnection();
+            using IDbCommand command = DbContext.CreateCommand(query);
+            IDataReader? reader = command.ExecuteReader();
+
+            if (getDataReader) { return reader; }
+
+            if (reader != null)
+            {
+                List<TEntity> entities = Tools.ToListEntity<TEntity>(reader);
+                reader.Close();
+                connection.Close();
+                Debug.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
+                return entities;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Executes a SQL command, either non-query or select, based on the provided query.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of entities to retrieve.</typeparam>
         /// <param name="queries">The SQL query collection to execute.</param>
         /// <param name="DbContext">Database where the entities will be manipulated.</param>        
         /// <param name="expectedChanges">(Optional) Expected amount of changes to the database. If the amount of changes is not expected, the change will be rolled back and an exception will be thrown.</param> 
@@ -72,38 +104,6 @@ namespace EH.Commands
             }
         }
 
-        /// <summary>
-        /// Executes a SQL command, either non-query or select, based on the provided query.
-        /// </summary>
-        /// <typeparam name="TEntity">The type of entities to retrieve.</typeparam>
-        /// <param name="DbContext">Database where the entities will be manipulated.</param>
-        /// <param name="getDataReader">(Optional) If true and it is a select, it will return a dataReader filled with the result obtained.</param>       
-        /// <returns>
-        /// If the command is a select, returns a list of entities retrieved from the database.
-        /// </returns>
-        internal static object? ExecuteReader<TEntity>(this Database DbContext, string? query, bool getDataReader = false)
-        {
-            if (DbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
-            if (query is null) { throw new InvalidOperationException("Query does not exist."); }
-
-            IDbConnection connection = DbContext.CreateOpenConnection();
-            using IDbCommand command = DbContext.CreateCommand(query);
-            IDataReader? reader = command.ExecuteReader();
-
-            if (getDataReader) { return reader; }
-
-            if (reader != null)
-            {
-                List<TEntity> entities = Tools.ToListEntity<TEntity>(reader);
-                reader.Close();
-                connection.Close();
-                Debug.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
-                return entities;
-            }
-
-            return null;
-        }
-
         internal static ICollection<object?> ExecuteScalar(this Database DbContext, ICollection<string?> queries)
         {
             if (DbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
@@ -123,9 +123,13 @@ namespace EH.Commands
                     using IDbCommand command = DbContext.CreateCommand(query);
                     command.Transaction = transaction;
 
-                    var resultScalar = command.ExecuteScalar();
-                    Debug.WriteLine($"Result: {resultScalar}");
-                    results.Add(resultScalar);
+                    var resultParam = new OracleParameter(":Result", OracleDbType.Int32) { Direction = ParameterDirection.Output };
+                    command.Parameters.Add(resultParam);
+
+                    command.ExecuteScalar();                    
+
+                    Debug.WriteLine($"Result: {resultParam.Value}");
+                    results.Add(resultParam.Value);
                 }
 
                 transaction.Commit();

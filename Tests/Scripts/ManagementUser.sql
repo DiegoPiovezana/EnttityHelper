@@ -480,8 +480,11 @@ SELECT * FROM TB_USERtoGROUP;
 -- Improve inserts
 
 DROP TABLE TB_USER;
+DELETE FROM TB_USER;
 
 SELECT * FROM TB_USER;
+
+COMMIT
 
 INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer) VALUES ('1', 'Diego Piovezana', '@DiegoPiovezana', '10/08/2024 17:45:03', '1')
 RETURNING Id;
@@ -503,7 +506,7 @@ END;
 
 
 SET SERVEROUTPUT ON;
-                        
+
 DECLARE
     v_id TB_USER.Id%TYPE;
 BEGIN
@@ -514,7 +517,9 @@ BEGIN
     OPEN :result FOR SELECT v_id FROM DUAL;
 END;
 
-
+                   
+INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer) VALUES ('1', 'Diego Piovezana', '@DiegoPiovezana', '11/08/2024 16:17:20', '1')
+RETURNING Id INTO :Result;  
 
 
 COMMIT

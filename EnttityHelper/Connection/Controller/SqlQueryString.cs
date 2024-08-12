@@ -40,18 +40,14 @@ namespace EH.Connection
             string columns = string.Join(", ", filteredProperties.Keys);
             string values = string.Join("', '", filteredProperties.Values);
             tableName1 ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
-            var pk = ToolsProp.GetPK(entity);         
+            var pk = ToolsProp.GetPK(entity);
 
             switch (dbType)
             {
                 case Enums.DbType.Oracle:
-                    queries.Add($@"                        
-                        DECLARE
-                            v_id {tableName1}.{pk.Name}%TYPE;
-                        BEGIN
+                    queries.Add($@"
                             INSERT INTO {tableName1} ({columns}) VALUES ('{values}')
-                            RETURNING Id INTO :InsertedId; 
-                        END;
+                            RETURNING Id INTO :Result
                         ");
                     break;
                 case Enums.DbType.SQLServer:
@@ -95,16 +91,16 @@ namespace EH.Connection
 
                 foreach (var item in itemsCollection)
                 {
-                    if(item != null)
+                    if (item != null)
                     {
                         PropertyInfo prop2 = item.GetType().GetProperty(idName2);
 
                         if (prop2 != null)
                         {
                             object idValue2 = prop2.GetValue(item);
-                            queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");                                                     
+                            queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
                         }
-                    }                    
+                    }
                 }
             }
         }
@@ -197,7 +193,7 @@ namespace EH.Connection
 
                 foreach (var itemNew in invProp.GetValue(entity) as IEnumerable<object>)
                 {
-                    if(itemNew is null) continue;
+                    if (itemNew is null) continue;
                     PropertyInfo prop2 = itemNew.GetType().GetProperty(idName2);
                     if (prop2 != null) { itemsCollectionNew.Add(prop2.GetValue(itemNew).ToString()); }
                 }
