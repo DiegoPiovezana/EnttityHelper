@@ -78,8 +78,6 @@ namespace EH.Commands
 
                         if (expectedChanges != -1 && rowsAffected != expectedChanges)
                         {
-                            transaction.Rollback();
-                            connection.Close();
                             throw new InvalidOperationException($"Expected {expectedChanges} changes, but {rowsAffected} were made.");
                         }
 
@@ -94,6 +92,7 @@ namespace EH.Commands
                 catch (Exception)
                 {
                     transaction.Rollback();
+                    connection.Close();
                     throw;
                 }
             }
