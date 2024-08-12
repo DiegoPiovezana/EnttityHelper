@@ -161,7 +161,7 @@ namespace EH.Command
 
                     var id = ExecuteScalar(insertQueriesEntity.Value.First()); // Inserts the main entity
                     var typePk = pk.PropertyType;
-                    var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id, typePk);
+                    var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id.ToString(), typePk);
                     pk.SetValue(insertQueriesEntity.Key, convertedId);
                     insertions++;
 
