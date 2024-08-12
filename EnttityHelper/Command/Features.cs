@@ -118,11 +118,11 @@ namespace EH.Command
             }
             else // Entity or IEnumerable<Entity>
             {
-                IEnumerable<object> entities;
-                Dictionary<object, List<string?>?> insertsQueriesEntities = new();
+                IEnumerable<TEntity> entities;
+                Dictionary<TEntity, List<string?>?> insertsQueriesEntities = new();
                 int insertions = 0;
 
-                if (entity is IEnumerable<object> enumerable) { entities = enumerable; }
+                if (entity is IEnumerable<TEntity> enumerable) { entities = enumerable; }
                 else { entities = new[] { entity }; }
 
                 // TODO: If >100, use bulk insert - test performance
