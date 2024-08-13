@@ -86,6 +86,7 @@ namespace EH.Command
             if (entity is DataTable dataTable)
             {
                 if (dataTable.Rows.Count == 0) return 0;
+
                 tableName ??= Define.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
 
                 if (!CheckIfExist(tableName) && createTable)
@@ -95,7 +96,8 @@ namespace EH.Command
 
                 return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataTable, tableName, timeOutSeconds) ? dataTable.Rows.Count : 0;
             }
-            else if (entity is IDataReader dataReader)
+
+            if (entity is IDataReader dataReader)
             {
                 if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
 
@@ -108,76 +110,73 @@ namespace EH.Command
 
                 return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataReader, tableName, timeOutSeconds) ? 1 : 0;
             }
-            else if (entity is DataRow[] dataRow)
+
+            if (entity is DataRow[] dataRows)
             {
-                if (dataRow.Length == 0) return 0;
+                if (dataRows.Length == 0) return 0;
+
                 if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
-                return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataRow, tableName, timeOutSeconds) ? dataRow.Length : 0;
+
+                return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataRows, tableName, timeOutSeconds) ? dataRows.Length : 0;
             }
-            else // Entity or IEnumerable<Entity>
+
+            // Entity or IEnumerable<Entity>
+            var insertsQueriesEntities = new Dictionary<object, List<string?>?>();
+            var entities = entity as IEnumerable ?? new[] { entity };
+
+            // TODO: If >100, use bulk insert - test performance
+
+            var itemType = typeof(TEntity).IsGenericType && typeof(IEnumerable).IsAssignableFrom(typeof(TEntity))
+                ? typeof(TEntity).GetGenericArguments()[0]
+                : typeof(TEntity);
+
+            foreach (var entityItem in entities)
             {
-                Dictionary<object, List<string?>?> insertsQueriesEntities = new();
-                IEnumerable entities;
-                int insertions = 0;
+                tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
 
-                if (entity is IEnumerable enumerable) { entities = enumerable; }
-                else { entities = new[] { entity }; }
-
-                // TODO: If >100, use bulk insert - test performance
-
-
-                Type entityType = typeof(TEntity);
-                Type itemType = typeof(TEntity);
-
-                if (entityType.IsGenericType && typeof(IEnumerable).IsAssignableFrom(entityType)) { itemType = entityType.GetGenericArguments()[0]; }
-
-                foreach (var entityItem in entities)
+                if (!string.IsNullOrEmpty(namePropUnique))
                 {
-                    tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
+                    var properties = ToolsProp.GetProperties(entityItem, true, false);
 
-                    if (!string.IsNullOrEmpty(namePropUnique))
+                    // Check if entity exists (duplicates)
+                    if (CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))
                     {
-                        var properties = ToolsProp.GetProperties(entityItem, true, false);
-
-                        // Check if entity exists (duplicates)
-                        if (CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))
-                        {
-                            Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
-                            return -101;
-                        }
-
-                        if (!CheckIfExist(tableName) && createTable)
-                        {
-                            CreateTableIfNotExist<TEntity>(false, null, tableName);
-                        }
+                        Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
+                        return -101;
                     }
 
-                    insertsQueriesEntities[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.DbContext.Type, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();
-                }
-
-                foreach (var insertQueriesEntity in insertsQueriesEntities)
-                {
-                    if (insertQueriesEntity.Value is null) throw new Exception($"EH-000: insert query does not exist!");
-
-                    var pk = ToolsProp.GetPK(insertQueriesEntity.Key);
-
-                    var id = ExecuteScalar(insertQueriesEntity.Value.First()); // Inserts the main entity
-                    var typePk = pk.PropertyType;
-                    var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id.ToString(), typePk);
-                    pk.SetValue(insertQueriesEntity.Key, convertedId);
-                    insertions++;
-
-                    for (int i = 1; i < insertQueriesEntity.Value.Count; i++)
+                    if (!CheckIfExist(tableName) && createTable)
                     {
-                        insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'-404'", $"'{id}'"); // Useful for MxN                         
-                        insertsQueriesEntities[insertQueriesEntity.Key] = insertQueriesEntity.Value;
-                        insertions += ExecuteNonQuery(insertQueriesEntity.Value[i], 1);
+                        CreateTableIfNotExist<TEntity>(false, null, tableName);
                     }
                 }
 
-                return insertions;
+                insertsQueriesEntities[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.DbContext.Type, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();
             }
+
+            int insertions = 0;
+
+            foreach (var insertQueriesEntity in insertsQueriesEntities)
+            {
+                if (insertQueriesEntity.Value == null) throw new Exception("EH-000: Insert query does not exist!");
+
+                var pk = ToolsProp.GetPK(insertQueriesEntity.Key);
+                var id = ExecuteScalar(insertQueriesEntity.Value.First()); // Inserts the main entity
+                var typePk = pk.PropertyType;
+                var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id.ToString(), typePk);
+                pk.SetValue(insertQueriesEntity.Key, convertedId);
+                insertions++;
+
+                for (int i = 1; i < insertQueriesEntity.Value.Count; i++)
+                {
+                    insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'-404'", $"'{id}'"); // Useful for MxN                         
+                    insertions += ExecuteNonQuery(insertQueriesEntity.Value[i], 1);
+                }
+            }
+
+            return insertions;
         }
+
 
 
         //public int Insert(DataTable dataTable, bool createTable = false, string? tableName = null)

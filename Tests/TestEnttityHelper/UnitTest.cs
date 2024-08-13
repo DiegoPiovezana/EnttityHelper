@@ -415,8 +415,8 @@ namespace TestEnttityHelper
 
                 // Create many entities
                 User user1 = new("Diego Piovezana One Repeat") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                User user2 = new("User Test One") { Id = 3, GitHub = "@UserTestOne", DtCreation = DateTime.Now, IdCareer = 2 };
-                User user3 = new("User Test Two") { Id = 4, GitHub = "@UserTestTwo", DtCreation = DateTime.Now, IdCareer = 3 };
+                User user2 = new("User Test One") { Id = 2, GitHub = "@UserTestOne", DtCreation = DateTime.Now, IdCareer = 2 };
+                User user3 = new("User Test Two") { Id = 3, GitHub = "@UserTestTwo", DtCreation = DateTime.Now, IdCareer = 3 };
 
                 List<User>? users = new() { user1, user2, user3 };
 
