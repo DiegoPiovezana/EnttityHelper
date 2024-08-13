@@ -2,6 +2,7 @@
 using EH.Properties;
 using Oracle.ManagedDataAccess.Client;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
@@ -122,7 +123,8 @@ namespace EH.Command
                 Dictionary<TEntity, List<string?>?> insertsQueriesEntities = new();
                 int insertions = 0;
 
-                if (entity is IEnumerable<TEntity> enumerable) { entities = enumerable; }
+                //if (entity is IEnumerable<TEntity> enumerable) { entities = enumerable; }
+                if (typeof(IEnumerable).IsAssignableFrom(entity.GetType())) { entities = entity as IEnumerable<TEntity> ?? new[] { entity }; }
                 else { entities = new[] { entity }; }
 
                 // TODO: If >100, use bulk insert - test performance
@@ -131,6 +133,8 @@ namespace EH.Command
 
                 foreach (var entityItem in entities)
                 {
+                    //var entityItem = (TEntity)entityItemObj;
+
                     if (!string.IsNullOrEmpty(namePropUnique))
                     {
                         var properties = ToolsProp.GetProperties(entityItem, true, false);

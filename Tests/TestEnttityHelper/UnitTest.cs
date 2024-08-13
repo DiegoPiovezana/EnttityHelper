@@ -408,12 +408,13 @@ namespace TestEnttityHelper
 
                 // Test for one entity
                 User entityTest = new("Diego Piovezana One") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                eh.Delete(entityTest);
+                //eh.Delete(entityTest);
                 bool result1 = eh.Insert(entityTest, nameof(entityTest.Id), true) == 1;
                 if (result1) { eh.Delete(entityTest); }
+                Assert.That(result1, Is.EqualTo(true));
 
                 // Create many entities
-                User user1 = new("Diego Piovezana Two") { Id = 2, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                User user1 = new("Diego Piovezana One Repeat") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
                 User user2 = new("User Test One") { Id = 3, GitHub = "@UserTestOne", DtCreation = DateTime.Now, IdCareer = 2 };
                 User user3 = new("User Test Two") { Id = 4, GitHub = "@UserTestTwo", DtCreation = DateTime.Now, IdCareer = 3 };
 
