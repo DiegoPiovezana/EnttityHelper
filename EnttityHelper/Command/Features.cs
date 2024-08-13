@@ -116,13 +116,8 @@ namespace EH.Command
             }
             else // Entity or IEnumerable<Entity>
             {
-                Type entityType = typeof(TEntity);
-                Type itemType = entityType.IsGenericType && typeof(IEnumerable).IsAssignableFrom(entityType)
-                                ? entityType.GetGenericArguments()[0]
-                                : entityType;
-
-                IEnumerable entities;
                 Dictionary<object, List<string?>?> insertsQueriesEntities = new();
+                IEnumerable entities;
                 int insertions = 0;
 
                 if (entity is IEnumerable enumerable) { entities = enumerable; }
