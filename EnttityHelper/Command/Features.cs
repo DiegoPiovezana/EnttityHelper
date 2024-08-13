@@ -83,9 +83,6 @@ namespace EH.Command
 
         public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class
         {
-
-
-
             if (entity is DataTable dataTable)
             {
                 if (dataTable.Rows.Count == 0) return 0;
@@ -119,22 +116,23 @@ namespace EH.Command
             }
             else // Entity or IEnumerable<Entity>
             {
-                IEnumerable<TEntity> entities;
-                Dictionary<TEntity, List<string?>?> insertsQueriesEntities = new();
+                Type entityType = typeof(TEntity);
+                Type itemType = entityType.IsGenericType && typeof(IEnumerable).IsAssignableFrom(entityType)
+                                ? entityType.GetGenericArguments()[0]
+                                : entityType;
+
+                IEnumerable entities;
+                Dictionary<object, List<string?>?> insertsQueriesEntities = new();
                 int insertions = 0;
 
-                //if (entity is IEnumerable<TEntity> enumerable) { entities = enumerable; }
-                if (typeof(IEnumerable).IsAssignableFrom(entity.GetType())) { entities = entity as IEnumerable<TEntity> ?? new[] { entity }; }
+                if (entity is IEnumerable enumerable) { entities = enumerable; }
                 else { entities = new[] { entity }; }
 
                 // TODO: If >100, use bulk insert - test performance
 
 
-
                 foreach (var entityItem in entities)
                 {
-                    //var entityItem = (TEntity)entityItemObj;
-
                     if (!string.IsNullOrEmpty(namePropUnique))
                     {
                         var properties = ToolsProp.GetProperties(entityItem, true, false);
@@ -160,7 +158,6 @@ namespace EH.Command
                 {
                     if (insertQueriesEntity.Value is null) throw new Exception($"EH-000: insert query does not exist!");
 
-                    //string? id = GetPKValueOfLastInsert(insertQueriesEntity.Key); // TODO: Refactor this
                     var pk = ToolsProp.GetPK(insertQueriesEntity.Key);
 
                     var id = ExecuteScalar(insertQueriesEntity.Value.First()); // Inserts the main entity
@@ -180,6 +177,7 @@ namespace EH.Command
                 return insertions;
             }
         }
+
 
         //public int Insert(DataTable dataTable, bool createTable = false, string? tableName = null)
         //{
