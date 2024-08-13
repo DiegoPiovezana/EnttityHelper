@@ -126,12 +126,18 @@ namespace EH.Command
                 // TODO: If >100, use bulk insert - test performance
 
 
+                Type entityType = typeof(TEntity);
+                Type itemType = typeof(TEntity);
+
+                if (entityType.IsGenericType && typeof(IEnumerable).IsAssignableFrom(entityType)) { itemType = entityType.GetGenericArguments()[0]; }
+
                 foreach (var entityItem in entities)
                 {
+                    tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
+
                     if (!string.IsNullOrEmpty(namePropUnique))
                     {
                         var properties = ToolsProp.GetProperties(entityItem, true, false);
-                        tableName ??= ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
 
                         // Check if entity exists (duplicates)
                         if (CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))
