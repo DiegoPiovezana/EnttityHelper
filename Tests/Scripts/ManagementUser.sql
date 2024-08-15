@@ -482,7 +482,8 @@ SELECT * FROM TB_USERtoGROUP;
 DROP TABLE TB_USER;
 DELETE FROM TB_USER;
 
-SELECT * FROM TB_USER;
+SELECT * FROM TB_USER ORDER BY ID;
+
 
 COMMIT
 
@@ -525,3 +526,33 @@ RETURNING Id INTO :Result;
 COMMIT
 
 ROLLBACK;
+
+
+-- Set auto increment
+DROP SEQUENCE SEQUENCE_USER;
+CREATE SEQUENCE SEQUENCE_USER
+START WITH 3
+INCREMENT BY 1;
+
+CREATE OR REPLACE TRIGGER TRIGGER_USER
+BEFORE INSERT ON TB_USER
+FOR EACH ROW
+BEGIN
+    IF :NEW.id IS NULL THEN
+        :NEW.id := SEQUENCE_USER.NEXTVAL;
+    END IF;
+END;
+
+INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer) VALUES ('1', 'Diego Piovezana', '@DiegoPiovezana', '10/08/2024 17:45:03', '1'); -- error
+INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer) VALUES ('0', 'Diego Piovezana', '@DiegoPiovezana', '10/08/2024 17:45:03', '1'); -- ok
+INSERT INTO TB_USER (Name, GitHub, DtCreation, IdCareer) VALUES ('Diego Piovezana', '@DiegoPiovezana', '10/08/2024 17:45:03', '1'); -- ok
+INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer) VALUES ('200', 'Diego Piovezana', '@DiegoPiovezana', '10/08/2024 17:45:03', '1'); -- ok
+
+
+INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer) VALUES ('0', 'Diego Piovezana One', '@DiegoPiovezana', '15/08/2024 01:18:58', '1')
+RETURNING Id INTO :Result
+
+
+
+SELECT * FROM TB_USER ORDER BY ID;
+DELETE FROM TB_USER;
