@@ -127,7 +127,7 @@ namespace EH.Commands
 
                     command.ExecuteScalar();                    
 
-                    Debug.WriteLine($"Result: {resultParam.Value}");
+                    //Debug.WriteLine($"Result: {resultParam.Value}");
                     results.Add(resultParam.Value);
                 }
 

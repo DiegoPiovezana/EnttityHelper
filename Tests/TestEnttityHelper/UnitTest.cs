@@ -408,9 +408,7 @@ namespace TestEnttityHelper
 
                 // Test for one entity
                 User entityTest = new("Diego Piovezana One") { Id = 0, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                //eh.Delete(entityTest);
-                //bool result1 = eh.Insert(entityTest, nameof(entityTest.Id), true) == 1;
-                bool result1 = eh.Insert(entityTest, null, true) == 1;
+                bool result1 = eh.Insert(entityTest, nameof(entityTest.GitHub), true) == 1;               
                 if (result1) { eh.Delete(entityTest); }
                 Assert.That(result1, Is.EqualTo(true));
 
