@@ -45,10 +45,7 @@ namespace EH.Connection
             switch (dbType)
             {
                 case Enums.DbType.Oracle:
-                    queries.Add($@"
-                            INSERT INTO {tableName1} ({columns}) VALUES ('{values}')
-                            RETURNING Id INTO :Result
-                        ");
+                    queries.Add($@"INSERT INTO {tableName1} ({columns}) VALUES ('{values}') RETURNING Id INTO :Result");
                     break;
                 case Enums.DbType.SQLServer:
                     queries.Add($@"INSERT INTO {tableName1} OUTPUT INSERTED.{pk.Name} ({columns}) VALUES ('{values}')");

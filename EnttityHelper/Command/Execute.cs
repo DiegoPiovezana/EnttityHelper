@@ -103,6 +103,18 @@ namespace EH.Commands
             }
         }
 
+        /// <summary>
+        /// Executes a collection of SQL queries within a transaction using the provided database context,
+        /// and returns the results of the executed scalar queries as a collection of objects.
+        /// Each query must include an output parameter named ":Result" to capture the return value.
+        /// </summary>
+        /// <param name="DbContext">The database context containing the connection and transaction information.</param>
+        /// <param name="queries">A collection of SQL query strings to be executed as scalar commands. 
+        /// Each query must contain an output parameter named ":Result" for capturing the result.</param>
+        /// <returns>A collection of objects representing the results of each scalar query executed.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the database connection or transaction is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if the queries collection or any individual query is null or empty.</exception>
+        /// <exception cref="Exception">Thrown if an error occurs during the execution of the queries, triggering a transaction rollback.</exception>
         internal static ICollection<object?> ExecuteScalar(this Database DbContext, ICollection<string?> queries)
         {
             if (DbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
@@ -148,6 +160,19 @@ namespace EH.Commands
             }
         }
 
+        /// <summary>
+        /// Executes a bulk copy operation to transfer data from the provided input source to a specified table in the database.
+        /// The input data can be of type DataRow[], DataTable, or IDataReader, and the appropriate bulk copy mechanism will be used
+        /// based on the underlying database provider (e.g., OracleBulkCopy, SqlBulkCopy).
+        /// </summary>
+        /// <param name="dbContext">The database context used to establish the connection and perform the bulk copy operation.</param>
+        /// <param name="inputDataToCopy">The data to be copied, which can be of type DataRow[], DataTable, or IDataReader.</param>
+        /// <param name="tableName">The name of the destination table where the data will be copied.</param>
+        /// <param name="bulkCopyTimeout">The timeout duration (in seconds) for the bulk copy operation.</param>
+        /// <returns>Returns true if the bulk copy operation is successful; otherwise, throws an exception.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if the database context, input data, or table name is null or empty.</exception>
+        /// <exception cref="NotSupportedException">Thrown if the bulk copy operation is not supported for the provided data type or database provider.</exception>
+        /// <exception cref="Exception">Thrown if an error occurs during the bulk copy operation, causing the connection to close and the exception to be rethrown.</exception>
         internal static bool PerformBulkCopyOperation(this Database dbContext, object inputDataToCopy, string tableName, int bulkCopyTimeout)
         {
             // dataToCopy: DataRow[], DataTable, IDataReader
@@ -205,10 +230,6 @@ namespace EH.Commands
                 throw;
             }
         }
-
-
-
-
 
     }
 }

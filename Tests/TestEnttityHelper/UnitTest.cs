@@ -24,7 +24,7 @@ namespace TestEnttityHelper
         [Test, Order(2)]
         public void TestConnection()
         {
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             bool test = eh.DbContext.ValidateConnection();
             Assert.That(test, Is.EqualTo(true));
         }
@@ -32,7 +32,7 @@ namespace TestEnttityHelper
         [Test, Order(3)]
         public void TestCreateTableIfNotExist()
         {
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 bool result = eh.CreateTableIfNotExist<EntityTest>(false);
@@ -47,7 +47,7 @@ namespace TestEnttityHelper
         [Test, Order(4)]
         public void TestCreateTable()
         {
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 // Oracle.ManagedDataAccess.Client.OracleException : ORA-00955: name is already used by an existing object
@@ -86,7 +86,7 @@ namespace TestEnttityHelper
         [Test, Order(6)]
         public void TestUpdateEntity()
         {
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 90, Name = "Testing entity 90 updating start time via C#", StartDate = DateTime.Now };
@@ -103,7 +103,7 @@ namespace TestEnttityHelper
         [Test, Order(7)]
         public void TestSearchEntity()
         {
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 90 };
@@ -120,7 +120,7 @@ namespace TestEnttityHelper
         [Test, Order(8)]
         public void TestGetEntity()
         {
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 var result = eh.Get<EntityTest>();
@@ -138,7 +138,7 @@ namespace TestEnttityHelper
         [Test, Order(9)]
         public void TestNonQuery()
         {
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 bool result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 90") == 1;
@@ -153,7 +153,7 @@ namespace TestEnttityHelper
         [Test, Order(10)]
         public void TestFullEntity()
         {
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 300, Name = "Testando 1 entidade 100 via C#", StartDate = DateTime.Now };
@@ -180,7 +180,7 @@ namespace TestEnttityHelper
         [Test, Order(11)]
         public void TestOneToOne()
         {
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 300, Name = "Testando 1 entidade 100 via C#", StartDate = DateTime.Now };
@@ -206,7 +206,7 @@ namespace TestEnttityHelper
         [Test, Order(12)]
         public void TestManyToOne()
         {
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 //eh.CreateTableIfNotExist<Career>();
@@ -233,7 +233,7 @@ namespace TestEnttityHelper
         [Test, Order(13)]
         public void TestManyToMany()
         {
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 /////////////////////////////////////////////////// 
@@ -309,7 +309,7 @@ namespace TestEnttityHelper
         [Test, Order(14)]
         public void TestInsertDataTable()
         {
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 // Empty columns will automatically have the Object type. In the database, the Object type will be NVARCHAR2(100)
@@ -337,7 +337,7 @@ namespace TestEnttityHelper
         [Test, Order(15)]
         public void TestInsertLinkSelect()
         {
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 // Select from database table from database 1
@@ -361,7 +361,7 @@ namespace TestEnttityHelper
         public void TestFullEntityREADME()
         {
             // Create a connection with the database using the connection string
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
 
             if (eh.DbContext.ValidateConnection())
             {

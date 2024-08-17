@@ -70,7 +70,7 @@ namespace App
         static void Main()
         {
             // Creates a connection with the database using the connection string
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
 
             if (eh.DbContext.ValidateConnection())
             {
@@ -121,7 +121,7 @@ namespace App
         static void Main()
         {
             // Creates a connection with the database using the connection string
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
 
             if (eh.DbContext.ValidateConnection())
             {
@@ -160,7 +160,7 @@ namespace App
         static void Main()
         {
             // Creates a connection with the database using the connection string
-            EnttityHelper eh = new($"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
 
             if (eh.DbContext.ValidateConnection())
             {

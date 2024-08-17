@@ -13,7 +13,7 @@ namespace EH_WindowsFormsApp
 {
     public partial class FrmUsers : Form
     {
-        static readonly string stringConnection = $"Data Source=172.27.13.97:49161/xe;User Id=system;Password=oracle";
+        static readonly string stringConnection = $"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle";
         readonly Database db = new(stringConnection);
         private bool _isUpdate = false;
         private User? _userSelected;
