@@ -525,7 +525,7 @@ RETURNING Id INTO :Result;
 
 COMMIT
 
-ROLLBACK;
+ROLLBACK
 
 
 -- Set auto increment
@@ -564,7 +564,9 @@ INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer) VALUES ('200', 'Die
 INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer) VALUES ('0', 'Diego Piovezana One', '@DiegoPiovezana', '15/08/2024 01:18:58', '1')
 RETURNING Id INTO :Result
 
-
-
 SELECT * FROM TB_USER ORDER BY ID;
 DELETE FROM TB_USER;
+
+SELECT * FROM TB_CAREERS;
+
+INSERT INTO TB_CAREERS (IdCareer, Name, CareerLevel, Active) VALUES ('1', 'Pleno', '2', '1') RETURNING Id INTO :Result
