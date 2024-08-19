@@ -85,6 +85,7 @@ namespace EH.Connection
                 string idTb1 = tableName1.Substring(0, Math.Min(tableName1.Length, 27));
                 string idTb2 = tableName2.Substring(0, Math.Min(tableName2.Length, 27));
                 object idValue1 = prop1.GetValue(entity);
+                //object idValue1 = -404;
 
                 foreach (var item in itemsCollection)
                 {

@@ -167,9 +167,10 @@ namespace EH.Command
                 pk.SetValue(insertQueriesEntity.Key, convertedId);
                 insertions++;
 
+                // Useful for MxN
                 for (int i = 1; i < insertQueriesEntity.Value.Count; i++)
                 {
-                    insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'-404'", $"'{id}'"); // Useful for MxN                         
+                    insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'-404'", $"'{id}'");                         
                     insertions += ExecuteNonQuery(insertQueriesEntity.Value[i], 1);
                 }
             }
@@ -229,17 +230,27 @@ namespace EH.Command
             //string? updateQuery = _enttityHelper.GetQuery.Update(entity, nameId, _enttityHelper.ReplacesTableName, tableName);
             //return ExecuteNonQuery(updateQuery, 1);
 
-            Collection<TEntity> entities;
-            if (entity is Collection<TEntity> collection) { entities = collection; }
-            else { entities = new Collection<TEntity> { entity }; }
+            //Collection<TEntity> entities;
+            //if (entity is Collection<TEntity> collection) { entities = collection; }
+            //else { entities = new Collection<TEntity> { entity }; }
 
-            int updates = 0;
+            // Entity or IEnumerable<Entity>
+            var updatesQueriesEntities = new Dictionary<object, List<string?>?>();
+            var entities = entity as IEnumerable ?? new[] { entity };
+            
             foreach (var entityItem in entities)
             {
-                ICollection<string?> updatesQuery = _enttityHelper.GetQuery.Update(entityItem, _enttityHelper, nameId, tableName, ignoreInversePropertyProperties);
-                updates += updatesQuery.Sum(insertQuery => insertQuery is null ? throw new Exception($"EH-000: Error!") : ExecuteNonQuery(insertQuery, 1));
+                var queryUpdate = _enttityHelper.GetQuery.Update(entityItem, _enttityHelper, nameId, tableName, ignoreInversePropertyProperties);
+                updatesQueriesEntities[entityItem] = _enttityHelper.GetQuery.Update(entityItem, _enttityHelper, nameId, tableName, ignoreInversePropertyProperties).ToList();
             }
 
+            int updates = 0;
+
+            foreach (var updateQueriesEntity in updatesQueriesEntities)
+            {
+                if (updateQueriesEntity.Value == null) throw new Exception("EH-000: Update query does not exist!");
+                updates += updateQueriesEntity.Value.Sum(updateQuery => updateQuery is null ? throw new Exception($"EH-000: Error update query!") : ExecuteNonQuery(updateQuery, 1));
+            }
             return updates;
         }
 
