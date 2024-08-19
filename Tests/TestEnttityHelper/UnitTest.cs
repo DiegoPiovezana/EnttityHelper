@@ -67,15 +67,15 @@ namespace TestEnttityHelper
             {
                 //bool result = eh.Insert(new { Id = 1, Name = "Test" }, null);
 
-                //EntityTest entityTest = new() { Id = 90, Name = "Testando entidade 90 via C#", StartDate = DateTime.Now };
-                User entityTest = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                EntityTest entityTest = new() { Id = 90, Name = "Testando entidade 90 via C#", StartDate = DateTime.Now };
+                //User entityTest = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
 
                 //bool result = eh.Insert(entityTest);
-                bool result = eh.Insert(entityTest, nameof(entityTest.Id), true) == 1;
+                int result = eh.Insert(entityTest, nameof(entityTest.Id), true);
 
-                if (result) { eh.Delete(entityTest); }
+                //if (result) { eh.Delete(entityTest); }
 
-                Assert.That(result, Is.EqualTo(true));
+                Assert.That(result == 1, Is.EqualTo(true));
             }
             else
             {
@@ -118,22 +118,35 @@ namespace TestEnttityHelper
         }
 
         [Test, Order(8)]
-        public void TestGetEntity()
+        public void TestGetEntity_SuccessfulRetrieval()
         {
             EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+                     
             if (eh.DbContext.ValidateConnection())
             {
                 var result = eh.Get<EntityTest>();
-                if (result is null) { Assert.Fail(); }
-                //else { Assert.That(result[0].StartDate.Date.Equals(DateTime.Now.AddMinutes(-10)), Is.EqualTo(true)); }
-                //else { Assert.That(result[0].StartDate, Is.LessThanOrEqualTo(DateTime.Now.AddMinutes(-10))); }
-                else { Assert.That(result[0].StartDate, Is.GreaterThanOrEqualTo(DateTime.Now.AddMinutes(-15))); }
+                             
+                Assert.That(result, Is.Not.Null, "Result should not be null.");
+                Assert.That(result, Has.Count.GreaterThanOrEqualTo(1), "At least one entity should be returned.");
+                              
+                var firstEntity = result.First();
+                Assert.That(firstEntity.StartDate, Is.LessThanOrEqualTo(DateTime.Now.AddMinutes(-10)), "StartDate should be 10 minutes earlier than now.");
+                Assert.That(firstEntity.StartDate, Is.GreaterThanOrEqualTo(DateTime.Now.AddMinutes(-15)), "StartDate should be at most 15 minutes earlier than now.");
             }
             else
             {
-                Assert.Fail();
+                Assert.Fail("Failed to validate database connection.");
             }
         }
+
+        [Test, Order(9)]
+        public void TestGetEntity_FailureWhenNoConnection()
+        {           
+            EnttityHelper eh = new($"Data Source=invalid;User Id=invalid;Password=invalid");
+
+            Assert.Throws<InvalidOperationException>(() => eh.Get<EntityTest>(), "Should throw exception when connection is invalid.");
+        }
+
 
         [Test, Order(9)]
         public void TestNonQuery()
@@ -222,7 +235,6 @@ namespace TestEnttityHelper
                 var users = eh.Get<User>();
 
                 Assert.Pass();
-
             }
             else
             {
@@ -256,48 +268,68 @@ namespace TestEnttityHelper
                 /////////////////////////////////////////////////// 
                 // INSERT
 
-                Career carrer = new() { IdCareer = 1, Name = "Pleno", CareerLevel = 2, Active = true };
-                eh.Insert(carrer);
+                Career carrer1 = new() { IdCareer = 1, Name = "Pleno", CareerLevel = 2, Active = true };
+                //eh.Insert(carrer);
 
                 Career carrer2 = new() { IdCareer = 3, Name = "Trainee", CareerLevel = 0, Active = true };
-                eh.Insert(carrer2);
+                //eh.Insert(carrer2);
+
+                var resultCarrers = eh.Insert(new List<Career>() { carrer1, carrer2 });
+                Assert.That(resultCarrers == 2, Is.EqualTo(true));
 
                 Group group1 = new() { Id = 1, Name = "Developers", Description = "Developer Group" };
-                eh.Insert(group1);
+                //eh.Insert(group1);
 
                 Group group2 = new() { Id = 2, Name = "Testers", Description = "Tester Group" };
-                eh.Insert(group2);
+                //eh.Insert(group2);
 
-                //eh.ExecuteNonQuery("DELETE FROM TB_USER");
-                User user = new() { Id = 1, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                List<Group> groupsUser = new() { group1, group2 };
-                foreach (var group in groupsUser) { user.Groups.Add(group); }
-                eh.Insert(user);
+                var resultGroups = eh.Insert(new List<Group>() { group1, group2 });
+                Assert.That(resultGroups == 2, Is.EqualTo(true));
 
+                eh.ExecuteNonQuery("DELETE FROM TB_USER");                
+                
+                // Insert user with group
+                User user1 = new() { Id = 1, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                List<Group> groupsUserAdd = new() { group1, group2 };
+                foreach (var group in groupsUserAdd) { user1.Groups.Add(group); } 
+                Assert.That(eh.Insert(user1) == 1, Is.EqualTo(true));
 
+                // Insert group with user
                 User user2 = new() { Id = 2, Name = "John Victor", GitHub = "@JohnVictor", DtCreation = DateTime.Now, IdCareer = 3 };
-                eh.Insert(user2);
+                Assert.That(eh.Insert(user2) == 1, Is.EqualTo(true));
 
                 Group group3 = new() { Id = 3, Name = "Operation", Description = "Operation Group" };
-                group3.Users.Add(user2);
-                eh.Insert(group3);
+                group3.Users.Add(user2);                
+                Assert.That(eh.Insert(group3) == 1, Is.EqualTo(true));
 
 
                 /////////////////////////////////////////////////// 
                 // GET
                 var carrers = eh.Get<Career>();
-                var users = eh.Get<User>();
                 var groups = eh.Get<Group>();
-
+                var users = eh.Get<User>();
+                Assert.Multiple(() =>
+                {
+                    Assert.That(carrers.Count == 2, Is.EqualTo(true));
+                    Assert.That(groups.Count == 3, Is.EqualTo(true));
+                    Assert.That(users.Count == 2, Is.EqualTo(true));
+                });
 
                 /////////////////////////////////////////////////// 
                 // UPDATE
-                User userUpdate = new() { Id = 1, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                userUpdate.Groups.Add(group2);
-                eh.Update(userUpdate);
+                //User userUpdate = new() { Id = 1, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                user1.Groups = new List<Group>() { group1 };
+                eh.Update(user1);
 
                 var usersUpdated = eh.Get<User>();
+                Assert.That(usersUpdated.Count == 2, Is.EqualTo(true));
 
+                var groupsUser1 = usersUpdated.Where(u => u.Id == 1).FirstOrDefault().Groups;
+                Assert.Multiple(() =>
+                {
+                    Assert.That(groupsUser1.Count == 1, Is.EqualTo(true));
+                    Assert.That(groupsUser1.FirstOrDefault().Name.Equals("Testers"), Is.EqualTo(true));
+                });
                 Assert.Pass();
             }
             else
@@ -407,8 +439,8 @@ namespace TestEnttityHelper
                 eh.CreateTableIfNotExist<User>(false);
 
                 // Test for one entity
-                User entityTest = new("Diego Piovezana One") { Id = 0, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                bool result1 = eh.Insert(entityTest, nameof(entityTest.GitHub), true) == 1;               
+                User entityTest = new("Diego Piovezana One") { Id = 0, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 1 };
+                bool result1 = eh.Insert(entityTest, nameof(entityTest.GitHub), true) == 1;
                 if (result1) { eh.Delete(entityTest); }
                 Assert.That(result1, Is.EqualTo(true));
 
@@ -420,9 +452,27 @@ namespace TestEnttityHelper
                 List<User>? users = new() { user1, user2, user3 };
 
                 // Inserts the entities
-                int result = eh.Insert(users);
+                int result2 = eh.Insert(users);
 
-                Assert.That(result == 3, Is.EqualTo(true));
+                Assert.That(result2 == 3, Is.EqualTo(true));
+
+                // Insert the many entities (MxN)
+                Group group4 = new() { Id = 0, Name = "Masters", Description = "Masters Group" };
+                Group group5 = new() { Id = 0, Name = "Managers", Description = "Managers Group" };
+                User userM = new("Maria da Silva") { Id = 0, GitHub = "@MariaSilva", DtCreation = DateTime.Now, IdCareer = 1 };
+                userM.Groups.Add(group4);
+                userM.Groups.Add(group5);
+                int result3 = eh.Insert(userM, nameof(userM.GitHub), true);
+                Assert.That(result3 == 3, Is.EqualTo(true));
+
+                // Insert the many entities (NxM)
+                User userX = new("Xavier Souza") { Id = 0, GitHub = "@XavierSouza", DtCreation = DateTime.Now, IdCareer = 2 };
+                User userY = new("Yasmin Corsa") { Id = 0, GitHub = "@YasminCorsa", DtCreation = DateTime.Now};
+                Group group6 = new() { Id = 0, Name = "Managers", Description = "Managers Group" };
+                group6.Users.Add(userX);
+                group6.Users.Add(userY);
+                int result4 = eh.Insert(group6, nameof(group6.Name), true);
+                Assert.That(result4 == 3, Is.EqualTo(true));
             }
             else
             {
@@ -430,7 +480,7 @@ namespace TestEnttityHelper
             }
         }
 
-        [Test, Order(17)]
+        [Test, Order(18)]
         public void TestManyUpdates()
         {
             EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
