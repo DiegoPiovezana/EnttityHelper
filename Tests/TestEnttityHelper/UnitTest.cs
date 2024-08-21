@@ -480,6 +480,11 @@ namespace TestEnttityHelper
                 userM.Groups.Add(group5);
                 int result4 = eh.Insert(userM, nameof(userM.GitHub), true);
                 Assert.That(result4 == 3, Is.EqualTo(true));
+
+                eh.ExecuteNonQuery($"DELETE FROM TB_GROUP_USERSTOGROUPS WHERE ID_TB_USER = {userM.Id}");
+                eh.Delete(group4);
+                eh.Delete(group5);
+                eh.Delete(userM);
             }
             else
             {
@@ -500,11 +505,16 @@ namespace TestEnttityHelper
                 int result5 = eh.Insert(users, nameof(User.Name), false);
                 Assert.That(result5 == 2, Is.EqualTo(true));
 
-                Group group6 = new() { Id = 0, Name = "Managers", Description = "Managers Group" };
+                Group group6 = new() { Id = 0, Name = "Group Six", Description = "Group Six Test" };
                 group6.Users.Add(userX);
                 group6.Users.Add(userY);
                 int result6 = eh.Insert(group6, nameof(group6.Name), true);
                 Assert.That(result6 == 3, Is.EqualTo(true));
+
+                eh.ExecuteNonQuery($"DELETE FROM TB_GROUP_USERSTOGROUPS WHERE ID_TB_GROUP_USERS  = {group6.Id}");
+                eh.Delete(userX);
+                eh.Delete(userY);
+                eh.Delete(group6);
             }
             else
             {
