@@ -121,14 +121,14 @@ namespace TestEnttityHelper
         public void TestGetEntity_SuccessfulRetrieval()
         {
             EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
-                     
+
             if (eh.DbContext.ValidateConnection())
             {
                 var result = eh.Get<EntityTest>();
-                             
+
                 Assert.That(result, Is.Not.Null, "Result should not be null.");
                 Assert.That(result, Has.Count.GreaterThanOrEqualTo(1), "At least one entity should be returned.");
-                              
+
                 var firstEntity = result.First();
                 Assert.That(firstEntity.StartDate, Is.LessThanOrEqualTo(DateTime.Now.AddMinutes(-10)), "StartDate should be 10 minutes earlier than now.");
                 Assert.That(firstEntity.StartDate, Is.GreaterThanOrEqualTo(DateTime.Now.AddMinutes(-15)), "StartDate should be at most 15 minutes earlier than now.");
@@ -141,7 +141,7 @@ namespace TestEnttityHelper
 
         [Test, Order(9)]
         public void TestGetEntity_FailureWhenNoConnection()
-        {           
+        {
             EnttityHelper eh = new($"Data Source=invalid;User Id=invalid;Password=invalid");
 
             Assert.Throws<InvalidOperationException>(() => eh.Get<EntityTest>(), "Should throw exception when connection is invalid.");
@@ -286,12 +286,12 @@ namespace TestEnttityHelper
                 var resultGroups = eh.Insert(new List<Group>() { group1, group2 });
                 Assert.That(resultGroups == 2, Is.EqualTo(true));
 
-                eh.ExecuteNonQuery("DELETE FROM TB_USER");                
-                
+                eh.ExecuteNonQuery("DELETE FROM TB_USER");
+
                 // Insert user with group
                 User user1 = new() { Id = 1, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
                 List<Group> groupsUserAdd = new() { group1, group2 };
-                foreach (var group in groupsUserAdd) { user1.Groups.Add(group); } 
+                foreach (var group in groupsUserAdd) { user1.Groups.Add(group); }
                 Assert.That(eh.Insert(user1) == 1, Is.EqualTo(true));
 
                 // Insert group with user
@@ -299,7 +299,7 @@ namespace TestEnttityHelper
                 Assert.That(eh.Insert(user2) == 1, Is.EqualTo(true));
 
                 Group group3 = new() { Id = 3, Name = "Operation", Description = "Operation Group" };
-                group3.Users.Add(user2);                
+                group3.Users.Add(user2);
                 Assert.That(eh.Insert(group3) == 1, Is.EqualTo(true));
 
 
@@ -430,7 +430,7 @@ namespace TestEnttityHelper
         }
 
         [Test, Order(17)]
-        public void TestManyInsertions()
+        public void TestManyInsertionsSimple()
         {
             EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
@@ -456,23 +456,55 @@ namespace TestEnttityHelper
 
                 Assert.That(result2 == 3, Is.EqualTo(true));
 
-                // Insert the many entities (MxN)
+            }
+        }
+
+        [Test, Order(17)]
+        public void TestManyInsertionsMxN()
+        {
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            if (eh.DbContext.ValidateConnection())
+            {
+                // INSERT THE MANY ENTITIES (MXN)
                 Group group4 = new() { Id = 0, Name = "Masters", Description = "Masters Group" };
                 Group group5 = new() { Id = 0, Name = "Managers", Description = "Managers Group" };
+                List<Group> groups = new() { group4, group5 };
+                int result3 = eh.Insert(groups, nameof(Group.Name), true);
+                Assert.That(result3 == 2, Is.EqualTo(true));
+
+                // It is necessary to first insert the groups, and then link them to the user
+                // Otherwise, the local ID of groups 4 and 5 will be incorrectly used, instead of the one defined by the database.
+
                 User userM = new("Maria da Silva") { Id = 0, GitHub = "@MariaSilva", DtCreation = DateTime.Now, IdCareer = 1 };
                 userM.Groups.Add(group4);
                 userM.Groups.Add(group5);
-                int result3 = eh.Insert(userM, nameof(userM.GitHub), true);
-                Assert.That(result3 == 3, Is.EqualTo(true));
+                int result4 = eh.Insert(userM, nameof(userM.GitHub), true);
+                Assert.That(result4 == 3, Is.EqualTo(true));
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
 
-                // Insert the many entities (NxM)
-                User userX = new("Xavier Souza") { Id = 0, GitHub = "@XavierSouza", DtCreation = DateTime.Now, IdCareer = 2 };
-                User userY = new("Yasmin Corsa") { Id = 0, GitHub = "@YasminCorsa", DtCreation = DateTime.Now};
+        [Test, Order(17)]
+        public void TestManyInsertionsNxM()
+        {
+            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            if (eh.DbContext.ValidateConnection())
+            {
+                // INSERT THE MANY ENTITIES (NXM)
+                User userX = new("Xavier Souza") { Id = -404, GitHub = "@XavierSouza", DtCreation = DateTime.Now, IdCareer = 2 };
+                User userY = new("Yasmin Corsa") { Id = -405, GitHub = "@YasminCorsa", DtCreation = DateTime.Now };
+                List<User> users = new() { userX, userY };
+                int result5 = eh.Insert(users, nameof(User.Name), false);
+                Assert.That(result5 == 2, Is.EqualTo(true));
+
                 Group group6 = new() { Id = 0, Name = "Managers", Description = "Managers Group" };
                 group6.Users.Add(userX);
                 group6.Users.Add(userY);
-                int result4 = eh.Insert(group6, nameof(group6.Name), true);
-                Assert.That(result4 == 3, Is.EqualTo(true));
+                int result6 = eh.Insert(group6, nameof(group6.Name), true);
+                Assert.That(result6 == 3, Is.EqualTo(true));
             }
             else
             {

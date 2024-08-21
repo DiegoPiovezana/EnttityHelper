@@ -170,7 +170,7 @@ namespace EH.Command
                 // Useful for MxN
                 for (int i = 1; i < insertQueriesEntity.Value.Count; i++)
                 {
-                    insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'-404'", $"'{id}'");                         
+                    insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'&ID1'", $"'{id}'");                
                     insertions += ExecuteNonQuery(insertQueriesEntity.Value[i], 1);
                 }
             }
