@@ -81,9 +81,9 @@ namespace EH.Connection
                 var itemsCollection = (IEnumerable<object>)invProp.Value.Value;
                 if (itemsCollection is null) { continue; } // If the collection is null, there is no need to insert anything.
 
-                PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
                 string idTb1 = tableName1.Substring(0, Math.Min(tableName1.Length, 27));
                 string idTb2 = tableName2.Substring(0, Math.Min(tableName2.Length, 27));
+                //PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
                 //object idValue1 = prop1.GetValue(entity);
                 string idValue1 = "&ID1";
 

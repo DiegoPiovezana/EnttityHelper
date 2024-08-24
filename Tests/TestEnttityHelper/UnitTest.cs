@@ -529,16 +529,22 @@ namespace TestEnttityHelper
             if (eh.DbContext.ValidateConnection())
             {
                 // Create many entities
-                User user1 = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 3 };
-                User user2 = new("User Test One") { Id = 2, GitHub = "@UserTestOne", DtCreation = DateTime.Now, IdCareer = 1 };
-                User user3 = new("User Test Two") { Id = 3, GitHub = "@UserTestTwo", DtCreation = DateTime.Now, IdCareer = 1 };
+                User user1 = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana18", DtCreation = DateTime.Now, IdCareer = 3 };
+                User user2 = new("User Test One") { Id = 2, GitHub = "@UserTestOne18", DtCreation = DateTime.Now, IdCareer = 1 };
+                User user3 = new("User Test Two") { Id = 3, GitHub = "@UserTestTwo18", DtCreation = DateTime.Now, IdCareer = 1 };
 
                 List<User>? users = new() { user1, user2, user3 };
+                int result1 = eh.Insert(users);
+                Assert.That(result1 == 3, Is.EqualTo(true));
+
+                // Update entities
+                user1.IdCareer = 1;
+                user2.Name = "User Test One Updt";
+                user3.GitHub = "@UpdtUserTestTwo18";
 
                 // Updates the entities
-                int result = eh.Update(users);
-
-                Assert.That(result == 3, Is.EqualTo(true));
+                int result2 = eh.Update(users);
+                Assert.That(result2 == 3, Is.EqualTo(true));               
             }
             else
             {
