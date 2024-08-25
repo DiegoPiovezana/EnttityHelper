@@ -310,11 +310,15 @@ namespace EH.Connection
             StringBuilder queryBuilderPrincipal = new();
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
 
-            queryBuilderPrincipal.Append($@"CREATE TABLE {tableName} (");
+            Type entityType = typeof(TEntity);
+            Type itemType = entityType;
+            if (typeof(IEnumerable).IsAssignableFrom(entityType) && entityType.IsGenericType) { itemType = entityType.GetGenericArguments()[0]; }
 
-            TEntity entity = Activator.CreateInstance<TEntity>() ?? throw new ArgumentNullException(nameof(entity));
+            object entity = Activator.CreateInstance(itemType) ?? throw new ArgumentNullException(nameof(entity));
             var properties = ToolsProp.GetProperties(entity, false, false);
-            var pk = ToolsProp.GetPK((object)entity);
+            var pk = ToolsProp.GetPK(entity);
+
+            queryBuilderPrincipal.Append($@"CREATE TABLE {tableName} (");
 
             foreach (KeyValuePair<string, Property> prop in properties)
             {
