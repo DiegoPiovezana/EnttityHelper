@@ -179,7 +179,7 @@ namespace EH.Properties
         }
 
         internal static string GetTableName<TEntity>(Dictionary<string, string>? replacesTableName)
-        {
+        {            
             TableAttribute? ta = GetTableAttribute(typeof(TEntity));
             string schema = ta?.Schema != null ? $"{ta.Schema}." : "";
             string tableName = ta?.Name ?? typeof(TEntity).Name;

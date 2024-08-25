@@ -528,10 +528,12 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
+                //int deletes = eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE ID IN (1, 2, 3)");
+
                 // Create many entities
                 User user1 = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana18", DtCreation = DateTime.Now, IdCareer = 3 };
-                User user2 = new("User Test One") { Id = 2, GitHub = "@UserTestOne18", DtCreation = DateTime.Now, IdCareer = 1 };
-                User user3 = new("User Test Two") { Id = 3, GitHub = "@UserTestTwo18", DtCreation = DateTime.Now, IdCareer = 1 };
+                User user2 = new("User Test Two") { Id = 2, GitHub = "@UserTestTwo18", DtCreation = DateTime.Now, IdCareer = 1 };
+                User user3 = new("User Test Three") { Id = 3, GitHub = "@UserTestThree18", DtCreation = DateTime.Now, IdCareer = 1 };
 
                 List<User>? users = new() { user1, user2, user3 };
                 int result1 = eh.Insert(users);
@@ -539,12 +541,19 @@ namespace TestEnttityHelper
 
                 // Update entities
                 user1.IdCareer = 1;
-                user2.Name = "User Test One Updt";
-                user3.GitHub = "@UpdtUserTestTwo18";
-
-                // Updates the entities
+                user2.Name = "User Test Two Updt";
+                user3.GitHub = "@UpdtUserTestThree18";
+               
                 int result2 = eh.Update(users);
-                Assert.That(result2 == 3, Is.EqualTo(true));               
+                Assert.That(result2 == 3, Is.EqualTo(true));
+
+                // Update one entity
+                User user4 = new("User Test Four") { Id = 4, GitHub = "@UserTestFour18", DtCreation = DateTime.Now, IdCareer = 2 };
+                int result3 = eh.Insert(user4);
+                Assert.That(result3 == 1, Is.EqualTo(true));
+                user4.GitHub = "@UpdtUserTestFour18";
+                int result4 = eh.Update(user4);
+                Assert.That(result4 == 1, Is.EqualTo(true));
             }
             else
             {

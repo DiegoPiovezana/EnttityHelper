@@ -130,10 +130,10 @@ namespace EH.Command
                 ? typeof(TEntity).GetGenericArguments()[0]
                 : typeof(TEntity);
 
+            tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
+
             foreach (var entityItem in entities)
             {
-                tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
-
                 if (!string.IsNullOrEmpty(namePropUnique))
                 {
                     var properties = ToolsProp.GetProperties(entityItem, true, false);
@@ -143,12 +143,12 @@ namespace EH.Command
                     {
                         Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
                         return -101;
-                    }                   
+                    }
                 }
 
                 if (!CheckIfExist(tableName))
                 {
-                    if (createTable) CreateTableIfNotExist<TEntity>(false, null, tableName);
+                    if (createTable) CreateTable<TEntity>(false, null, tableName);
                     else throw new InvalidOperationException($"Table '{tableName}' does not exist!");
                 }
 
@@ -171,7 +171,7 @@ namespace EH.Command
                 // Useful for MxN
                 for (int i = 1; i < insertQueriesEntity.Value.Count; i++)
                 {
-                    insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'&ID1'", $"'{id}'");                
+                    insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'&ID1'", $"'{id}'");
                     insertions += ExecuteNonQuery(insertQueriesEntity.Value[i], 1);
                 }
             }
@@ -238,11 +238,17 @@ namespace EH.Command
             // Entity or IEnumerable<Entity>
             var updatesQueriesEntities = new Dictionary<object, List<string?>?>();
             var entities = entity as IEnumerable ?? new[] { entity };
-            
+
+            var itemType = typeof(TEntity).IsGenericType && typeof(IEnumerable).IsAssignableFrom(typeof(TEntity))
+                ? typeof(TEntity).GetGenericArguments()[0]
+                : typeof(TEntity);
+
+            tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
+
             foreach (var entityItem in entities)
             {
                 var queryUpdate = _enttityHelper.GetQuery.Update(entityItem, _enttityHelper, nameId, tableName, ignoreInversePropertyProperties);
-                updatesQueriesEntities[entityItem] = _enttityHelper.GetQuery.Update(entityItem, _enttityHelper, nameId, tableName, ignoreInversePropertyProperties).ToList();
+                updatesQueriesEntities[entityItem] = queryUpdate.ToList();
             }
 
             int updates = 0;
@@ -315,19 +321,23 @@ namespace EH.Command
 
             var createsTableQuery = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, createOnlyPrimaryTable, ignoreProps, _enttityHelper.ReplacesTableName, tableName);
 
-            foreach (string? createTableQuery in createsTableQuery.Reverse()) // The last table is the main table
-            {
-                if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
-                {
-                    Debug.WriteLine("Table created!");
-                }
-                else
-                {
-                    throw new InvalidOperationException("Table not created!");
-                }
-                //if (createOnlyPrimaryTable) { break; }
-            }
-            return true;
+            //foreach (string? createTableQuery in createsTableQuery.Reverse()) // The last table is the main table
+            //{
+            //    if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
+            //    {
+            //        Debug.WriteLine("Table created!");
+            //    }
+            //    else
+            //    {
+            //        throw new InvalidOperationException("Table not created!");
+            //    }
+            //    //if (createOnlyPrimaryTable) { break; }
+            //}
+
+            //return true;
+
+            var creates = ExecuteNonQuery(createsTableQuery.Reverse().ToList()); // The last table is the main table
+            return createsTableQuery.Count == creates.Count;
         }
 
         public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable = false, ICollection<string>? ignoreProps = null, string? tableName = null)
@@ -407,7 +417,7 @@ namespace EH.Command
 
         public ICollection<int> ExecuteNonQuery(ICollection<string?> queries, int expectedChanges = -1)
         {
-            return Commands.Execute.ExecuteNonQuery<object>(_enttityHelper.DbContext, queries, expectedChanges);
+            return Commands.Execute.ExecuteNonQuery(_enttityHelper.DbContext, queries, expectedChanges);
         }
 
         public List<TEntity>? ExecuteSelect<TEntity>(string? query)

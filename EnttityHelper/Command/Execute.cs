@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace EH.Commands
 {
@@ -44,64 +46,85 @@ namespace EH.Commands
         }
 
         /// <summary>
-        /// Executes a SQL command, either non-query or select, based on the provided query.
+        /// Executes a collection of SQL non-query commands (e.g., INSERT, UPDATE, DELETE).
         /// </summary>
-        /// <typeparam name="TEntity">The type of entities to retrieve.</typeparam>
-        /// <param name="queries">The SQL query collection to execute.</param>
-        /// <param name="DbContext">Database where the entities will be manipulated.</param>        
-        /// <param name="expectedChanges">(Optional) Expected amount of changes to the database. If the amount of changes is not expected, the change will be rolled back and an exception will be thrown.</param> 
+        /// <param name="DbContext">The database context where the commands will be executed.</param>
+        /// <param name="queries">The collection of SQL queries to execute.</param>
+        /// <param name="expectedChanges">(Optional) The expected number of rows affected by each command. If the actual number of affected rows does not match, the transaction is rolled back, and an exception is thrown.</param>
         /// <returns>
-        /// Returns the number of affected rows.       
+        /// A collection of integers representing the number of rows affected by each executed command.
         /// </returns>
-        internal static ICollection<int> ExecuteNonQuery<TEntity>(this Database DbContext, ICollection<string?> queries, int expectedChanges = -1)
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the database connection is null, or when the queries collection is null or contains an empty query.
+        /// </exception>
+        /// <exception cref="Exception">
+        /// Thrown when a SQL error occurs, including specific handling for the 'ORA-00942' error.
+        /// </exception>
+        internal static ICollection<int> ExecuteNonQuery(this Database DbContext, ICollection<string?> queries, int expectedChanges = -1)
         {
+            if (DbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
+            if (queries is null || queries.Count == 0) { throw new InvalidOperationException("Queries do not exist."); }
+
+            IDbConnection connection = DbContext.CreateOpenConnection();
+            IDbTransaction? transaction = DbContext.CreateTransaction() ?? throw new InvalidOperationException("Transaction is null.");
+            string tableName = string.Empty;
+
             try
             {
-                if (DbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
-                if (queries is null) { throw new InvalidOperationException("Queries do not exist."); }
+                ICollection<int> result = new List<int>();
 
-                IDbConnection connection = DbContext.CreateOpenConnection();
-                IDbTransaction? transaction = DbContext.CreateTransaction() ?? throw new InvalidOperationException("Transaction is null.");
-
-                try
+                foreach (var query in queries)
                 {
-                    ICollection<int> result = new List<int>();
+                    if (string.IsNullOrEmpty(query?.Trim())) { throw new ArgumentNullException(nameof(query), "Query cannot be null or empty."); }
 
-                    foreach (var query in queries)
+                    //var match = Regex.Match(query, @"FROM\s+([^\s]+)", RegexOptions.IgnoreCase);
+                    //if (match.Success) { tableName = match.Groups[1].Value; }
+
+                    var tables = new List<string>();
+
+                    // 'FROM' e 'JOIN'
+                    var fromMatches = Regex.Matches(query, @"\b(?:FROM|JOIN)\s+([^\s,]+)", RegexOptions.IgnoreCase);
+                    foreach (Match match in fromMatches) { if (match.Success) { tables.Add(match.Groups[1].Value); } }
+
+                    // 'FOREIGN KEY REFERENCES'
+                    var foreignKeyMatches = Regex.Matches(query, @"\bFOREIGN\s+KEY\s+\([^\)]+\)\s+REFERENCES\s+([^\s\(]+)", RegexOptions.IgnoreCase);
+                    foreach (Match match in foreignKeyMatches) { if (match.Success) { tables.Add(match.Groups[1].Value); } }
+
+                    tableName = string.Join(" or ", tables);
+
+                    using IDbCommand command = DbContext.CreateCommand(query);
+                    command.Transaction = transaction;
+
+                    int rowsAffected = command.ExecuteNonQuery();
+
+                    if (expectedChanges != -1 && rowsAffected != expectedChanges)
                     {
-                        if (string.IsNullOrEmpty(query?.Trim())) { throw new ArgumentNullException(nameof(query), "Query cannot be null or empty."); }
-
-                        using IDbCommand command = DbContext.CreateCommand(query);
-                        command.Transaction = transaction;
-
-                        int rowsAffected = command.ExecuteNonQuery();
-
-                        if (expectedChanges != -1 && rowsAffected != expectedChanges)
-                        {
-                            throw new InvalidOperationException($"Expected {expectedChanges} changes, but {rowsAffected} were made.");
-                        }
-
-                        transaction.Commit();
-                        connection.Close();
-                        Debug.WriteLine($"Rows Affected: {rowsAffected}");
-                        result.Add(rowsAffected);
+                        throw new InvalidOperationException($"Expected {expectedChanges} changes, but {rowsAffected} were made.");
                     }
 
-                    return result;
+                    result.Add(rowsAffected);
                 }
-                catch (Exception)
-                {
-                    transaction.Rollback();
-                    connection.Close();
-                    throw;
-                }
+
+                transaction.Commit();
+                return result;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
+                transaction.Rollback();
+                //connection.Close();
+
+                if (ex.Message.Contains("ORA-00942") && !string.IsNullOrEmpty(tableName))
+                {
+                    throw new Exception($"E-942-EH: Table or view '{tableName}' does not exist!", ex);
+                }
                 throw;
             }
+            finally
+            {
+                if (connection.State == ConnectionState.Open) connection.Close();
+            }
         }
+
 
         /// <summary>
         /// Executes a collection of SQL queries within a transaction using the provided database context,
@@ -137,7 +160,7 @@ namespace EH.Commands
                     var resultParam = new OracleParameter(":Result", OracleDbType.Int32) { Direction = ParameterDirection.Output };
                     command.Parameters.Add(resultParam);
 
-                    command.ExecuteScalar();                    
+                    command.ExecuteScalar();
 
                     //Debug.WriteLine($"Result: {resultParam.Value}");
                     results.Add(resultParam.Value);

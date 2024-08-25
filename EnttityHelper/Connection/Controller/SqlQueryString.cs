@@ -162,8 +162,18 @@ namespace EH.Connection
                 Type entity2Type = collectionType.GetGenericArguments()[0];
                 string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(entity.GetType(), invProp, enttityHelper.ReplacesTableName);
 
-                var tableName1 = ToolsProp.GetTableName(entity.GetType(), enttityHelper.ReplacesTableName);
-                var tableName2 = ToolsProp.GetTableName(entity2Type, enttityHelper.ReplacesTableName);
+                var tableName1 = ToolsProp.GetTableName(entity.GetType(), enttityHelper.ReplacesTableName); // Ex.: TB_USER
+                var tableName2 = ToolsProp.GetTableName(entity2Type, enttityHelper.ReplacesTableName);  // Ex.: TB_GROUP_USERS
+
+                MethodInfo checkIfExistMethod = typeof(EnttityHelper).GetMethod("CheckIfExist");
+                ValidateTableExist(tableName1);
+                ValidateTableExist(tableName2);
+
+                void ValidateTableExist(string tableName)
+                {
+                    bool tableExists = (bool)checkIfExistMethod.Invoke(enttityHelper, new object[] { tableName, null, 0 });
+                    if (!tableExists) { throw new Exception($"Table '{tableName}' doesn't exist!"); }
+                }
 
                 var pk1 = ToolsProp.GetPK((object)entity);
                 var pk2 = ToolsProp.GetPK((object)entity2Type);
