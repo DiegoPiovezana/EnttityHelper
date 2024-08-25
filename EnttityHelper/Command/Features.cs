@@ -143,12 +143,13 @@ namespace EH.Command
                     {
                         Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
                         return -101;
-                    }
+                    }                   
+                }
 
-                    if (!CheckIfExist(tableName) && createTable)
-                    {
-                        CreateTableIfNotExist<TEntity>(false, null, tableName);
-                    }
+                if (!CheckIfExist(tableName))
+                {
+                    if (createTable) CreateTableIfNotExist<TEntity>(false, null, tableName);
+                    else throw new InvalidOperationException($"Table '{tableName}' does not exist!");
                 }
 
                 insertsQueriesEntities[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.DbContext.Type, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();

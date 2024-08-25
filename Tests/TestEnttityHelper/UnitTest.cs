@@ -548,8 +548,9 @@ namespace TestEnttityHelper
             }
             else
             {
-                Assert.Fail();
+                Assert.Fail("Connection failed!");
             }
         }
+
     }
 }
