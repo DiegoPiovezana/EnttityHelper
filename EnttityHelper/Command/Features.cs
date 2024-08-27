@@ -124,13 +124,54 @@ namespace EH.Command
             var insertsQueriesEntities = new Dictionary<object, List<string?>?>();
             var entities = entity as IEnumerable ?? new[] { entity };
 
+            if (entity is null) throw new InvalidOperationException($"$'{nameof(entity)}' is null!");
+            var entityFirst = entities.Cast<object>().FirstOrDefault() ?? throw new InvalidOperationException($"$'{nameof(entity)}' is invalid!");
+
             // TODO: If >100, use bulk insert - test performance
+
+            // Check FK table
+            Dictionary<object, object>? fkProperties = ToolsProp.GetFKProperties(entityFirst);
+            if (fkProperties != null)
+            {
+                foreach (var fkProp in fkProperties)
+                {
+                    string tableNamefkProp = ToolsProp.GetTableName(fkProp.Value.GetType(), _enttityHelper.ReplacesTableName);
+                    var pkFk = fkProp.Value.GetPK();
+                    if (!CheckIfExist(tableNamefkProp, $"{pkFk.Name} = {pkFk.GetValue(fkProp.Value, null)}")) throw new InvalidOperationException($"Entity or table '{tableNamefkProp}' does not exist!");
+                }
+            }
+
+            // Check MxN table
+            if (!ignoreInversePropertyProperties)
+            {
+                List<PropertyInfo>? inverseProperties = ToolsProp.GetInverseProperties(entityFirst);
+                if (inverseProperties != null)
+                {
+                    foreach (var inverseProp in inverseProperties)
+                    {
+                        Type propInverseType = inverseProp.PropertyType.GetGenericArguments()[0];
+                        string tableNameInverseProp = ToolsProp.GetTableName(propInverseType, _enttityHelper.ReplacesTableName);
+
+                        if (!CheckIfExist(tableNameInverseProp))
+                        {
+                            if (createTable) CreateTable<TEntity>(false, null, tableNameInverseProp);
+                            else throw new InvalidOperationException($"Table '{tableNameInverseProp}' does not exist!");
+                        }
+                    }
+                }
+            }
 
             var itemType = typeof(TEntity).IsGenericType && typeof(IEnumerable).IsAssignableFrom(typeof(TEntity))
                 ? typeof(TEntity).GetGenericArguments()[0]
                 : typeof(TEntity);
 
             tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
+
+            if (!CheckIfExist(tableName))
+            {
+                if (createTable) CreateTable<TEntity>(false, null, tableName);
+                else throw new InvalidOperationException($"Table '{tableName}' does not exist!");
+            }
 
             foreach (var entityItem in entities)
             {
@@ -144,12 +185,6 @@ namespace EH.Command
                         Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
                         return -101;
                     }
-                }
-
-                if (!CheckIfExist(tableName))
-                {
-                    if (createTable) CreateTable<TEntity>(false, null, tableName);
-                    else throw new InvalidOperationException($"Table '{tableName}' does not exist!");
                 }
 
                 insertsQueriesEntities[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.DbContext.Type, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();

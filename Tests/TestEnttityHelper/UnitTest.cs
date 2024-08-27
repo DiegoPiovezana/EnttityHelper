@@ -528,6 +528,12 @@ namespace TestEnttityHelper
             EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
+                Career carrer1 = new(1, "Developer");
+                Career carrer2 = new(2, "Management");
+                Career carrer3 = new(3, "Analyst");
+                //eh.Insert(new List<Career> { carrer1, carrer2, carrer3 });
+
+
                 //int deletes = eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE ID IN (1, 2, 3)");
 
                 // Create many entities
@@ -543,7 +549,7 @@ namespace TestEnttityHelper
                 user1.IdCareer = 1;
                 user2.Name = "User Test Two Updt";
                 user3.GitHub = "@UpdtUserTestThree18";
-               
+
                 int result2 = eh.Update(users);
                 Assert.That(result2 == 3, Is.EqualTo(true));
 
