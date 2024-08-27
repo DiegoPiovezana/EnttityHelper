@@ -77,20 +77,8 @@ namespace EH.Commands
                 {
                     if (string.IsNullOrEmpty(query?.Trim())) { throw new ArgumentNullException(nameof(query), "Query cannot be null or empty."); }
 
-                    //var match = Regex.Match(query, @"FROM\s+([^\s]+)", RegexOptions.IgnoreCase);
-                    //if (match.Success) { tableName = match.Groups[1].Value; }
-
-                    var tables = new List<string>();
-
-                    // 'FROM' e 'JOIN'
-                    var fromMatches = Regex.Matches(query, @"\b(?:FROM|JOIN)\s+([^\s,]+)", RegexOptions.IgnoreCase);
-                    foreach (Match match in fromMatches) { if (match.Success) { tables.Add(match.Groups[1].Value); } }
-
-                    // 'FOREIGN KEY REFERENCES'
-                    var foreignKeyMatches = Regex.Matches(query, @"\bFOREIGN\s+KEY\s+\([^\)]+\)\s+REFERENCES\s+([^\s\(]+)", RegexOptions.IgnoreCase);
-                    foreach (Match match in foreignKeyMatches) { if (match.Success) { tables.Add(match.Groups[1].Value); } }
-
-                    tableName = string.Join(" or ", tables);
+                    var tables = GetTbDependence(query); 
+                    tableName = string.Join(" and ", tables);
 
                     using IDbCommand command = DbContext.CreateCommand(query);
                     command.Transaction = transaction;
@@ -105,17 +93,17 @@ namespace EH.Commands
                     result.Add(rowsAffected);
                 }
 
-                transaction.Commit();
+                transaction.Commit(); // Possible only for DML
                 return result;
             }
             catch (Exception ex)
             {
-                transaction.Rollback();
+                transaction.Rollback(); // Not applicable to DDL
                 //connection.Close();
 
                 if (ex.Message.Contains("ORA-00942") && !string.IsNullOrEmpty(tableName))
                 {
-                    throw new Exception($"E-942-EH: Table or view '{tableName}' does not exist!", ex);
+                    throw new Exception($"E-942-EH: Table or view '{tableName}' must exist!", ex);
                 }
                 throw;
             }
@@ -123,8 +111,34 @@ namespace EH.Commands
             {
                 if (connection.State == ConnectionState.Open) connection.Close();
             }
-        }
 
+            static List<string> GetTbDependence(string query)
+            {
+                var tables = new List<string>();
+
+                // 'FROM' e 'JOIN'
+                var fromMatches = Regex.Matches(query, @"\b(?:FROM|JOIN)\s+([^\s,]+)", RegexOptions.IgnoreCase);
+                foreach (Match match in fromMatches)
+                {
+                    if (match.Success)
+                    {
+                        tables.Add(match.Groups[1].Value);
+                    }
+                }
+
+                // 'FOREIGN KEY REFERENCES'
+                var foreignKeyMatches = Regex.Matches(query, @"\bFOREIGN\s+KEY\s+\([^\)]+\)\s+REFERENCES\s+([^\s\(]+)", RegexOptions.IgnoreCase);
+                foreach (Match match in foreignKeyMatches)
+                {
+                    if (match.Success)
+                    {
+                        tables.Add(match.Groups[1].Value);
+                    }
+                }
+
+                return tables;
+            }
+        }
 
         /// <summary>
         /// Executes a collection of SQL queries within a transaction using the provided database context,
