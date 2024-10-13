@@ -345,6 +345,18 @@ namespace EH
             }
         }
 
+        /// <inheritdoc/>
+        public string NormalizeText(string? text, char replaceSpace = '_', bool toLower = true)
+        {
+            try
+            {
+                return _features.NormalizeText(text, replaceSpace, toLower);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
 
     }
 }

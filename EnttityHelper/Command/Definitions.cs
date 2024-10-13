@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace EH.Command
 {
-    internal class Define
+    internal class Definitions
     {
         internal static string NameTableFromDataTable(string tableName, Dictionary<string, string>? replacesTableName)
-        {            
+        {
             if (string.IsNullOrEmpty(tableName) && replacesTableName?.Keys != null)
             {
                 foreach (string replace in replacesTableName.Keys)

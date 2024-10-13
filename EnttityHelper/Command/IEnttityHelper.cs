@@ -259,6 +259,15 @@ namespace EH.Command
         /// <returns>The name of the primary key for the entity.</returns>
         public string? GetPKName<TEntity>(TEntity entity) where TEntity : class;
 
+        /// <summary>
+        /// Normalizes a given text by removing diacritical marks (accents), trimming whitespace, replacing spaces with a specified character, and optionally converting the text to lowercase.
+        /// </summary>
+        /// <param name="text">The input text to be normalized. If null or empty, an empty string is returned.</param>
+        /// <param name="replaceSpace">The character to replace spaces with. Defaults to '_'.</param>
+        /// <param name="toLower">Indicates whether the result should be converted to lowercase. Defaults to true.</param>
+        /// <returns>A normalized version of the input text without diacritical marks, spaces replaced by the specified character, and optionally in lowercase.</returns>
+        public string NormalizeText(string? text, char replaceSpace = '_', bool toLower = true);
+
 
     }
 }

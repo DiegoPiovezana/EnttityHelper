@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace EH.Commands
@@ -77,7 +76,7 @@ namespace EH.Commands
                 {
                     if (string.IsNullOrEmpty(query?.Trim())) { throw new ArgumentNullException(nameof(query), "Query cannot be null or empty."); }
 
-                    var tables = GetTbDependence(query); 
+                    var tables = GetTbDependence(query);
                     tableName = string.Join(" and ", tables);
 
                     using IDbCommand command = DbContext.CreateCommand(query);

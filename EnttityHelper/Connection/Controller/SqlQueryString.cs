@@ -435,7 +435,7 @@ namespace EH.Connection
             if (typesSql is null) { throw new ArgumentNullException(nameof(typesSql)); }
 
             StringBuilder queryBuilder = new();
-            tableName ??= Define.NameTableFromDataTable(dataTable.TableName, replacesTableName);
+            tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, replacesTableName);
 
             queryBuilder.Append($@"CREATE TABLE {tableName} (");
 

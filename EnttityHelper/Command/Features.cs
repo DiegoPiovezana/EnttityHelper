@@ -8,8 +8,10 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace EH.Command
 {
@@ -87,7 +89,7 @@ namespace EH.Command
             {
                 if (dataTable.Rows.Count == 0) return 0;
 
-                tableName ??= Define.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
+                tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
 
                 if (!CheckIfExist(tableName) && createTable)
                 {
@@ -403,7 +405,7 @@ namespace EH.Command
         public bool CreateTableIfNotExist(DataTable dataTable, string? tableName = null)
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
-            tableName ??= Define.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
+            tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
             if (CheckIfExist(tableName)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
             return CreateTable(dataTable, tableName);
         }
@@ -556,14 +558,26 @@ namespace EH.Command
             return ToolsProp.GetTableNameManyToMany(entity1, propCollection, _enttityHelper.ReplacesTableName);
         }
 
-        public string? GetPKName<TEntity>(TEntity entity) where TEntity : class => ToolsProp.GetPK(entity)?.Name;
+        public string? GetPKName<TEntity>(TEntity entity) where TEntity : class => entity.GetPK()?.Name;
 
-        //public string? GetPKValueOfLastInsert<TEntity>(TEntity entity) where TEntity : class
-        //{
-        //    string? nameTable = GetTableName<TEntity>();
-        //    string pkName = ToolsProp.GetPK(entity).Name;
-        //    return ExecuteScalar($"SELECT {pkName} FROM (SELECT {pkName} FROM {nameTable} ORDER BY {pkName} DESC) WHERE ROWNUM = 1");
-        //}
+
+        public string NormalizeText(string? text, char replaceSpace = '_', bool toLower = true)
+        {
+            if (string.IsNullOrEmpty(text?.Trim())) return "";
+
+            string normalizedString = text.Trim().Normalize(NormalizationForm.FormD);
+            StringBuilder stringBuilder = new();
+
+            foreach (char c in normalizedString)
+            {
+                UnicodeCategory unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != UnicodeCategory.NonSpacingMark) { stringBuilder.Append(c); }
+            }
+
+            if (toLower) return stringBuilder.ToString().Normalize(NormalizationForm.FormC).Replace(' ', replaceSpace).ToLower();
+            return stringBuilder.ToString().Normalize(NormalizationForm.FormC).Replace(' ', replaceSpace);
+        }
+
 
     }
 }
