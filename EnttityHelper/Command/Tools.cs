@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -127,35 +128,26 @@ namespace EH.Command
             return dataTable;
         }
 
-        /// <summary>
-        /// Normalizes the input text by removing diacritics and replacing spaces with the specified character.
-        /// </summary>
-        /// <param name="text">The input text to be normalized.</param>
-        /// <param name="replaceSpace">(Optional) The character used to replace spaces. Default is underscore ('_').</param>
-        /// <param name="toLower">(Optional) Indicates whether the result should be converted to lowercase. Default is true.</param>
-        /// <returns>The normalized string.</returns>
-        public static string Normalize(this string? text, char replaceSpace = '_', bool toLower = true)
+        public static DataTable GetFirstRows(this IDataReader reader, int rowCount)
         {
-            try
+            DataTable dataTable = new();
+
+            for (int i = 0; i < reader.FieldCount; i++)
             {
-                if (string.IsNullOrEmpty(text?.Trim())) return "";
+                dataTable.Columns.Add(reader.GetName(i), reader.GetFieldType(i));
+            }
 
-                string normalizedString = text.Trim().Normalize(NormalizationForm.FormD);
-                StringBuilder stringBuilder = new();
-
-                foreach (char c in normalizedString)
+            for (int count = 0; reader.Read() && count < rowCount; count++)
+            {
+                DataRow row = dataTable.NewRow();
+                for (int i = 0; i < reader.FieldCount; i++)
                 {
-                    UnicodeCategory unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
-                    if (unicodeCategory != UnicodeCategory.NonSpacingMark) { stringBuilder.Append(c); }
+                    row[i] = reader[i];
                 }
+                dataTable.Rows.Add(row);
+            }
 
-                if (toLower) return stringBuilder.ToString().Normalize(NormalizationForm.FormC).Replace(' ', replaceSpace).ToLower();
-                return stringBuilder.ToString().Normalize(NormalizationForm.FormC).Replace(' ', replaceSpace);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            return dataTable;
         }
 
         /// <summary>
@@ -182,30 +174,6 @@ namespace EH.Command
             }
         }
 
-        public static DataTable GetFirstRows(this IDataReader reader, int rowCount)
-        {
-            DataTable dataTable = new();
-
-            for (int i = 0; i < reader.FieldCount; i++)
-            {
-                dataTable.Columns.Add(reader.GetName(i), reader.GetFieldType(i));
-            }
-
-            int count = 0;
-            while (reader.Read() && count < rowCount)
-            {
-                DataRow row = dataTable.NewRow();
-                for (int i = 0; i < reader.FieldCount; i++)
-                {
-                    row[i] = reader[i];
-                }
-                dataTable.Rows.Add(row);
-                count++;
-            }
-
-            return dataTable;
-        }
-
         public static string? FixValueToString(this object value)
         {
             if (value is string vString)
@@ -214,6 +182,103 @@ namespace EH.Command
                 return vString.Replace("'''", "'").Replace("'", "''");
             }
             return "NULL";
+        }
+
+
+        /// <summary>
+        /// Normalizes the input text by removing diacritics and replacing spaces with the specified character.
+        /// </summary>
+        /// <param name="text">The input text to be normalized.</param>
+        /// <param name="toLower">(Optional) Indicates whether the result should be converted to lowercase. Default is true.</param>
+        /// <param name="replaceSpace">(Optional) The character used to replace spaces. Default is underscore ('_').</param>
+        /// <returns>The normalized string.</returns>
+        public static string Normalize(this string? text, bool toLower = true, char replaceSpace = '_')
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(text?.Trim())) return "";
+
+                string normalizedString = text.Trim().Normalize(NormalizationForm.FormD);
+                StringBuilder stringBuilder = new();
+
+                foreach (char c in normalizedString)
+                {
+                    UnicodeCategory unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+                    if (unicodeCategory != UnicodeCategory.NonSpacingMark) { stringBuilder.Append(c); }
+                }
+
+                if (toLower) return stringBuilder.ToString().Normalize(NormalizationForm.FormC).Replace(' ', replaceSpace).ToLower();
+                return stringBuilder.ToString().Normalize(NormalizationForm.FormC).Replace(' ', replaceSpace);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public static string NormalizeColumnOrTableName(this string? name, bool replaceInvalidChars = true)
+        {
+            const int limitChars = 30;
+            char[] InvalidCharacters = { ' ', '.', ',', ';', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '{', '}', '[', ']', '|', ':', '"', '<', '>', '/', '?', '\\' };
+            HashSet<string> ReservedKeywords = new() { "SELECT", "INSERT", "UPDATE", "DELETE", "FROM", "WHERE", "JOIN", "CREATE", "ALTER", "DROP", "TABLE", "COLUMN", "INDEX", "VIEW" };
+            char[] AllowedSpecialCharacters = { '_', '$' }; // Allowed characters for table and column names
+
+            name = name.Normalize(false);
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Name cannot be null or empty.", nameof(name));
+            }
+
+            StringBuilder normalizedName = new();
+
+            // Check if the name starts with a letter or underscore
+            if (!char.IsLetter(name[0]) && name[0] != '_')
+            {
+                throw new ArgumentException("Name must start with a letter or an underscore.");
+            }
+
+            foreach (char c in name)
+            {
+                if (char.IsLetterOrDigit(c) || Array.Exists(AllowedSpecialCharacters, ch => ch == c))
+                {
+                    normalizedName.Append(c);
+                }
+                else
+                {
+                    if (replaceInvalidChars)
+                    {
+                        // Replace invalid character with an underscore
+                        normalizedName.Append('_');
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"Invalid character '{c}' detected in name.");
+                    }
+                }
+            }
+
+            string result = normalizedName.ToString();
+
+            //if (result.Length > limitChars) // Adjust the length limit as necessary
+            //{                
+            //    throw new ArgumentException($"Name cannot exceed {limitChars} characters.", nameof(result));
+            //}
+
+            //if (result.Any(c => InvalidCharacters.Contains(c)))
+            //{
+            //    throw new ArgumentException($"Name contains invalid characters. Allowed characters are alphanumeric and underscore.", nameof(result));
+            //}
+
+            if (ReservedKeywords.Contains(result.ToUpper()))
+            {
+                throw new ArgumentException("Name cannot be a reserved keyword.", nameof(result));
+
+            }
+
+            result = result.Length > 30 ? result.Substring(0, 30) : result;
+
+            return result;
         }
 
 

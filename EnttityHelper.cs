@@ -358,5 +358,18 @@ namespace EH
             }
         }
 
+        /// <inheritdoc/>
+        public string NormalizeColumnOrTableName(string? name, bool replaceInvalidChars = true)
+        {
+            try
+            {
+                return _features.NormalizeColumnOrTableName(name, replaceInvalidChars);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
     }
 }

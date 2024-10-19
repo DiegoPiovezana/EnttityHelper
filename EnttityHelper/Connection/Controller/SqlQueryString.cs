@@ -444,7 +444,7 @@ namespace EH.Connection
             {
                 string nameColumn = column.ColumnName;
                 nameColumn = nameColumn.Length > 30 ? nameColumn.Substring(0, 30) : nameColumn;
-                nameColumn = Tools.Normalize(nameColumn, '_', false);
+                nameColumn = nameColumn.NormalizeColumnOrTableName();
 
                 typesSql.TryGetValue(column.DataType.Name.Trim(), out string typeColumn);
 

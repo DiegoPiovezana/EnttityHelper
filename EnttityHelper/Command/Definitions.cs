@@ -2,7 +2,7 @@
 
 namespace EH.Command
 {
-    internal class Definitions
+    internal static class Definitions
     {
         internal static string NameTableFromDataTable(string tableName, Dictionary<string, string>? replacesTableName)
         {
@@ -15,7 +15,7 @@ namespace EH.Command
             }
 
             tableName = tableName.Length > 30 ? tableName.Substring(0, 30) : tableName;
-            tableName = Tools.Normalize(tableName, '_', false);
+            tableName = tableName.NormalizeColumnOrTableName();
             return tableName;
         }
 

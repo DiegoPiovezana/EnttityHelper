@@ -8,10 +8,8 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace EH.Command
 {
@@ -563,23 +561,14 @@ namespace EH.Command
 
         public string NormalizeText(string? text, char replaceSpace = '_', bool toLower = true)
         {
-            if (string.IsNullOrEmpty(text?.Trim())) return "";
+            return Tools.Normalize(text, toLower, replaceSpace);
+        }
 
-            string normalizedString = text.Trim().Normalize(NormalizationForm.FormD);
-            StringBuilder stringBuilder = new();
-
-            foreach (char c in normalizedString)
-            {
-                UnicodeCategory unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
-                if (unicodeCategory != UnicodeCategory.NonSpacingMark) { stringBuilder.Append(c); }
-            }
-
-            if (toLower) return stringBuilder.ToString().Normalize(NormalizationForm.FormC).Replace(' ', replaceSpace).ToLower();
-            return stringBuilder.ToString().Normalize(NormalizationForm.FormC).Replace(' ', replaceSpace);
+        public string NormalizeColumnOrTableName(string? name, bool replaceInvalidChars = true)
+        {
+            return Tools.NormalizeColumnOrTableName(name, replaceInvalidChars);
         }
 
 
     }
 }
-
-

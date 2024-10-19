@@ -5,11 +5,19 @@ using SH;
 using TestEH_UnitTest.Entities;
 using TestEH_UnitTest.Entitities;
 using TestEnttityHelper.OthersEntity;
+using Xunit;
 
 namespace TestEnttityHelper
 {
-    public class Tests
+    public class EntityHelperTests
     {
+        private readonly EnttityHelper _enttityHelper;
+
+        public EntityHelperTests()
+        {
+            _enttityHelper = new EnttityHelper("Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+        }
+
         [SetUp]
         public void Setup()
         {
@@ -566,6 +574,22 @@ namespace TestEnttityHelper
                 Assert.Fail("Connection failed!");
             }
         }
+
+        [TestCase("invalid@name", ExpectedResult = "invalid_name")] // Contains an invalid character (@)
+        //[TestCase("validName", ExpectedResult = "validName")]
+        //[TestCase("123invalidName", ExpectedResult = "_invalidName")] // Starts with a number
+        //[TestCase("invalid name", ExpectedResult = "invalid_name")] // Contains a space
+        //[TestCase("name$", ExpectedResult = "name_")] // Contains an invalid character ($)
+        //[TestCase("name with space", ExpectedResult = "name_with_space")] // Contains a space
+        //[TestCase("validName_123", ExpectedResult = "validName_123")] // Valid name with numbers
+        public string NormalizeColumnOrTableName_Should_Return_Correct_Name(string inputName)
+        {
+            // Act
+            return _enttityHelper.NormalizeColumnOrTableName(inputName);
+        }
+
+
+
 
     }
 }
