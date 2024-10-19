@@ -216,12 +216,12 @@ namespace EH.Command
             }
         }
 
-        public static string NormalizeColumnOrTableName(this string? name, bool replaceInvalidChars = true)
+        public static string NormalizeColumnOrTableName(this string? name, bool adjustInvalidChars = true)
         {
             const int limitChars = 30;
             char[] InvalidCharacters = { ' ', '.', ',', ';', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '{', '}', '[', ']', '|', ':', '"', '<', '>', '/', '?', '\\' };
             HashSet<string> ReservedKeywords = new() { "SELECT", "INSERT", "UPDATE", "DELETE", "FROM", "WHERE", "JOIN", "CREATE", "ALTER", "DROP", "TABLE", "COLUMN", "INDEX", "VIEW" };
-            char[] AllowedSpecialCharacters = { '_', '$' }; // Allowed characters for table and column names
+            char[] AllowedSpecialCharacters = { '_'}; // Allowed characters for table and column names
 
             name = name.Normalize(false);
 
@@ -232,12 +232,6 @@ namespace EH.Command
 
             StringBuilder normalizedName = new();
 
-            // Check if the name starts with a letter or underscore
-            if (!char.IsLetter(name[0]) && name[0] != '_')
-            {
-                throw new ArgumentException("Name must start with a letter or an underscore.");
-            }
-
             foreach (char c in name)
             {
                 if (char.IsLetterOrDigit(c) || Array.Exists(AllowedSpecialCharacters, ch => ch == c))
@@ -246,7 +240,7 @@ namespace EH.Command
                 }
                 else
                 {
-                    if (replaceInvalidChars)
+                    if (adjustInvalidChars)
                     {
                         // Replace invalid character with an underscore
                         normalizedName.Append('_');
@@ -260,24 +254,29 @@ namespace EH.Command
 
             string result = normalizedName.ToString();
 
-            //if (result.Length > limitChars) // Adjust the length limit as necessary
-            //{                
-            //    throw new ArgumentException($"Name cannot exceed {limitChars} characters.", nameof(result));
-            //}
-
             //if (result.Any(c => InvalidCharacters.Contains(c)))
             //{
             //    throw new ArgumentException($"Name contains invalid characters. Allowed characters are alphanumeric and underscore.", nameof(result));
             //}
+         
+            if (!char.IsLetter(name[0]) && name[0] != '_')
+            {
+                if (adjustInvalidChars) result = "_" + result;
+                else throw new ArgumentException("Name must start with a letter or an underscore.");
+            }
 
             if (ReservedKeywords.Contains(result.ToUpper()))
             {
-                throw new ArgumentException("Name cannot be a reserved keyword.", nameof(result));
-
+                if (adjustInvalidChars) result = "_" + result;
+                else throw new ArgumentException("Name cannot be a reserved keyword.", nameof(result));
             }
 
-            result = result.Length > 30 ? result.Substring(0, 30) : result;
+            //if (result.Length > limitChars)
+            //{
+            //    throw new ArgumentException($"Name cannot exceed {limitChars} characters.", nameof(result));
+            //}
 
+            result = result.Length > limitChars ? result.Substring(0, limitChars) : result;
             return result;
         }
 

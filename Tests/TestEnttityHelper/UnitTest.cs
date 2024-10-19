@@ -5,7 +5,6 @@ using SH;
 using TestEH_UnitTest.Entities;
 using TestEH_UnitTest.Entitities;
 using TestEnttityHelper.OthersEntity;
-using Xunit;
 
 namespace TestEnttityHelper
 {
@@ -575,17 +574,47 @@ namespace TestEnttityHelper
             }
         }
 
-        [TestCase("invalid@name", ExpectedResult = "invalid_name")] // Contains an invalid character (@)
-        //[TestCase("validName", ExpectedResult = "validName")]
-        //[TestCase("123invalidName", ExpectedResult = "_invalidName")] // Starts with a number
-        //[TestCase("invalid name", ExpectedResult = "invalid_name")] // Contains a space
-        //[TestCase("name$", ExpectedResult = "name_")] // Contains an invalid character ($)
-        //[TestCase("name with space", ExpectedResult = "name_with_space")] // Contains a space
-        //[TestCase("validName_123", ExpectedResult = "validName_123")] // Valid name with numbers
-        public string NormalizeColumnOrTableName_Should_Return_Correct_Name(string inputName)
+        [Test]
+        [TestCase(null, "Name cannot be null or empty. (Parameter 'name')")]
+        [TestCase("", "Name cannot be null or empty. (Parameter 'name')")]
+        [TestCase("1InvalidName", "Name must start with a letter or an underscore.")]
+        [TestCase("Invalid Name@2023", "Invalid character '@' detected in name.")]
+        [TestCase("SELECT", "Name cannot be a reserved keyword. (Parameter 'result')")]
+        public void NormalizeColumnOrTableName_Should_ThrowArgumentException_ForInvalidInputs(string name, string expectedMessage)
+        {
+            // Act & Assert
+            var ex = Assert.Throws<ArgumentException>(() => _enttityHelper.NormalizeColumnOrTableName(name, false));
+            Assert.AreEqual(expectedMessage, ex.Message);
+        }
+
+        [Test]
+        [TestCase("Invalid Name@2023", "Invalid_Name_2023")]
+        [TestCase("SELECT", "_SELECT")]
+        [TestCase("123invalidName", "_123invalidName")]
+        [TestCase("invalid@name", "invalid_name")]
+        [TestCase("name$", "name_")]
+        [TestCase("name with space", "name_with_space")]
+        public void NormalizeColumnOrTableName_Should_AdjustName_When_InvalidCharactersOrReservedKeyword(string name, string expected)
         {
             // Act
-            return _enttityHelper.NormalizeColumnOrTableName(inputName);
+            string result = _enttityHelper.NormalizeColumnOrTableName(name, true);
+
+            // Assert
+            Assert.AreEqual(expected, result);
+        }
+
+        [Test]
+        [TestCase("ThisIsAVeryLongNameThatExceedsTheLimitOfThirtyCharacters", "ThisIsAVeryLongNameThatExceeds")]
+        [TestCase("Valid_Name123", "Valid_Name123")]
+        [TestCase("validName_123", "validName_123")]
+        [TestCase("validName", "validName")]
+        public void NormalizeColumnOrTableName_Should_ReturnCorrectlyAdjustedName_When_ValidInputs(string name, string expected)
+        {
+            // Act
+            string result = _enttityHelper.NormalizeColumnOrTableName(name, true);
+
+            // Assert
+            Assert.AreEqual(expected, result);
         }
 
 
