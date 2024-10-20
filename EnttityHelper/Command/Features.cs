@@ -261,6 +261,32 @@ namespace EH.Command
             return inserts;
         }
 
+        public int LoadCSV(string selectQuery, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600)
+        {
+            using (var csvReader = new CSVDataReader(csvFilePath))
+            {
+                int result = Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, csvReader, tableName, timeOutSeconds);
+
+                if (result == 1)
+                {
+                    Console.WriteLine("Bulk insert completed successfully.");
+                }
+                else
+                {
+                    Console.WriteLine("Bulk insert failed.");
+                }
+            }
+
+
+            var dataReaderSelect = (IDataReader?)Commands.Execute.ExecuteReader<IDataReader>(_enttityHelper.DbContext, selectQuery, true);
+            if (dataReaderSelect is null) return 0;
+            var inserts = Insert(dataReaderSelect, tableName, true, tableName, false, timeOutSeconds);
+            dataReaderSelect.Close();
+            _enttityHelper.DbContext.CloseConnection();
+
+            return inserts;
+        }
+
         public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
         {
             //string? updateQuery = _enttityHelper.GetQuery.Update(entity, nameId, _enttityHelper.ReplacesTableName, tableName);
@@ -507,14 +533,7 @@ namespace EH.Command
 
         public ICollection<object?> ExecuteScalar(ICollection<string?> queries)
         {
-            try
-            {
-                return Commands.Execute.ExecuteScalar(_enttityHelper.DbContext, queries);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            return Commands.Execute.ExecuteScalar(_enttityHelper.DbContext, queries);
         }
 
         public bool IncludeAll<TEntity>(TEntity entity)
