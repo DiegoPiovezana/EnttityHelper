@@ -276,13 +276,14 @@ namespace EH.Command
 
                 dataTable.TableName = Path.GetFileNameWithoutExtension(csvFilePath);
 
-                foreach (string header in headers)
+                for (int i = 0; i < headers.Length; i++)
                 {
-                    if (string.IsNullOrWhiteSpace(header))
+                    if (string.IsNullOrWhiteSpace(headers[i]))
                     {
-                        throw new InvalidOperationException("CSV file contains empty or invalid header names.");
+                        //throw new InvalidOperationException("CSV file contains empty or invalid header names.");
+                        headers[i] = $"ColumnEmpty_{i + 1}";
                     }
-                    dataTable.Columns.Add(new DataColumn(header.Trim()));
+                    dataTable.Columns.Add(new DataColumn(headers[i].Trim()));
                 }
 
                 tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);

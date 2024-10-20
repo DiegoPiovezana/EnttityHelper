@@ -623,8 +623,11 @@ namespace TestEnttityHelper
             Assert.That(_enttityHelper.DbContext.ValidateConnection());
 
             // Arrange
-            string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ColunasExcel.csv";
+            //string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ColunasExcel.csv";
+            string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoIrregular.csv";
             string tableName = "TestTable";
+            int batchSize = 1000000;
+            int timeout = 30000;
 
             // Mock the Insert method to return a successful insert count
             var insertCount = 101253;
@@ -635,7 +638,7 @@ namespace TestEnttityHelper
             if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
 
             // Act
-            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName);
+            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName, batchSize,timeout);
 
             // Assert
             Assert.AreEqual(insertCount, result);
