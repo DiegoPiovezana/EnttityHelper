@@ -105,7 +105,7 @@ namespace EH.Command
                 {
                     _enttityHelper.DbContext.CreateOpenConnection();
                     CreateTable(dataReader.GetFirstRows(10), tableName);
-                    return -942; // Because IDataReader
+                    return -942; // Because IDataReader                   
                 }
 
                 return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataReader, tableName, timeOutSeconds) ? 1 : 0;
@@ -244,45 +244,23 @@ namespace EH.Command
 
         public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds = 600)
         {
+        repeat:
             var dataReaderSelect = (IDataReader?)Commands.Execute.ExecuteReader<IDataReader>(_enttityHelper.DbContext, selectQuery, true);
             if (dataReaderSelect is null) return 0;
-
-            int inserts = db2.Insert(dataReaderSelect, tableName, true, tableName, false, timeOutSeconds);
-
-            if (inserts == -942)
-            {
-                dataReaderSelect = (IDataReader?)Commands.Execute.ExecuteReader<IDataReader>(_enttityHelper.DbContext, selectQuery, true);
-                inserts = db2.Insert(dataReaderSelect, tableName, true, tableName, false, timeOutSeconds);
-            }
-
+            int inserts = db2.Insert(dataReaderSelect, tableName, true, tableName, true, timeOutSeconds);
+            if (inserts == -942) goto repeat;
             dataReaderSelect.Close();
             _enttityHelper.DbContext.CloseConnection();
-
             return inserts;
         }
 
-        public int LoadCSV(string selectQuery, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600)
+        public int LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int timeOutSeconds = 600)
         {
+            int inserts = 0;
             using (var csvReader = new CSVDataReader(csvFilePath))
             {
-                int result = Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, csvReader, tableName, timeOutSeconds);
-
-                if (result == 1)
-                {
-                    Console.WriteLine("Bulk insert completed successfully.");
-                }
-                else
-                {
-                    Console.WriteLine("Bulk insert failed.");
-                }
+                inserts = Insert(csvFilePath, tableName, createTable, tableName, true, timeOutSeconds);
             }
-
-
-            var dataReaderSelect = (IDataReader?)Commands.Execute.ExecuteReader<IDataReader>(_enttityHelper.DbContext, selectQuery, true);
-            if (dataReaderSelect is null) return 0;
-            var inserts = Insert(dataReaderSelect, tableName, true, tableName, false, timeOutSeconds);
-            dataReaderSelect.Close();
-            _enttityHelper.DbContext.CloseConnection();
 
             return inserts;
         }
