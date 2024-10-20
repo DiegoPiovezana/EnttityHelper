@@ -209,7 +209,7 @@ namespace EH.Commands
         /// <exception cref="ArgumentNullException">Thrown if the database context, input data, or table name is null or empty.</exception>
         /// <exception cref="NotSupportedException">Thrown if the bulk copy operation is not supported for the provided data type or database provider.</exception>
         /// <exception cref="Exception">Thrown if an error occurs during the bulk copy operation, causing the connection to close and the exception to be rethrown.</exception>
-        internal static bool PerformBulkCopyOperation(this Database dbContext, object inputDataToCopy, string tableName, int bulkCopyTimeout)
+        internal static int PerformBulkCopyOperation(this Database dbContext, object inputDataToCopy, string tableName, int bulkCopyTimeout)
         {
             // dataToCopy: DataRow[], DataTable, IDataReader
 
@@ -240,20 +240,18 @@ namespace EH.Commands
                     case OracleBulkCopy oracleBulkCopy:
                         oracleBulkCopy.DestinationTableName = tableName;
                         oracleBulkCopy.BulkCopyTimeout = bulkCopyTimeout;
-                        if (inputDataToCopy is DataRow[] dataRowsOracle) { oracleBulkCopy.WriteToServer(dataRowsOracle); }
-                        else if (inputDataToCopy is DataTable dataTable) { oracleBulkCopy.WriteToServer(dataTable); }
-                        else if (inputDataToCopy is IDataReader dataReader) { oracleBulkCopy.WriteToServer(dataReader); }
+                        if (inputDataToCopy is DataRow[] dataRowsOracle) { oracleBulkCopy.WriteToServer(dataRowsOracle); return dataRowsOracle.Length; }
+                        else if (inputDataToCopy is DataTable dataTable) { oracleBulkCopy.WriteToServer(dataTable); return dataTable.Rows.Count; }
+                        else if (inputDataToCopy is IDataReader dataReader) { oracleBulkCopy.WriteToServer(dataReader); return dataReader.RecordsAffected; }
                         else { throw new NotSupportedException("Bulk Copy operation is not yet supported for this data type."); }
-                        return true;
 
                     case SqlBulkCopy sqlBulkCopy:
                         sqlBulkCopy.DestinationTableName = tableName;
                         sqlBulkCopy.BulkCopyTimeout = bulkCopyTimeout;
-                        if (inputDataToCopy is DataRow[] dataRowsSql) { sqlBulkCopy.WriteToServer(dataRowsSql); }
-                        else if (inputDataToCopy is DataTable dataTable) { sqlBulkCopy.WriteToServer(dataTable); }
-                        else if (inputDataToCopy is IDataReader dataReader) { sqlBulkCopy.WriteToServer(dataReader); }
+                        if (inputDataToCopy is DataRow[] dataRowsSql) { sqlBulkCopy.WriteToServer(dataRowsSql); return dataRowsSql.Length; }
+                        else if (inputDataToCopy is DataTable dataTable) { sqlBulkCopy.WriteToServer(dataTable); return dataTable.Rows.Count; }
+                        else if (inputDataToCopy is IDataReader dataReader) { sqlBulkCopy.WriteToServer(dataReader); return dataReader.RecordsAffected; }
                         else { throw new NotSupportedException("Bulk Copy operation is not yet supported for this data type."); }
-                        return true;
 
                     default:
                         throw new NotSupportedException("Bulk Copy operation is not yet supported for this database type.");

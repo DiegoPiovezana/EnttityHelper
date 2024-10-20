@@ -86,6 +86,19 @@ namespace EH
         }
 
         /// <inheritdoc/> 
+        public int LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 10000, int timeOutSeconds = 600, char separator = ';')
+        {
+            try
+            {
+                return _features.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds, separator);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <inheritdoc/> 
         public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
         {
             try

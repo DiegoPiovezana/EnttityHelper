@@ -617,6 +617,61 @@ namespace TestEnttityHelper
             Assert.AreEqual(expected, result);
         }
 
+        [Test]
+        public void LoadCSV_ShouldInsertData_WhenValidCSVFile()
+        {
+            Assert.That(_enttityHelper.DbContext.ValidateConnection());
+
+            // Arrange
+            string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ColunasExcel.csv";
+            string tableName = "TestTable";
+
+            // Mock the Insert method to return a successful insert count
+            var insertCount = 101253;
+            //var mock = new Mock<EnttityHelper>();
+            //mock.Setup(m => m.Insert(It.IsAny<CSVDataReader>(), tableName, true, It.IsAny<int>()))
+            //    .Returns(insertCount);
+
+            if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
+
+            // Act
+            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName);
+
+            // Assert
+            Assert.AreEqual(insertCount, result);
+        }
+
+        [Test]
+        public void LoadCSV_ShouldRetry_WhenInsertReturnsNegative942()
+        {
+            // Arrange
+            string csvFilePath = "valid_path.csv";
+            string tableName = "TestTable";
+
+            //var mock = new Mock<EnttityHelper>();
+            //mock.SetupSequence(m => m.Insert(It.IsAny<CSVDataReader>(), tableName, true, It.IsAny<int>()))
+            //    .Returns(-942)
+            //    .Returns(1);
+
+            // Act
+            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName);
+
+            // Assert
+            Assert.AreEqual(1, result);
+            //mock.Verify(m => m.Insert(It.IsAny<CSVDataReader>(), tableName, true, It.IsAny<int>()), Times.Exactly(2));
+        }
+
+        [Test]
+        public void LoadCSV_ShouldThrowException_WhenCSVFileIsInvalid()
+        {
+            // Arrange
+            string csvFilePath = "invalid_path.csv";
+            string tableName = "TestTable";
+
+            // Act & Assert
+            var ex = Assert.Throws<ArgumentException>(() => _enttityHelper.LoadCSV(csvFilePath, true, tableName));
+            Assert.That(ex.Message, Does.Contain("Error loading CSV"));
+        }
 
 
 

@@ -16,7 +16,7 @@ namespace EH.Connection
     /// <summary>
     /// Allows you to obtain the main commands to be executed on the database.
     /// </summary>
-    public class SqlQueryString
+    public class SqlQueryString //: IEnttityHelper
     {
         /// <summary>
         /// Gets the insert command.
@@ -445,6 +445,7 @@ namespace EH.Connection
                 string nameColumn = column.ColumnName;
                 nameColumn = nameColumn.Length > 30 ? nameColumn.Substring(0, 30) : nameColumn;
                 nameColumn = nameColumn.NormalizeColumnOrTableName();
+                // TODO: Column empty
 
                 typesSql.TryGetValue(column.DataType.Name.Trim(), out string typeColumn);
 

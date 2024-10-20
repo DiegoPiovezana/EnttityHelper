@@ -261,13 +261,13 @@ namespace EH.Command
          
             if (!char.IsLetter(name[0]) && name[0] != '_')
             {
-                if (adjustInvalidChars) result = "_" + result;
+                if (adjustInvalidChars) result = "c_" + result;
                 else throw new ArgumentException("Name must start with a letter or an underscore.");
             }
 
             if (ReservedKeywords.Contains(result.ToUpper()))
             {
-                if (adjustInvalidChars) result = "_" + result;
+                if (adjustInvalidChars) result = "c_" + result;
                 else throw new ArgumentException("Name cannot be a reserved keyword.", nameof(result));
             }
 

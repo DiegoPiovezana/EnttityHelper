@@ -1,4 +1,5 @@
-﻿using EH.Connection;
+﻿using EH.Commands;
+using EH.Connection;
 using EH.Properties;
 using Oracle.ManagedDataAccess.Client;
 using System;
@@ -8,6 +9,7 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 
@@ -94,7 +96,7 @@ namespace EH.Command
                     CreateTable(dataTable, tableName);
                 }
 
-                return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataTable, tableName, timeOutSeconds) ? dataTable.Rows.Count : 0;
+                return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataTable, tableName, timeOutSeconds);
             }
 
             if (entity is IDataReader dataReader)
@@ -104,11 +106,12 @@ namespace EH.Command
                 if (!CheckIfExist(tableName) && createTable)
                 {
                     _enttityHelper.DbContext.CreateOpenConnection();
-                    CreateTable(dataReader.GetFirstRows(10), tableName);
+                    var dt = dataReader.GetFirstRows(10);
+                    CreateTable(dt, tableName);
                     return -942; // Because IDataReader                   
                 }
 
-                return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataReader, tableName, timeOutSeconds) ? 1 : 0;
+                return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataReader, tableName, timeOutSeconds);
             }
 
             if (entity is DataRow[] dataRows)
@@ -117,7 +120,7 @@ namespace EH.Command
 
                 if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
 
-                return Commands.Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataRows, tableName, timeOutSeconds) ? dataRows.Length : 0;
+                return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataRows, tableName, timeOutSeconds);
             }
 
             // Entity or IEnumerable<Entity>
@@ -244,26 +247,87 @@ namespace EH.Command
 
         public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds = 600)
         {
-        repeat:
-            var dataReaderSelect = (IDataReader?)Commands.Execute.ExecuteReader<IDataReader>(_enttityHelper.DbContext, selectQuery, true);
-            if (dataReaderSelect is null) return 0;
-            int inserts = db2.Insert(dataReaderSelect, tableName, true, tableName, true, timeOutSeconds);
-            if (inserts == -942) goto repeat;
-            dataReaderSelect.Close();
+            int inserts;
+            do
+            {
+                var dataReaderSelect = (IDataReader?)_enttityHelper.DbContext.ExecuteReader<IDataReader>(selectQuery, true);
+                if (dataReaderSelect is null) return 0;
+                inserts = db2.Insert(dataReaderSelect, null, true, tableName, true, timeOutSeconds);
+                dataReaderSelect.Close();
+            } while (inserts == -942);
+
             _enttityHelper.DbContext.CloseConnection();
             return inserts;
         }
 
-        public int LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int timeOutSeconds = 600)
-        {
-            int inserts = 0;
-            using (var csvReader = new CSVDataReader(csvFilePath))
-            {
-                inserts = Insert(csvFilePath, tableName, createTable, tableName, true, timeOutSeconds);
-            }
 
-            return inserts;
+        public int LoadCSV(string csvFilePath, bool createTable, string? tableName, int batchSize, int timeOutSeconds, char separator)
+        {
+            Validations.Validate.IsCsvValid(csvFilePath);
+            int totalInserts = 0;
+
+            try
+            {
+                using StreamReader reader = new(csvFilePath);
+                DataTable dataTable = new();
+
+                string[] headers = reader.ReadLine()?.Split(separator)
+                    ?? throw new InvalidOperationException("CSV file is empty or headers are missing.");
+
+                dataTable.TableName = Path.GetFileNameWithoutExtension(csvFilePath);
+
+                foreach (string header in headers)
+                {
+                    if (string.IsNullOrWhiteSpace(header))
+                    {
+                        throw new InvalidOperationException("CSV file contains empty or invalid header names.");
+                    }
+                    dataTable.Columns.Add(new DataColumn(header.Trim()));
+                }
+
+                tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
+
+                if (!CheckIfExist(tableName) && createTable)
+                {
+                    CreateTable(dataTable, tableName);
+                }
+
+                while (!reader.EndOfStream)
+                {
+                    string[] rows = reader.ReadLine()?.Split(separator)
+                        ?? throw new InvalidOperationException("Error reading a row from the CSV file.");
+
+                    if (rows.Length != headers.Length)
+                    {
+                        throw new InvalidOperationException("Mismatch between CSV header and row column count.");
+                    }
+
+                    DataRow row = dataTable.NewRow();
+                    for (int i = 0; i < headers.Length; i++)
+                    {
+                        row[i] = rows[i]?.Trim();
+                    }
+                    dataTable.Rows.Add(row);
+
+                    if (dataTable.Rows.Count >= batchSize)
+                    {
+                        totalInserts += _enttityHelper.DbContext.PerformBulkCopyOperation(dataTable, tableName, timeOutSeconds);
+                        dataTable.Clear();
+                    }
+                }
+
+                if (dataTable.Rows.Count > 0) // Remaing rows
+                {
+                    totalInserts += _enttityHelper.DbContext.PerformBulkCopyOperation(dataTable, tableName, timeOutSeconds);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error during CSV loading process: {ex.Message}", ex);
+            }
+            return totalInserts;
         }
+
 
         public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
         {
