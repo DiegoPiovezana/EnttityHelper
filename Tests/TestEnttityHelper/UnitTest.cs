@@ -673,8 +673,8 @@ namespace TestEnttityHelper
             var insertCount = 5_000_000;
 
             string tableName = "TestTable_BigCsv";
-            int batchSize = 100_000_000;
-            int timeout = 120; // Timeout in seconds to insert 1 batch
+            int batchSize = 50_000;
+            int timeout = 5; // Timeout in seconds to insert 1 batch
 
             if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
 
