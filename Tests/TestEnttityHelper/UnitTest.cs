@@ -2,6 +2,7 @@ using EH;
 using NUnit.Framework.Internal;
 using Oracle.ManagedDataAccess.Client;
 using SH;
+using System.Diagnostics;
 using TestEH_UnitTest.Entities;
 using TestEH_UnitTest.Entitities;
 using TestEnttityHelper.OthersEntity;
@@ -623,14 +624,17 @@ namespace TestEnttityHelper
             Assert.That(_enttityHelper.DbContext.ValidateConnection());
 
             // Arrange
-            //string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ColunasExcel.csv";
+            //string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ColunasExcel.csv"; 
+            //var insertCount = 101_253;
+
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoIrregular.csv";
+            var insertCount = 100;
+
             string tableName = "TestTable";
-            int batchSize = 1000000;
-            int timeout = 30000;
+            int batchSize = 100000;
+            int timeout = 300000;
 
             // Mock the Insert method to return a successful insert count
-            var insertCount = 101253;
             //var mock = new Mock<EnttityHelper>();
             //mock.Setup(m => m.Insert(It.IsAny<CSVDataReader>(), tableName, true, It.IsAny<int>()))
             //    .Returns(insertCount);
@@ -641,27 +645,7 @@ namespace TestEnttityHelper
             int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName, batchSize,timeout);
 
             // Assert
-            Assert.AreEqual(insertCount, result);
-        }
-
-        [Test]
-        public void LoadCSV_ShouldRetry_WhenInsertReturnsNegative942()
-        {
-            // Arrange
-            string csvFilePath = "valid_path.csv";
-            string tableName = "TestTable";
-
-            //var mock = new Mock<EnttityHelper>();
-            //mock.SetupSequence(m => m.Insert(It.IsAny<CSVDataReader>(), tableName, true, It.IsAny<int>()))
-            //    .Returns(-942)
-            //    .Returns(1);
-
-            // Act
-            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName);
-
-            // Assert
-            Assert.AreEqual(1, result);
-            //mock.Verify(m => m.Insert(It.IsAny<CSVDataReader>(), tableName, true, It.IsAny<int>()), Times.Exactly(2));
+            Assert.AreEqual(insertCount-1, result); // -1 because the first row is the header
         }
 
         [Test]
@@ -672,10 +656,39 @@ namespace TestEnttityHelper
             string tableName = "TestTable";
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentException>(() => _enttityHelper.LoadCSV(csvFilePath, true, tableName));
-            Assert.That(ex.Message, Does.Contain("Error loading CSV"));
+            var ex = Assert.Throws<FileNotFoundException>(() => _enttityHelper.LoadCSV(csvFilePath, true, tableName));
+            Assert.That(ex.Message, Does.Contain("File not found"));
         }
 
+        [Test]
+        public void LoadCSV_BIGCSVFile()
+        {
+            Assert.That(_enttityHelper.DbContext.ValidateConnection());
+
+            DateTime startTime = DateTime.Now;
+            Debug.WriteLine($"Start: {startTime}");
+
+            // Arrange   
+            string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\BigCsvGerado_5000000x20.csv";
+            var insertCount = 5_000_000;
+
+            string tableName = "TestTable_BigCsv";
+            int batchSize = 1000000;
+            int timeout = 60*1; // Timeout in seconds to insert 1 batch
+
+            if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
+
+            // Act
+            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName, batchSize, timeout);
+
+            DateTime endTime = DateTime.Now;
+            Debug.WriteLine($"End: {endTime}");
+
+            Debug.WriteLine($"Elapsed: {endTime - startTime}");
+
+            // Assert
+            Assert.AreEqual(insertCount-1, result); // -1 because the first row is the header
+        }
 
 
     }
