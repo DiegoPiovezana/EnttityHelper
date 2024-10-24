@@ -80,12 +80,12 @@ namespace EH.Command
         /// <param name="csvFilePath">The path to the CSV file.</param>
         /// <param name="createTable">Indicates whether to create a new table if it does not exist.</param>
         /// <param name="tableName">The name of the table to load the data into. If null, a default name will be used.</param>
-        /// <param name="batchSize">The maximum number of rows to load at once. Default is 10000. The bigger it is, the faster it is, but the higher the memory consumption will be.</param>
+        /// <param name="batchSize">The maximum number of rows to load at once. Default is 100000. The bigger it is, the faster it is, but the higher the memory consumption will be.</param>
         /// <param name="timeOutSeconds">The timeout duration for the operation in seconds. Default is 600 seconds.</param>
         /// <param name="separator">The separator character used in the CSV file. Default is ';'</param>
         /// <returns>The number of records inserted into the database.</returns>
         /// <exception cref="ArgumentException">Thrown when the CSV file is invalid or cannot be loaded.</exception>
-        int LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 10000, int timeOutSeconds = 600, char separator = ';');
+        int LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char separator = ';');
 
         /// <summary>
         /// Allow to update an entity in the database.
