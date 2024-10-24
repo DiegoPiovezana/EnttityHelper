@@ -64,7 +64,7 @@ namespace EH
         {
             try
             {
-                return _features.Insert(entity, namePropUnique, createTable, tableName, ignoreInversePropertyProperties);
+                return _features.Insert(entity, namePropUnique, createTable, tableName, ignoreInversePropertyProperties, timeOutSeconds);
             }
             catch (Exception)
             {
@@ -77,7 +77,7 @@ namespace EH
         {
             try
             {
-                return _features.InsertLinkSelect(selectQuery, db2, tableName);
+                return _features.InsertLinkSelect(selectQuery, db2, tableName, timeOutSeconds);
             }
             catch (Exception)
             {
@@ -86,7 +86,7 @@ namespace EH
         }
 
         /// <inheritdoc/> 
-        public int LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 10000, int timeOutSeconds = 600, char separator = ';')
+        public int LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char separator = ';')
         {
             try
             {
@@ -103,7 +103,7 @@ namespace EH
         {
             try
             {
-                return _features.Update(entity, nameId, tableName);
+                return _features.Update(entity, nameId, tableName, ignoreInversePropertyProperties);
             }
             catch (Exception)
             {

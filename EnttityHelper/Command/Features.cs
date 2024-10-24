@@ -83,7 +83,7 @@ namespace EH.Command
             }
         }
 
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class
+        public int Insert<TEntity>(TEntity entity, string? namePropUnique, bool createTable, string? tableName, bool ignoreInversePropertyProperties, int timeOutSeconds) where TEntity : class
         {
             if (entity is DataTable dataTable)
             {
@@ -91,7 +91,7 @@ namespace EH.Command
 
                 tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
 
-                if (!CheckIfExist(tableName) && createTable)
+                if (!CheckIfExist(tableName, null, 0) && createTable)
                 {
                     CreateTable(dataTable, tableName);
                 }
@@ -103,7 +103,7 @@ namespace EH.Command
             {
                 if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
 
-                if (!CheckIfExist(tableName) && createTable)
+                if (!CheckIfExist(tableName, null, 0) && createTable)
                 {
                     _enttityHelper.DbContext.CreateOpenConnection();
                     var dt = dataReader.GetFirstRows(10);
@@ -140,7 +140,7 @@ namespace EH.Command
                 {
                     string tableNamefkProp = ToolsProp.GetTableName(fkProp.Value.GetType(), _enttityHelper.ReplacesTableName);
                     var pkFk = fkProp.Value.GetPK();
-                    if (!CheckIfExist(tableNamefkProp, $"{pkFk.Name} = {pkFk.GetValue(fkProp.Value, null)}")) throw new InvalidOperationException($"Entity or table '{tableNamefkProp}' does not exist!");
+                    if (!CheckIfExist(tableNamefkProp, $"{pkFk.Name} = {pkFk.GetValue(fkProp.Value, null)}",1)) throw new InvalidOperationException($"Entity or table '{tableNamefkProp}' does not exist!");
                 }
             }
 
@@ -155,7 +155,7 @@ namespace EH.Command
                         Type propInverseType = inverseProp.PropertyType.GetGenericArguments()[0];
                         string tableNameInverseProp = ToolsProp.GetTableName(propInverseType, _enttityHelper.ReplacesTableName);
 
-                        if (!CheckIfExist(tableNameInverseProp))
+                        if (!CheckIfExist(tableNameInverseProp, null, 0))
                         {
                             if (createTable) CreateTable<TEntity>(false, null, tableNameInverseProp);
                             else throw new InvalidOperationException($"Table '{tableNameInverseProp}' does not exist!");
@@ -170,7 +170,7 @@ namespace EH.Command
 
             tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
 
-            if (!CheckIfExist(tableName))
+            if (!CheckIfExist(tableName, null, 0))
             {
                 if (createTable) CreateTable<TEntity>(false, null, tableName);
                 else throw new InvalidOperationException($"Table '{tableName}' does not exist!");
@@ -245,7 +245,7 @@ namespace EH.Command
         //    return Commands.Execute.PerformBulkCopyOperation(DbContext, dataReader, tableName);
         //}
 
-        public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds = 600)
+        public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds)
         {
             int inserts;
             do
@@ -288,7 +288,7 @@ namespace EH.Command
 
                 tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
 
-                if (!CheckIfExist(tableName) && createTable)
+                if (!CheckIfExist(tableName, null, 0) && createTable)
                 {
                     CreateTable(dataTable, tableName);
                 }
@@ -330,7 +330,7 @@ namespace EH.Command
         }
 
 
-        public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
+        public int Update<TEntity>(TEntity entity, string? nameId, string? tableName, bool ignoreInversePropertyProperties) where TEntity : class
         {
             //string? updateQuery = _enttityHelper.GetQuery.Update(entity, nameId, _enttityHelper.ReplacesTableName, tableName);
             //return ExecuteNonQuery(updateQuery, 1);
@@ -365,7 +365,7 @@ namespace EH.Command
             return updates;
         }
 
-        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null) where TEntity : class
+        public List<TEntity>? Get<TEntity>(bool includeAll, string? filter, string? tableName) where TEntity : class
         {
             string? querySelect = _enttityHelper.GetQuery.Get<TEntity>(filter, _enttityHelper.ReplacesTableName, tableName);
             var entities = ExecuteSelect<TEntity>(querySelect);
@@ -373,7 +373,7 @@ namespace EH.Command
             return entities;
         }
 
-        public TEntity? Search<TEntity>(TEntity entity, bool includeAll = true, string? idPropName = null, string? tableName = null) where TEntity : class
+        public TEntity? Search<TEntity>(TEntity entity, bool includeAll, string? idPropName, string? tableName) where TEntity : class
         {
             string? selectQuery = _enttityHelper.GetQuery.Search(entity, idPropName, _enttityHelper.ReplacesTableName, tableName);
             var entities = ExecuteSelect<TEntity>(selectQuery);
@@ -381,7 +381,7 @@ namespace EH.Command
             return entities.FirstOrDefault();
         }
 
-        public bool CheckIfExist(string tableName, string? filter = null, int quantity = 0)
+        public bool CheckIfExist(string tableName, string? filter, int quantity)
         {
             try
             {
@@ -419,7 +419,7 @@ namespace EH.Command
             }
         }
 
-        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps = null, string? tableName = null)
+        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps, string? tableName)
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
@@ -440,25 +440,25 @@ namespace EH.Command
 
             //return true;
 
-            var creates = ExecuteNonQuery(createsTableQuery.Reverse().ToList()); // The last table is the main table
+            var creates = ExecuteNonQuery(createsTableQuery.Reverse().ToList(),-1); // The last table is the main table
             return createsTableQuery.Count == creates.Count;
         }
 
-        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable = false, ICollection<string>? ignoreProps = null, string? tableName = null)
+        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps, string? tableName)
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
             tableName ??= ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
-            if (CheckIfExist(tableName)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
+            if (CheckIfExist(tableName, null, 0)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
             return CreateTable<TEntity>(createOnlyPrimaryTable, ignoreProps, tableName);
         }
 
-        public bool CreateTable(DataTable dataTable, string? tableName = null)
+        public bool CreateTable(DataTable dataTable, string? tableName)
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
             string? createTableQuery = _enttityHelper.GetQuery.CreateTableFromDataTable(dataTable, _enttityHelper.TypesDefault, _enttityHelper.ReplacesTableName, tableName);
 
-            if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
+            if (ExecuteNonQuery(createTableQuery,-1) != 0) // Return = -1
             {
                 Debug.WriteLine("Table created!");
                 return true;
@@ -469,11 +469,11 @@ namespace EH.Command
             }
         }
 
-        public bool CreateTableIfNotExist(DataTable dataTable, string? tableName = null)
+        public bool CreateTableIfNotExist(DataTable dataTable, string? tableName)
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
             tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
-            if (CheckIfExist(tableName)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
+            if (CheckIfExist(tableName, null, 0)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
             return CreateTable(dataTable, tableName);
         }
 
@@ -498,7 +498,7 @@ namespace EH.Command
         //    return true;
         //}
 
-        public int Delete<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class
+        public int Delete<TEntity>(TEntity entity, string? nameId, string? tableName) where TEntity : class
         {
             Collection<TEntity> entities;
             if (entity is Collection<TEntity> collection) { entities = collection; }
@@ -514,19 +514,19 @@ namespace EH.Command
             return deletions;
         }
 
-        public int ExecuteNonQuery(string? query, int expectedChanges = -1)
+        public int ExecuteNonQuery(string? query, int expectedChanges)
         {
             return ExecuteNonQuery(new List<string?>() { query }, expectedChanges).FirstOrDefault();
         }
 
-        public ICollection<int> ExecuteNonQuery(ICollection<string?> queries, int expectedChanges = -1)
+        public ICollection<int> ExecuteNonQuery(ICollection<string?> queries, int expectedChanges)
         {
-            return Commands.Execute.ExecuteNonQuery(_enttityHelper.DbContext, queries, expectedChanges);
+            return Execute.ExecuteNonQuery(_enttityHelper.DbContext, queries, expectedChanges);
         }
 
         public List<TEntity>? ExecuteSelect<TEntity>(string? query)
         {
-            return (List<TEntity>?)Commands.Execute.ExecuteReader<TEntity>(_enttityHelper.DbContext, query);
+            return (List<TEntity>?)Execute.ExecuteReader<TEntity>(_enttityHelper.DbContext, query);
         }
 
         public DataTable? ExecuteSelectDt(string? query)
@@ -621,12 +621,12 @@ namespace EH.Command
         public string? GetPKName<TEntity>(TEntity entity) where TEntity : class => entity.GetPK()?.Name;
 
 
-        public string NormalizeText(string? text, char replaceSpace = '_', bool toLower = true)
+        public string NormalizeText(string? text, char replaceSpace, bool toLower)
         {
             return Tools.Normalize(text, toLower, replaceSpace);
         }
 
-        public string NormalizeColumnOrTableName(string? name, bool replaceInvalidChars = true)
+        public string NormalizeColumnOrTableName(string? name, bool replaceInvalidChars)
         {
             return Tools.NormalizeColumnOrTableName(name, replaceInvalidChars);
         }
