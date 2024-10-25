@@ -10,7 +10,7 @@
 		<AssemblyName>EnttityHelper</AssemblyName>
 		<PackageId>EnttityHelper</PackageId>
 		<Description>Allows easy manipulation of entities in different databases.</Description>
-		<Version>0.5.0-alpha-5</Version>
+		<Version>0.5.0-alpha-6</Version>
 		<Authors>Diêgo Piovezana</Authors>
 		<Company>DiegoPiov</Company>
 		<RepositoryUrl>https://github.com/DiegoPiovezana/EnttityHelper</RepositoryUrl>
@@ -21,7 +21,7 @@
 		<ApplicationIcon>EnttityHelper\Images\EnttityHelper_icon.ico</ApplicationIcon>
 		<PackageIcon>EnttityHelper_icon.png</PackageIcon>
 		<PackageReleaseNotes>- Alpha Version
-- Possible bugs possibly present</PackageReleaseNotes>
+- There may be bugs</PackageReleaseNotes>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<AppDesignerFolder>Properties</AppDesignerFolder>		
