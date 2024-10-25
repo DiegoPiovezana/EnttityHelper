@@ -83,6 +83,7 @@ namespace EH.Commands
                     command.Transaction = transaction;
 
                     int rowsAffected = command.ExecuteNonQuery();
+                    //Debug.WriteLine(query);
 
                     if (expectedChanges != -1 && rowsAffected != expectedChanges)
                     {
@@ -174,6 +175,7 @@ namespace EH.Commands
                     command.Parameters.Add(resultParam);
 
                     command.ExecuteScalar();
+                    //Debug.WriteLine(query);
 
                     //Debug.WriteLine($"Result: {resultParam.Value}");
                     results.Add(resultParam.Value);

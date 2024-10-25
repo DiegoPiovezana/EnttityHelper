@@ -576,7 +576,7 @@ namespace EH.Command
 
         public ICollection<object?> ExecuteScalar(ICollection<string?> queries)
         {
-            return Commands.Execute.ExecuteScalar(_enttityHelper.DbContext, queries);
+            return Execute.ExecuteScalar(_enttityHelper.DbContext, queries);
         }
 
         public bool IncludeAll<TEntity>(TEntity entity)
@@ -614,7 +614,8 @@ namespace EH.Command
 
         public string? GetTableNameManyToMany(Type entity1, string namePropCollection)
         {
-            PropertyInfo propCollection = entity1.GetType().GetProperty(namePropCollection);
+            PropertyInfo propCollection = entity1.GetProperty(namePropCollection);
+            if (propCollection == null) throw new ArgumentNullException(nameof(propCollection), "Property not found!");
             return ToolsProp.GetTableNameManyToMany(entity1, propCollection, _enttityHelper.ReplacesTableName);
         }
 

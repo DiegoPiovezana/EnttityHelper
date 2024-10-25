@@ -259,7 +259,7 @@ namespace EH.Command
         /// Gets the name of the table representing a many-to-many relationship between two entities.
         /// </summary>
         /// <param name="entity1">The type of the first entity.</param>
-        /// <param name="propCollectionName">The name of collection with the second entity.</param>
+        /// <param name="propCollectionName">The name of the property present in the first entity that represents a collection linked to the second entity.</param>
         /// <returns>The name of the many-to-many table.</returns>
         public string? GetTableNameManyToMany(Type entity1, string propCollectionName);
 

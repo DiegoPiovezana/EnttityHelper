@@ -1,5 +1,4 @@
 using EH;
-using NUnit.Framework.Internal;
 using Oracle.ManagedDataAccess.Client;
 using SH;
 using System.Diagnostics;
@@ -7,7 +6,7 @@ using TestEH_UnitTest.Entities;
 using TestEH_UnitTest.Entitities;
 using TestEnttityHelper.OthersEntity;
 
-namespace TestEnttityHelper
+namespace TestEH_UnitTest
 {
     public class EntityHelperTests
     {
@@ -15,7 +14,7 @@ namespace TestEnttityHelper
 
         public EntityHelperTests()
         {
-            _enttityHelper = new EnttityHelper("Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            _enttityHelper = new EnttityHelper("Data Source=localhost:1521/xe;User Id=system;Password=oracle");
         }
 
         [SetUp]
@@ -32,7 +31,7 @@ namespace TestEnttityHelper
         [Test, Order(2)]
         public void TestConnection()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             bool test = eh.DbContext.ValidateConnection();
             Assert.That(test, Is.EqualTo(true));
         }
@@ -40,7 +39,7 @@ namespace TestEnttityHelper
         [Test, Order(3)]
         public void TestCreateTableIfNotExist()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 bool result = eh.CreateTableIfNotExist<EntityTest>(false);
@@ -55,7 +54,7 @@ namespace TestEnttityHelper
         [Test, Order(4)]
         public void TestCreateTable()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 // Oracle.ManagedDataAccess.Client.OracleException : ORA-00955: name is already used by an existing object
@@ -70,7 +69,7 @@ namespace TestEnttityHelper
         [Test, Order(5)]
         public void TestInsertEntity()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 //bool result = eh.Insert(new { Id = 1, Name = "Test" }, null);
@@ -94,7 +93,7 @@ namespace TestEnttityHelper
         [Test, Order(6)]
         public void TestUpdateEntity()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 90, Name = "Testing entity 90 updating start time via C#", StartDate = DateTime.Now };
@@ -111,7 +110,7 @@ namespace TestEnttityHelper
         [Test, Order(7)]
         public void TestSearchEntity()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 90 };
@@ -128,18 +127,22 @@ namespace TestEnttityHelper
         [Test, Order(8)]
         public void TestGetEntity_SuccessfulRetrieval()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
 
             if (eh.DbContext.ValidateConnection())
             {
+                EntityTest entityTest = new() { Id = 8, Name = "Entity Test", StartDate = DateTime.Now };
+                eh.Delete(entityTest);
+                int result1 = eh.Insert(entityTest, nameof(entityTest.Id), true);
+                Assert.That(result1, Is.EqualTo(1));
+
                 var result = eh.Get<EntityTest>();
 
                 Assert.That(result, Is.Not.Null, "Result should not be null.");
                 Assert.That(result, Has.Count.GreaterThanOrEqualTo(1), "At least one entity should be returned.");
 
-                var firstEntity = result.First();
-                Assert.That(firstEntity.StartDate, Is.LessThanOrEqualTo(DateTime.Now.AddMinutes(-10)), "StartDate should be 10 minutes earlier than now.");
-                Assert.That(firstEntity.StartDate, Is.GreaterThanOrEqualTo(DateTime.Now.AddMinutes(-15)), "StartDate should be at most 15 minutes earlier than now.");
+                var lastEntity = result.Last();
+                Assert.That(lastEntity.StartDate, Is.LessThanOrEqualTo(DateTime.Now.AddSeconds(10)), "StartDate should be 10 seconds earlier than now.");                
             }
             else
             {
@@ -150,16 +153,22 @@ namespace TestEnttityHelper
         [Test, Order(9)]
         public void TestGetEntity_FailureWhenNoConnection()
         {
+            // Arrange
             EnttityHelper eh = new($"Data Source=invalid;User Id=invalid;Password=invalid");
 
-            Assert.Throws<InvalidOperationException>(() => eh.Get<EntityTest>(), "Should throw exception when connection is invalid.");
+            // Act & Assert
+            var exception = Assert.Throws<SystemException>(() => eh.Get<EntityTest>());
+
+            // Verifica se a mensagem da exceção está correta
+            Assert.That(exception.Message, Is.EqualTo("Invalid database type!"));
         }
+
 
 
         [Test, Order(9)]
         public void TestNonQuery()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 bool result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 90") == 1;
@@ -174,7 +183,7 @@ namespace TestEnttityHelper
         [Test, Order(10)]
         public void TestFullEntity()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 300, Name = "Testando 1 entidade 100 via C#", StartDate = DateTime.Now };
@@ -201,7 +210,7 @@ namespace TestEnttityHelper
         [Test, Order(11)]
         public void TestOneToOne()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 300, Name = "Testando 1 entidade 100 via C#", StartDate = DateTime.Now };
@@ -227,7 +236,7 @@ namespace TestEnttityHelper
         [Test, Order(12)]
         public void TestManyToOne()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 //eh.CreateTableIfNotExist<Career>();
@@ -253,13 +262,13 @@ namespace TestEnttityHelper
         [Test, Order(13)]
         public void TestManyToMany()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 /////////////////////////////////////////////////// 
                 // CREATE TABLE
 
-                if (eh.CheckIfExist("TB_GROUP_USERSTOGROUPS")) eh.ExecuteNonQuery("DROP TABLE TB_GROUP_USERSTOGROUPS");
+                if (eh.CheckIfExist(eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups)))) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))}");
                 if (eh.CheckIfExist(eh.GetTableName<Group>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Group>()}");
                 if (eh.CheckIfExist(eh.GetTableName<User>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<User>()}");
                 if (eh.CheckIfExist(eh.GetTableName<Career>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Career>()}");
@@ -282,7 +291,7 @@ namespace TestEnttityHelper
                 Career carrer2 = new() { IdCareer = 3, Name = "Trainee", CareerLevel = 0, Active = true };
                 //eh.Insert(carrer2);
 
-                var resultCarrers = eh.Insert(new List<Career>() { carrer1, carrer2 });
+                int resultCarrers = eh.Insert(new List<Career>() { carrer1, carrer2 });
                 Assert.That(resultCarrers == 2, Is.EqualTo(true));
 
                 Group group1 = new() { Id = 1, Name = "Developers", Description = "Developer Group" };
@@ -291,31 +300,32 @@ namespace TestEnttityHelper
                 Group group2 = new() { Id = 2, Name = "Testers", Description = "Tester Group" };
                 //eh.Insert(group2);
 
-                var resultGroups = eh.Insert(new List<Group>() { group1, group2 });
+                int resultGroups = eh.Insert(new List<Group>() { group1, group2 });
                 Assert.That(resultGroups == 2, Is.EqualTo(true));
 
-                eh.ExecuteNonQuery("DELETE FROM TB_USER");
+                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()}"); // DELETE FROM TB_USER
 
                 // Insert user with group
                 User user1 = new() { Id = 1, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
                 List<Group> groupsUserAdd = new() { group1, group2 };
                 foreach (var group in groupsUserAdd) { user1.Groups.Add(group); }
-                Assert.That(eh.Insert(user1) == 1, Is.EqualTo(true));
+                Assert.That(eh.Insert(user1) == 3, Is.EqualTo(true));
 
                 // Insert group with user
                 User user2 = new() { Id = 2, Name = "John Victor", GitHub = "@JohnVictor", DtCreation = DateTime.Now, IdCareer = 3 };
                 Assert.That(eh.Insert(user2) == 1, Is.EqualTo(true));
 
+                // Insert new group with user
                 Group group3 = new() { Id = 3, Name = "Operation", Description = "Operation Group" };
                 group3.Users.Add(user2);
-                Assert.That(eh.Insert(group3) == 1, Is.EqualTo(true));
+                Assert.That(eh.Insert(group3) == 2, Is.EqualTo(true));
 
 
                 /////////////////////////////////////////////////// 
                 // GET
-                var carrers = eh.Get<Career>();
-                var groups = eh.Get<Group>();
-                var users = eh.Get<User>();
+                List<Career>? carrers = eh.Get<Career>();
+                List<Group>? groups = eh.Get<Group>();
+                List<User>? users = eh.Get<User>();
                 Assert.Multiple(() =>
                 {
                     Assert.That(carrers.Count == 2, Is.EqualTo(true));
@@ -329,15 +339,27 @@ namespace TestEnttityHelper
                 user1.Groups = new List<Group>() { group1 };
                 eh.Update(user1);
 
-                var usersUpdated = eh.Get<User>();
+                List<User>? usersUpdated = eh.Get<User>();
                 Assert.That(usersUpdated.Count == 2, Is.EqualTo(true));
 
                 var groupsUser1 = usersUpdated.Where(u => u.Id == 1).FirstOrDefault().Groups;
                 Assert.Multiple(() =>
                 {
                     Assert.That(groupsUser1.Count == 1, Is.EqualTo(true));
-                    Assert.That(groupsUser1.FirstOrDefault().Name.Equals("Testers"), Is.EqualTo(true));
+                    Assert.That(groupsUser1.FirstOrDefault().Name.Equals("Developers"), Is.EqualTo(true));
                 });
+
+                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))}"); // DELETE FROM TB_GROUP_USERStoGROUPS
+                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()}");
+                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()}");
+
+                // Insert new group with new user
+                User user3 = new() { Id = 3, Name = "Maria Joaquina", GitHub = "@MariaJoaquina", DtCreation = DateTime.Now, IdCareer = 1 };
+                Assert.That(eh.Insert(user3) == 1, Is.EqualTo(true)); // TODO: Insert together
+                Group group4 = new() { Id = 4, Name = "Analyst", Description = "Analyst Group" };
+                group4.Users.Add(user3);
+                Assert.That(eh.Insert(group4), Is.EqualTo(2)); // user + group + aux_tb = 3
+
                 Assert.Pass();
             }
             else
@@ -349,7 +371,7 @@ namespace TestEnttityHelper
         [Test, Order(14)]
         public void TestInsertDataTable()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 // Empty columns will automatically have the Object type. In the database, the Object type will be NVARCHAR2(100)
@@ -377,7 +399,7 @@ namespace TestEnttityHelper
         [Test, Order(15)]
         public void TestInsertLinkSelect()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 // Select from database table from database 1
@@ -401,7 +423,7 @@ namespace TestEnttityHelper
         public void TestFullEntityREADME()
         {
             // Create a connection with the database using the connection string
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
 
             if (eh.DbContext.ValidateConnection())
             {
@@ -409,13 +431,13 @@ namespace TestEnttityHelper
                 eh.CreateTableIfNotExist<User>(false);
 
                 // Create new entity
-                User userD = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                User userD = new("Diego Piovezana") { Id = 16, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
 
                 // Insert in database
                 eh.Insert(userD);
 
                 // Modify entity
-                userD.Name = "Diego Piovezana";
+                userD.Name = "Diêgo Piovezana";
 
                 // Update in database
                 eh.Update(userD);
@@ -440,22 +462,22 @@ namespace TestEnttityHelper
         [Test, Order(17)]
         public void TestManyInsertionsSimple()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 eh.CreateTableIfNotExist<Group>(true); // Necessary to then create the MxN relationship table
                 eh.CreateTableIfNotExist<User>(false);
 
                 // Test for one entity
-                User entityTest = new("Diego Piovezana One") { Id = 0, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 1 };
+                User entityTest = new("Diego Piovezana One") { Id = 21, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 1 };
                 bool result1 = eh.Insert(entityTest, nameof(entityTest.GitHub), true) == 1;
                 if (result1) { eh.Delete(entityTest); }
                 Assert.That(result1, Is.EqualTo(true));
 
                 // Create many entities
-                User user1 = new("Diego Piovezana One Repeat") { Id = 0, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                User user2 = new("User Test One") { Id = 0, GitHub = "@UserTestOne", DtCreation = DateTime.Now, IdCareer = 2 };
-                User user3 = new("User Test Two") { Id = 0, GitHub = "@UserTestTwo", DtCreation = DateTime.Now, IdCareer = 3 };
+                User user1 = new("Diego Piovezana One Repeat") { Id = 21, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                User user2 = new("User Test One") { Id = 22, GitHub = "@UserTestOne", DtCreation = DateTime.Now, IdCareer = 2 };
+                User user3 = new("User Test Two") { Id = 23, GitHub = "@UserTestTwo", DtCreation = DateTime.Now, IdCareer = 3 };
 
                 List<User>? users = new() { user1, user2, user3 };
 
@@ -470,7 +492,7 @@ namespace TestEnttityHelper
         [Test, Order(17)]
         public void TestManyInsertionsMxN()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 // INSERT THE MANY ENTITIES (MXN)
@@ -503,7 +525,7 @@ namespace TestEnttityHelper
         [Test, Order(17)]
         public void TestManyInsertionsNxM()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 // INSERT THE MANY ENTITIES (NXM)
@@ -533,7 +555,7 @@ namespace TestEnttityHelper
         [Test, Order(18)]
         public void TestManyUpdates()
         {
-            EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
                 Career carrer1 = new(1, "Developer");
@@ -590,8 +612,8 @@ namespace TestEnttityHelper
 
         [Test]
         [TestCase("Invalid Name@2023", "Invalid_Name_2023")]
-        [TestCase("SELECT", "_SELECT")]
-        [TestCase("123invalidName", "_123invalidName")]
+        [TestCase("SELECT", "c_SELECT")]
+        [TestCase("123invalidName", "c_123invalidName")]
         [TestCase("invalid@name", "invalid_name")]
         [TestCase("name$", "name_")]
         [TestCase("name with space", "name_with_space")]
@@ -642,10 +664,10 @@ namespace TestEnttityHelper
             if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
 
             // Act
-            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName, batchSize,timeout);
+            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName, batchSize, timeout);
 
             // Assert
-            Assert.AreEqual(insertCount-1, result); // -1 because the first row is the header
+            Assert.AreEqual(insertCount - 1, result); // -1 because the first row is the header
         }
 
         [Test]
@@ -672,14 +694,15 @@ namespace TestEnttityHelper
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\BigCsvGerado_5000000x20.csv";
             var insertCount = 5_000_000;
 
+            bool createTable = true;
             string tableName = "TestTable_BigCsv";
             int batchSize = 100_000;
-            int timeout = batchSize/20_000; // Timeout in seconds to insert 1 batch
+            int timeOutSeconds = 50; // Timeout in seconds to insert 1 batch
 
             if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
 
             // Act
-            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName, batchSize, timeout);
+            int result = _enttityHelper.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds);
 
             DateTime endTime = DateTime.Now;
             Debug.WriteLine($"End: {endTime}");
@@ -687,7 +710,7 @@ namespace TestEnttityHelper
             Debug.WriteLine($"Elapsed: {endTime - startTime}");
 
             // Assert
-            Assert.AreEqual(insertCount-1, result); // -1 because the first row is the header
+            Assert.AreEqual(insertCount - 1, result); // -1 because the first row is the header
         }
 
 

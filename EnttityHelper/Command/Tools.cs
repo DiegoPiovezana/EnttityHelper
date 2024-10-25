@@ -221,7 +221,7 @@ namespace EH.Command
             const int limitChars = 30;
             char[] InvalidCharacters = { ' ', '.', ',', ';', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '{', '}', '[', ']', '|', ':', '"', '<', '>', '/', '?', '\\' };
             HashSet<string> ReservedKeywords = new() { "SELECT", "INSERT", "UPDATE", "DELETE", "FROM", "WHERE", "JOIN", "CREATE", "ALTER", "DROP", "TABLE", "COLUMN", "INDEX", "VIEW" };
-            char[] AllowedSpecialCharacters = { '_'}; // Allowed characters for table and column names
+            char[] AllowedSpecialCharacters = { '_' }; // Allowed characters for table and column names
 
             name = name.Normalize(false);
 
@@ -258,7 +258,7 @@ namespace EH.Command
             //{
             //    throw new ArgumentException($"Name contains invalid characters. Allowed characters are alphanumeric and underscore.", nameof(result));
             //}
-         
+
             if (!char.IsLetter(name[0]) && name[0] != '_')
             {
                 if (adjustInvalidChars) result = "c_" + result;
