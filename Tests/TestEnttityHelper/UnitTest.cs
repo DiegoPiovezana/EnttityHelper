@@ -697,7 +697,7 @@ namespace TestEH_UnitTest
             bool createTable = true;
             string tableName = "TestTable_BigCsv";
             int batchSize = 100_000;
-            int timeOutSeconds = 50; // Timeout in seconds to insert 1 batch
+            int timeOutSeconds = 50; // Timeout in seconds to insert 1 batch (max)
 
             if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
 
@@ -708,6 +708,28 @@ namespace TestEH_UnitTest
             Debug.WriteLine($"End: {endTime}");
 
             Debug.WriteLine($"Elapsed: {endTime - startTime}");
+
+            // Assert
+            Assert.AreEqual(insertCount - 1, result); // -1 because the first row is the header
+        }
+
+        [Test]
+        public void LoadTXT_ShouldInsertData()
+        {
+            Assert.That(_enttityHelper.DbContext.ValidateConnection());
+                       
+            string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoIrregular.txt";
+            var insertCount = 100;
+
+            string tableName = "TestTable_Txt";
+            int batchSize = 100000;
+            int timeout = 30;
+            char delimiter = ';';
+
+            if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
+
+            // Act
+            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter);
 
             // Assert
             Assert.AreEqual(insertCount - 1, result); // -1 because the first row is the header

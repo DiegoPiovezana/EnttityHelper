@@ -75,17 +75,17 @@ namespace EH.Command
         public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds = 600);
 
         /// <summary>
-        /// Loads a CSV file into the database.
+        /// Loads a CSV or TXT file into the database.
         /// </summary>
-        /// <param name="csvFilePath">The path to the CSV file.</param>
+        /// <param name="csvFilePath">The path to the CSV/TXT file.</param>
         /// <param name="createTable">Indicates whether to create a new table if it does not exist.</param>
         /// <param name="tableName">The name of the table to load the data into. If null, a default name will be used.</param>
         /// <param name="batchSize">The maximum number of rows to load at once. Default is 100000. The bigger it is, the faster it is, but the higher the memory consumption will be.</param>
         /// <param name="timeOutSeconds">The timeout duration for the operation in seconds. Default is 600 seconds.</param>
-        /// <param name="separator">The separator character used in the CSV file. Default is ';'</param>
+        /// <param name="delimiter">The delimiter character used in the CSV/TXT file. Default is ';'</param>
         /// <returns>The number of records inserted into the database.</returns>
-        /// <exception cref="ArgumentException">Thrown when the CSV file is invalid or cannot be loaded.</exception>
-        int LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char separator = ';');
+        /// <exception cref="ArgumentException">Thrown when the CSV/TXT file is invalid or cannot be loaded.</exception>
+        int LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';');
 
         /// <summary>
         /// Allow to update an entity in the database.

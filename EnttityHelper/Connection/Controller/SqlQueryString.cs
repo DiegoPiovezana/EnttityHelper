@@ -443,9 +443,9 @@ namespace EH.Connection
             foreach (DataColumn column in columns)
             {
                 string nameColumn = column.ColumnName;
-                nameColumn = nameColumn.Length > 30 ? nameColumn.Substring(0, 30) : nameColumn;
+                //nameColumn = nameColumn.Length > 30 ? nameColumn.Substring(0, 30) : nameColumn;
                 nameColumn = nameColumn.NormalizeColumnOrTableName();
-                // TODO: Column empty
+                // TODO: Column empty?
 
                 typesSql.TryGetValue(column.DataType.Name.Trim(), out string typeColumn);
 

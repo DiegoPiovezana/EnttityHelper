@@ -620,9 +620,12 @@ DROP TABLE TB_TEST;
 -- OracleException: ORA-01653: não é possível estender a tabela SYSTEM.TESTTABLE_BIGCSV em 1024 no tablespace SYSTEM
 
 SELECT COUNT(*) FROM TESTTABLE;
-
-
 SELECT * FROM TESTTABLE;
+
+
+SELECT COUNT(*) FROM TESTTABLE_TXT;
+SELECT * FROM TESTTABLE_TXT;
+
 
 
 
@@ -648,5 +651,147 @@ WHERE TABLESPACE_NAME = 'SYSTEM';
 
 
 ALTER DATABASE DATAFILE '/u01/app/oracle/oradata/XE/system.dbf' RESIZE 10240M;
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------------------------------
+
+
+-- Verifica a saúde do banco de dados Oracle
+WITH 
+-- Seção 1: CPU usada por sessão
+CPU_USAGE AS (
+    SELECT 
+        'CPU Usage' AS "Section",
+        s.sid AS "Session ID",
+        s.serial# AS "Serial Number",
+        p.spid AS "Process ID",
+        s.username AS "Username",
+        'N/A' AS "Status",
+        'N/A' AS "Metric",
+        t.value / 100 AS "Value"
+    FROM 
+        v$session s
+    JOIN 
+        v$process p ON s.paddr = p.addr
+    JOIN 
+        v$sesstat t ON s.sid = t.sid
+    JOIN 
+        v$statname n ON t.statistic# = n.statistic#
+    WHERE 
+        n.name = 'CPU used by this session'
+),
+
+-- Seção 2: Uso de memória PGA por processo
+MEMORY_USAGE AS (
+    SELECT 
+        'Memory Usage' AS "Section",
+        NULL AS "Session ID",
+        NULL AS "Serial Number",
+        p.spid AS "Process ID",
+        p.program AS "Username",
+        'N/A' AS "Status",
+        'PGA Used MB' AS "Metric",
+        p.pga_used_mem / (1024 * 1024) AS "Value"
+    FROM 
+        v$process p
+    UNION ALL
+    SELECT 
+        'Memory Usage',
+        NULL,
+        NULL,
+        p.spid,
+        p.program,
+        'N/A',
+        'PGA Allocated MB',
+        p.pga_alloc_mem / (1024 * 1024)
+    FROM 
+        v$process p
+    UNION ALL
+    SELECT 
+        'Memory Usage',
+        NULL,
+        NULL,
+        p.spid,
+        p.program,
+        'N/A',
+        'PGA Max MB',
+        p.pga_max_mem / (1024 * 1024)
+    FROM 
+        v$process p
+),
+
+-- Seção 3: Sessões ativas
+ACTIVE_SESSIONS AS (
+    SELECT 
+        'Active Sessions' AS "Section",
+        s.sid AS "Session ID",
+        s.serial# AS "Serial Number",
+        NULL AS "Process ID",
+        s.username AS "Username",
+        s.status AS "Status",
+        'N/A' AS "Metric",
+        NULL AS "Value"
+    FROM 
+        v$session s
+    WHERE 
+        s.status = 'ACTIVE'
+),
+
+-- Seção 4: Eventos de espera
+WAIT_EVENTS AS (
+    SELECT 
+        'Wait Events' AS "Section",
+        NULL AS "Session ID",
+        NULL AS "Serial Number",
+        NULL AS "Process ID",
+        'N/A' AS "Username",
+        'N/A' AS "Status",
+        event AS "Metric",
+        time_waited / 100 AS "Value"
+    FROM 
+        v$system_event
+    WHERE 
+        event NOT IN ('SQL*Net message from client', 'SQL*Net message to client')
+),
+
+-- Seção 5: Leituras e Escritas no banco
+IO_STATS AS (
+    SELECT 
+        'I/O Statistics' AS "Section",
+        NULL AS "Session ID",
+        NULL AS "Serial Number",
+        NULL AS "Process ID",
+        'N/A' AS "Username",
+        'N/A' AS "Status",
+        name AS "Metric",
+        value AS "Value"
+    FROM 
+        v$sysstat
+    WHERE 
+        name IN ('physical reads', 'physical writes')
+)
+
+-- Query final: Combina todos os dados para exibir uma visão geral da saúde do banco de dados
+SELECT * FROM CPU_USAGE
+UNION ALL
+SELECT * FROM MEMORY_USAGE
+UNION ALL
+SELECT * FROM ACTIVE_SESSIONS
+UNION ALL
+SELECT * FROM WAIT_EVENTS
+UNION ALL
+SELECT * FROM IO_STATS;
+
+
+
 
 

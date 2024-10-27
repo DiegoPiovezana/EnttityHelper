@@ -261,9 +261,9 @@ namespace EH.Command
         }
 
 
-        public int LoadCSV(string csvFilePath, bool createTable, string? tableName, int batchSize, int timeOutSeconds, char separator)
+        public int LoadCSV(string csvFilePath, bool createTable, string? tableName, int batchSize, int timeOutSeconds, char delimiter)
         {
-            Validations.Validate.IsCsvValid(csvFilePath);
+            Validations.Validate.IsFileValid(csvFilePath);
             int totalInserts = 0;
 
             try
@@ -271,8 +271,8 @@ namespace EH.Command
                 using StreamReader reader = new(csvFilePath);
                 DataTable dataTable = new();
 
-                string[] headers = reader.ReadLine()?.Split(separator)
-                    ?? throw new InvalidOperationException("CSV file is empty or headers are missing.");
+                string[] headers = reader.ReadLine()?.Split(delimiter)
+                    ?? throw new InvalidOperationException("CSV/TXT file is empty or headers are missing.");
 
                 dataTable.TableName = Path.GetFileNameWithoutExtension(csvFilePath);
 
@@ -295,12 +295,12 @@ namespace EH.Command
 
                 while (!reader.EndOfStream)
                 {
-                    string[] rows = reader.ReadLine()?.Split(separator)
-                        ?? throw new InvalidOperationException("Error reading a row from the CSV file.");
+                    string[] rows = reader.ReadLine()?.Split(delimiter)
+                        ?? throw new InvalidOperationException("Error reading a row from the CSV/TXT file.");
 
                     if (rows.Length != headers.Length)
                     {
-                        throw new InvalidOperationException("Mismatch between CSV header and row column count.");
+                        throw new InvalidOperationException("Mismatch between CSV/TXT header and row column count.");
                     }
 
                     DataRow row = dataTable.NewRow();
@@ -324,7 +324,7 @@ namespace EH.Command
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error during CSV loading process: {ex.Message}", ex);
+                throw new Exception($"Error during CSV/TXT loading process: {ex.Message}", ex);
             }
             return totalInserts;
         }
