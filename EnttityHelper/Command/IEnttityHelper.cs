@@ -131,6 +131,29 @@ namespace EH.Command
         public bool CheckIfExist(string tableName, string? filter = null, int quantity = 0);
 
         /// <summary>
+        /// Counts the number of records in a specified table, with an optional filter for conditional counting.
+        /// Returns the count of matching records or a specific error code if the table does not exist.
+        ///
+        /// <para>
+        /// Uses the value -1 as a return to indicate the absence of the table in the database.
+        /// </para>
+        ///
+        /// <para>
+        /// Example usage:
+        /// <code>
+        /// int recordCount = enttityHelper.CountTable("Users", "IsActive = 1");
+        /// </code>
+        /// </para>
+        ///
+        /// </summary>
+        /// <param name="tableName">The name of the table to count records in.</param>
+        /// <param name="filter">An optional filter to apply to the count query. If null, all records are counted.</param>
+        /// <returns>The count of records matching the criteria, or -1 if the table does not exist.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the database connection is not established.</exception>
+        /// <exception cref="Exception">Rethrows any other exceptions encountered during query execution.</exception>
+        public long CountTable(string tableName, string? filter = null);
+
+        /// <summary>
         /// Allows you to create a table in the database according to the provided objectEntity object.
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to create the table.</typeparam>

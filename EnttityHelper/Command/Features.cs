@@ -301,7 +301,7 @@ namespace EH.Command
                     {
                         dataTable.Columns.Add(new DataColumn($"Column{i + 1}"));
                     }
-                  
+
                     DataRow firstRow = dataTable.NewRow();
                     for (int i = 0; i < headers.Length; i++)
                     {
@@ -431,6 +431,41 @@ namespace EH.Command
             //catch (SQLiteException ex) when (ex.ErrorCode == SQLiteErrorCode.Table)
             //{
             //    return false;
+            //}
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                if (_enttityHelper.DbContext?.IDbConnection is not null && _enttityHelper.DbContext.IDbConnection.State == ConnectionState.Open)
+                    _enttityHelper.DbContext.IDbConnection.Close();
+            }
+        }
+
+        public long CountTable(string tableName, string? filter)
+        {
+            try
+            {
+                if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
+
+                using IDbConnection dbConnection = _enttityHelper.DbContext.CreateOpenConnection();
+                using IDbCommand command = _enttityHelper.DbContext.CreateCommand($"SELECT COUNT(*) FROM {tableName} WHERE {filter ?? "1 = 1"}");
+                object result = command.ExecuteScalar();
+
+                return (result != null && result != DBNull.Value) ? Convert.ToInt64(result) : 0;
+            }
+            catch (OracleException ex) when (ex.Number == 942) // ORA-00942: table or view does not exist
+            {
+                return -1;
+            }
+            catch (SqlException ex) when (ex.Number == 208) // Invalid object name 'tableName'
+            {
+                return -1;
+            }
+            //catch (SQLiteException ex) when (ex.ErrorCode == SQLiteErrorCode.Table)
+            //{
+            //    return -1;
             //}
             catch (Exception)
             {

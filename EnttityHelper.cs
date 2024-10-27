@@ -150,6 +150,19 @@ namespace EH
             }
         }
 
+        /// <inheritdoc/>
+        public long CountTable(string tableName, string? filter = null)
+        {
+            try
+            {
+                return _features.CountTable(tableName, filter);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
         /// <inheritdoc/>    
         public bool CreateTable<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps = null, string? tableName = null)
         {
