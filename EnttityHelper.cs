@@ -86,11 +86,11 @@ namespace EH
         }
 
         /// <inheritdoc/> 
-        public int LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char separator = ';')
+        public int LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';')
         {
             try
             {
-                return _features.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds, separator);
+                return _features.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds, delimiter);
             }
             catch (Exception)
             {
