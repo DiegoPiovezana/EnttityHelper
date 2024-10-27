@@ -140,7 +140,7 @@ namespace EH.Command
                 {
                     string tableNamefkProp = ToolsProp.GetTableName(fkProp.Value.GetType(), _enttityHelper.ReplacesTableName);
                     var pkFk = fkProp.Value.GetPK();
-                    if (!CheckIfExist(tableNamefkProp, $"{pkFk.Name} = {pkFk.GetValue(fkProp.Value, null)}",1)) throw new InvalidOperationException($"Entity or table '{tableNamefkProp}' does not exist!");
+                    if (!CheckIfExist(tableNamefkProp, $"{pkFk.Name} = {pkFk.GetValue(fkProp.Value, null)}", 1)) throw new InvalidOperationException($"Entity or table '{tableNamefkProp}' does not exist!");
                 }
             }
 
@@ -261,7 +261,7 @@ namespace EH.Command
         }
 
 
-        public int LoadCSV(string csvFilePath, bool createTable, string? tableName, int batchSize, int timeOutSeconds, char delimiter)
+        public int LoadCSV(string csvFilePath, bool createTable, string? tableName, int batchSize, int timeOutSeconds, char delimiter, bool hasHeader)
         {
             Validations.Validate.IsFileValid(csvFilePath);
             int totalInserts = 0;
@@ -272,18 +272,42 @@ namespace EH.Command
                 DataTable dataTable = new();
 
                 string[] headers = reader.ReadLine()?.Split(delimiter)
-                    ?? throw new InvalidOperationException("CSV/TXT file is empty or headers are missing.");
+                    ?? throw new InvalidOperationException("CSV/TXT file is empty or headers are missing."); // Header must contain at least the delimiters 
 
                 dataTable.TableName = Path.GetFileNameWithoutExtension(csvFilePath);
 
-                for (int i = 0; i < headers.Length; i++)
+                //for (int i = 0; i < headers.Length; i++)
+                //{
+                //    if (string.IsNullOrWhiteSpace(headers[i]))
+                //    {
+                //        //throw new InvalidOperationException("CSV file contains empty or invalid header names.");
+                //        headers[i] = $"ColumnEmpty_{i + 1}";
+                //    }
+                //    dataTable.Columns.Add(new DataColumn(headers[i].Trim()));
+                //}                
+
+                // Definir colunas, seja a partir do cabeçalho ou com nomes genéricos
+                if (hasHeader)
                 {
-                    if (string.IsNullOrWhiteSpace(headers[i]))
+                    for (int i = 0; i < headers.Length; i++)
                     {
-                        //throw new InvalidOperationException("CSV file contains empty or invalid header names.");
-                        headers[i] = $"ColumnEmpty_{i + 1}";
+                        string columnName = string.IsNullOrWhiteSpace(headers[i]) ? $"ColumnEmpty_{i + 1}" : headers[i].Trim();
+                        dataTable.Columns.Add(new DataColumn(columnName));
                     }
-                    dataTable.Columns.Add(new DataColumn(headers[i].Trim()));
+                }
+                else
+                {
+                    for (int i = 0; i < headers.Length; i++)
+                    {
+                        dataTable.Columns.Add(new DataColumn($"Column{i + 1}"));
+                    }
+                  
+                    DataRow firstRow = dataTable.NewRow();
+                    for (int i = 0; i < headers.Length; i++)
+                    {
+                        firstRow[i] = headers[i];
+                    }
+                    dataTable.Rows.Add(firstRow);
                 }
 
                 tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
@@ -440,7 +464,7 @@ namespace EH.Command
 
             //return true;
 
-            var creates = ExecuteNonQuery(createsTableQuery.Reverse().ToList(),-1); // The last table is the main table
+            var creates = ExecuteNonQuery(createsTableQuery.Reverse().ToList(), -1); // The last table is the main table
             return createsTableQuery.Count == creates.Count;
         }
 
@@ -458,7 +482,7 @@ namespace EH.Command
 
             string? createTableQuery = _enttityHelper.GetQuery.CreateTableFromDataTable(dataTable, _enttityHelper.TypesDefault, _enttityHelper.ReplacesTableName, tableName);
 
-            if (ExecuteNonQuery(createTableQuery,-1) != 0) // Return = -1
+            if (ExecuteNonQuery(createTableQuery, -1) != 0) // Return = -1
             {
                 Debug.WriteLine("Table created!");
                 return true;

@@ -142,7 +142,7 @@ namespace TestEH_UnitTest
                 Assert.That(result, Has.Count.GreaterThanOrEqualTo(1), "At least one entity should be returned.");
 
                 var lastEntity = result.Last();
-                Assert.That(lastEntity.StartDate, Is.LessThanOrEqualTo(DateTime.Now.AddSeconds(10)), "StartDate should be 10 seconds earlier than now.");                
+                Assert.That(lastEntity.StartDate, Is.LessThanOrEqualTo(DateTime.Now.AddSeconds(10)), "StartDate should be 10 seconds earlier than now.");
             }
             else
             {
@@ -717,7 +717,7 @@ namespace TestEH_UnitTest
         public void LoadTXT_ShouldInsertData()
         {
             Assert.That(_enttityHelper.DbContext.ValidateConnection());
-                       
+
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoIrregular.txt";
             var insertCount = 100;
 
@@ -734,6 +734,53 @@ namespace TestEH_UnitTest
             // Assert
             Assert.AreEqual(insertCount - 1, result); // -1 because the first row is the header
         }
+
+        [Test]
+        public void LoadCSV_WithoutHeader1()
+        {
+            Assert.That(_enttityHelper.DbContext.ValidateConnection());
+
+            string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoVazio.csv";
+            var insertCount = 100; // J100
+
+            string tableName = "TestTable";
+            int batchSize = 100;
+            int timeout = 30;
+            char delimiter = ';';
+            bool hasHeader = true; // The header exists, but is empty
+
+            if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
+
+            // Act
+            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader);
+
+            // Assert
+            Assert.AreEqual(insertCount - 1, result); // -1 because the first row is the blank header
+        }
+
+        [Test]
+        public void LoadCSV_WithoutHeader2()
+        {
+            Assert.That(_enttityHelper.DbContext.ValidateConnection());
+
+            string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoInexistente.csv";
+            var insertCount = 101_254; // AB101254
+
+            string tableName = "TestTable";
+            int batchSize = 100_000;
+            int timeout = 60;
+            char delimiter = ';';
+            bool hasHeader = false; // The CSV file doesn't
+
+            if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
+
+            // Act
+            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader);
+
+            // Assert
+            Assert.AreEqual(insertCount - 0, result); // -0 because the first row isn't the header
+        }
+
 
 
     }
