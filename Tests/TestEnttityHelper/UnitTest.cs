@@ -357,7 +357,7 @@ namespace TestEH_UnitTest
             List<User>? usersUpdated = eh.Get<User>();
             Assert.That(usersUpdated.Count == 2, Is.EqualTo(true));
 
-            var groupsUser1 = usersUpdated.Where(u => u.Id == 1).FirstOrDefault().Groups;
+            var groupsUser1 = usersUpdated.Where(u => u.Id == 131).FirstOrDefault().Groups;
             Assert.Multiple(() =>
             {
                 Assert.That(groupsUser1.Count == 1, Is.EqualTo(true));
@@ -374,8 +374,6 @@ namespace TestEH_UnitTest
             Group group4 = new() { Id = 134, Name = "Analyst", Description = "Analyst Group" };
             group4.Users.Add(user3);
             Assert.That(eh.Insert(group4), Is.EqualTo(2)); // user + group + aux_tb = 3
-
-
         }
 
         [Test, Order(101)]
@@ -475,12 +473,15 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 // Create table - Object User     
+                eh.CreateTableIfNotExist<Career>(true);
                 eh.CreateTableIfNotExist<User>(false);
 
                 // Create new entity
-                User userD = new("Diego Piovezana") { Id = 16, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                Career career = new(1103, "Developer");
+                User userD = new("Diego Piovezana") { Id = 2103, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1103 };
 
                 // Insert in database
+                eh.Insert(career);
                 eh.Insert(userD);
 
                 // Modify entity
@@ -612,16 +613,26 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 // INSERT THE MANY ENTITIES (MXN)
-                Group group4 = new() { Id = 1061, Name = "Masters2", Description = "Masters Group" };
-                Group group5 = new() { Id = 1062, Name = "Managers", Description = "Managers Group" };
+                Group group4 = new() { Id = 1061, Name = "Masters106-2", Description = "Masters Group" };
+                Group group5 = new() { Id = 1062, Name = "Managers106", Description = "Managers Group" };
                 List<Group> groups = new() { group4, group5 };
                 int result3 = eh.Insert(groups, nameof(Group.Name), true);
                 Assert.That(result3 == 2, Is.EqualTo(true));
 
+                eh.CreateTableIfNotExist<Career>(true);
+                Career carrer1 = new() { IdCareer = 1061, Name = "Manag", CareerLevel = 5, Active = true };
+                long countCarrer1 = eh.CountEntity(carrer1);
+                Assert.IsTrue(countCarrer1 == 0 || countCarrer1 == 1);
+                if (countCarrer1 == 0)
+                {
+                    var result = eh.Insert(carrer1);
+                    Assert.AreEqual(result, 1);
+                }
+
                 // It is necessary to first insert the groups, and then link them to the user
                 // Otherwise, the local ID of groups 4 and 5 will be incorrectly used, instead of the one defined by the database.
 
-                User userM = new("Maria da Silva") { Id = 1061, GitHub = "@MariaSilva", DtCreation = DateTime.Now, IdCareer = 1 };
+                User userM = new("Maria da Silva") { Id = 1061, GitHub = "@MariaSilva", DtCreation = DateTime.Now, IdCareer = 1061 };
                 userM.Groups.Add(group4);
                 userM.Groups.Add(group5);
                 int result4 = eh.Insert(userM, nameof(userM.GitHub), true);
@@ -691,25 +702,25 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
-                Career carrer1 = new(1, "Developer");
-                Career carrer2 = new(2, "Management");
-                Career carrer3 = new(3, "Analyst");
-                //eh.Insert(new List<Career> { carrer1, carrer2, carrer3 });
-
+                Career carrer1 = new(2011, "Developer");
+                Career carrer2 = new(2012, "Management");
+                Career carrer3 = new(2013, "Analyst");
+                int resultCarrer = eh.Insert(new List<Career> { carrer1, carrer2, carrer3 });
+                Assert.That(resultCarrer, Is.EqualTo(3));
 
                 //int deletes = eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE ID IN (1, 2, 3)");
 
                 // Create many entities
-                User user1 = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana18", DtCreation = DateTime.Now, IdCareer = 3 };
-                User user2 = new("User Test Two") { Id = 2, GitHub = "@UserTestTwo18", DtCreation = DateTime.Now, IdCareer = 1 };
-                User user3 = new("User Test Three") { Id = 3, GitHub = "@UserTestThree18", DtCreation = DateTime.Now, IdCareer = 1 };
+                User user1 = new("Diego Piovezana") { Id = 2011, GitHub = "@DiegoPiovezana18", DtCreation = DateTime.Now, IdCareer = 2013 };
+                User user2 = new("User Test Two") { Id = 2012, GitHub = "@UserTestTwo18", DtCreation = DateTime.Now, IdCareer = 2011 };
+                User user3 = new("User Test Three") { Id = 2013, GitHub = "@UserTestThree18", DtCreation = DateTime.Now, IdCareer = 2011 };
 
                 List<User>? users = new() { user1, user2, user3 };
                 int result1 = eh.Insert(users);
                 Assert.That(result1 == 3, Is.EqualTo(true));
 
                 // Update entities
-                user1.IdCareer = 1;
+                user1.IdCareer = 2011;
                 user2.Name = "User Test Two Updt";
                 user3.GitHub = "@UpdtUserTestThree18";
 
@@ -717,7 +728,7 @@ namespace TestEH_UnitTest
                 Assert.That(result2 == 3, Is.EqualTo(true));
 
                 // Update one entity
-                User user4 = new("User Test Four") { Id = 4, GitHub = "@UserTestFour18", DtCreation = DateTime.Now, IdCareer = 2 };
+                User user4 = new("User Test Four") { Id = 2014, GitHub = "@UserTestFour18", DtCreation = DateTime.Now, IdCareer = 2012 };
                 int result3 = eh.Insert(user4);
                 Assert.That(result3 == 1, Is.EqualTo(true));
                 user4.GitHub = "@UpdtUserTestFour18";
@@ -818,8 +829,9 @@ namespace TestEH_UnitTest
         [Test]
         public void LoadCSV_BIGCSVFile()
         {
-            Assert.Pass(); // Skip
-
+            DateTime dtTarget = new DateTime(2024, 11, 3, 17, 0, 0);
+            int minuteExpiration = 5;
+            Assume.That(DateTime.Now - dtTarget < TimeSpan.FromMinutes(minuteExpiration), "Large csv file upload test was ignored!");
 
 
             Assert.That(_enttityHelper.DbContext.ValidateConnection());
@@ -862,14 +874,13 @@ namespace TestEH_UnitTest
             int batchSize = 100000;
             int timeout = 30;
             char delimiter = ';';
+            bool hasHeader = true; // The header exists
+            if (hasHeader) insertCount--; // Remove the header
 
             if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
 
-            // Act
-            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter);
-
-            // Assert
-            Assert.AreEqual(insertCount - 1, result); // -1 because the first row is the header
+            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader);
+            Assert.That(result, Is.EqualTo(insertCount));
         }
 
         [Test]
@@ -880,7 +891,7 @@ namespace TestEH_UnitTest
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoVazio.csv";
             var insertCount = 100; // J100
 
-            string tableName = "TestTable";
+            string tableName = "TestTableCsvHeader1";
             int batchSize = 100;
             int timeout = 30;
             char delimiter = ';';
@@ -903,7 +914,7 @@ namespace TestEH_UnitTest
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoInexistente.csv";
             var insertCount = 101_254; // AB101254
 
-            string tableName = "TestTable";
+            string tableName = "TestTableCsvHeader2";
             int batchSize = 100_000;
             int timeout = 60;
             char delimiter = ';';
