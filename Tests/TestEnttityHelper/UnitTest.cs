@@ -10,11 +10,11 @@ namespace TestEH_UnitTest
 {
     public class EntityHelperTests
     {
-        private readonly EnttityHelper _enttityHelper;
+        //private readonly EnttityHelper _enttityHelper;
 
         public EntityHelperTests()
         {
-            _enttityHelper = new EnttityHelper("Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            //_enttityHelper = new EnttityHelper("Data Source=localhost:1521/xe;User Id=system;Password=oracle");
         }
 
         [SetUp]
@@ -229,50 +229,44 @@ namespace TestEH_UnitTest
         public void TestManyToOne()
         {
             EnttityHelper eh = new("Data Source=localhost:1521/xe;User Id=system;Password=oracle");
-            if (eh.DbContext.ValidateConnection())
+            Assert.That(eh.DbContext.ValidateConnection(), Is.True);
+
+            // Ensure tables exist or create if they do not
+            eh.CreateTableIfNotExist<Career>(createOnlyPrimaryTable: false);
+            eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false);
+
+            var deletesOld = eh.ExecuteNonQuery("DELETE FROM TB_USER WHERE TO_CHAR(ID) LIKE '12%'");
+            Assert.IsTrue(deletesOld >= 0 && deletesOld <= 2);
+
+            deletesOld = eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR(IDCAREER) LIKE '12%'");
+            Assert.IsTrue(deletesOld >= 0 && deletesOld <= 2);
+
+            // Insert a career entity
+            Career career = new Career(121, "Developer");
+            int careerInsertResult = eh.Insert(career);
+            Assert.AreEqual(1, careerInsertResult, "Career insertion failed.");
+
+            // Insert a user entity linked to the created career
+            User user = new User("Diego Piovezana")
             {
-                // Ensure tables exist or create if they do not
-                eh.CreateTableIfNotExist<Career>(createOnlyPrimaryTable: false);
-                eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false);
+                Id = 121,
+                GitHub = "@DiegoPiovezana",
+                DtCreation = DateTime.Now,
+                IdCareer = 121
+            };
+            int userInsertResult = eh.Insert(user);
+            Assert.AreEqual(1, userInsertResult, "User insertion failed.");
 
-                var deletesOld = eh.ExecuteNonQuery("DELETE FROM TB_USER WHERE TO_CHAR(ID) LIKE '12%'");
-                Assert.IsTrue(deletesOld >= 0 && deletesOld <= 2);
+            // Retrieve and validate career entities
+            var careers = eh.Get<Career>();
+            Assert.IsNotNull(careers, "Failed to retrieve careers.");
+            Assert.IsTrue(careers.Any(), "No careers found.");
 
-                // Insert a career entity
-                Career career = new Career(121, "Developer");
-                int careerInsertResult = eh.Insert(career);
-                Assert.AreEqual(1, careerInsertResult, "Career insertion failed.");
-
-                // Insert a user entity linked to the created career
-                User user = new User("Diego Piovezana")
-                {
-                    Id = 121,
-                    GitHub = "@DiegoPiovezana",
-                    DtCreation = DateTime.Now,
-                    IdCareer = 1
-                };
-                int userInsertResult = eh.Insert(user);
-                Assert.AreEqual(1, userInsertResult, "User insertion failed.");
-
-                // Retrieve and validate career entities
-                var careers = eh.Get<Career>();
-                Assert.IsNotNull(careers, "Failed to retrieve careers.");
-                Assert.IsTrue(careers.Any(), "No careers found.");
-
-                // Retrieve and validate user entities
-                var users = eh.Get<User>();
-                Assert.IsNotNull(users, "Failed to retrieve users.");
-                Assert.IsTrue(users.Any(), "No users found.");
-
-                // Additional validation can be added as needed
-                Assert.Pass();
-            }
-            else
-            {
-                Assert.Fail("Database connection validation failed.");
-            }
+            // Retrieve and validate user entities
+            var users = eh.Get<User>();
+            Assert.IsNotNull(users, "Failed to retrieve users.");
+            Assert.IsTrue(users.Any(), "No users found.");
         }
-
 
         [Test, Order(13)]
         public void TestManyToMany()
@@ -432,10 +426,10 @@ namespace TestEH_UnitTest
 
             string tableNameDestiny = "TEST_LINKSELECT_CSV";
 
-            if (!_enttityHelper.CheckIfExist(tableName))
+            if (!eh1.CheckIfExist(tableName))
             {
                 // Act
-                int result = _enttityHelper.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds, delimiter, hasHeader);
+                int result = eh1.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds, delimiter, hasHeader);
                 Assert.That(result, Is.EqualTo(insertCount));
             }
 
@@ -655,7 +649,7 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
-                Career carrer2 = new() { IdCareer = 2, Name = "Pleno", CareerLevel = 2, Active = true };
+                Career carrer2 = new() { IdCareer = 1072, Name = "Pleno", CareerLevel = 2, Active = true };
 
                 if (!eh.CheckIfExist(
                     eh.GetTableName<Career>(),
@@ -666,18 +660,18 @@ namespace TestEH_UnitTest
 
                     int result10 = eh.Insert(carrer2);
                     Assert.AreEqual(1, result10);
-                }
-
-                User userNameRepeat = new("Xavier Souza") { Id = 1070, GitHub = "@XavierSouza", DtCreation = DateTime.Now, IdCareer = 2 };
-                var ex = Assert.Throws<Exception>(() => eh.Insert(userNameRepeat, nameof(userNameRepeat.GitHub), true));
-                Assert.That(ex.Message, Does.Contain("EH-101"));
+                }                               
 
                 // INSERT THE MANY ENTITIES (NXM)
-                User userX = new("Jayme Souza") { Id = 1071, GitHub = "@JaymeSouza", DtCreation = DateTime.Now, IdCareer = 2 };
+                User userX = new("Jayme Souza") { Id = 1071, GitHub = "@JSouza", DtCreation = DateTime.Now, IdCareer = 1072 };
                 User userY = new("Bruna Corsa") { Id = 1072, GitHub = "@BrunaCorsa", DtCreation = DateTime.Now };
                 List<User> users = new() { userX, userY };
                 int result5 = eh.Insert(users, nameof(User.Name), false);
                 Assert.AreEqual(result5, 2);
+
+                User userNameRepeat = new("Jhonny Souza") { Id = 1070, GitHub = "@JSouza", DtCreation = DateTime.Now, IdCareer = 1072 };
+                var ex = Assert.Throws<Exception>(() => eh.Insert(userNameRepeat, nameof(userNameRepeat.GitHub), true));
+                Assert.That(ex.Message, Does.Contain("EH-101"));
 
                 Group group6 = new() { Id = 1071, Name = "Group Six", Description = "Group Six Test" };
                 group6.Users.Add(userX);
@@ -750,7 +744,8 @@ namespace TestEH_UnitTest
         public void NormalizeColumnOrTableName_Should_ThrowArgumentException_ForInvalidInputs(string name, string expectedMessage)
         {
             // Act & Assert
-            var ex = Assert.Throws<ArgumentException>(() => _enttityHelper.NormalizeColumnOrTableName(name, false));
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            var ex = Assert.Throws<ArgumentException>(() => eh.NormalizeColumnOrTableName(name, false));
             Assert.AreEqual(expectedMessage, ex.Message);
         }
 
@@ -764,7 +759,8 @@ namespace TestEH_UnitTest
         public void NormalizeColumnOrTableName_Should_AdjustName_When_InvalidCharactersOrReservedKeyword(string name, string expected)
         {
             // Act
-            string result = _enttityHelper.NormalizeColumnOrTableName(name, true);
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            string result = eh.NormalizeColumnOrTableName(name, true);
 
             // Assert
             Assert.AreEqual(expected, result);
@@ -778,7 +774,8 @@ namespace TestEH_UnitTest
         public void NormalizeColumnOrTableName_Should_ReturnCorrectlyAdjustedName_When_ValidInputs(string name, string expected)
         {
             // Act
-            string result = _enttityHelper.NormalizeColumnOrTableName(name, true);
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            string result = eh.NormalizeColumnOrTableName(name, true);
 
             // Assert
             Assert.AreEqual(expected, result);
@@ -787,7 +784,8 @@ namespace TestEH_UnitTest
         [Test]
         public void LoadCSV_ShouldInsertData_WhenValidCSVFile()
         {
-            Assert.That(_enttityHelper.DbContext.ValidateConnection());
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            Assert.That(eh.DbContext.ValidateConnection());
 
             // Arrange
             //string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ColunasExcel.csv"; 
@@ -805,10 +803,10 @@ namespace TestEH_UnitTest
             //mock.Setup(m => m.Insert(It.IsAny<CSVDataReader>(), tableName, true, It.IsAny<int>()))
             //    .Returns(insertCount);
 
-            if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
+            if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
 
             // Act
-            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName, batchSize, timeout);
+            int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout);
 
             // Assert
             Assert.AreEqual(insertCount - 1, result); // -1 because the first row is the header
@@ -822,7 +820,8 @@ namespace TestEH_UnitTest
             string tableName = "TestTable";
 
             // Act & Assert
-            var ex = Assert.Throws<FileNotFoundException>(() => _enttityHelper.LoadCSV(csvFilePath, true, tableName));
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            var ex = Assert.Throws<FileNotFoundException>(() => eh.LoadCSV(csvFilePath, true, tableName));
             Assert.That(ex.Message, Does.Contain("File not found"));
         }
 
@@ -833,8 +832,9 @@ namespace TestEH_UnitTest
             int minuteExpiration = 5;
             Assume.That(DateTime.Now - dtTarget < TimeSpan.FromMinutes(minuteExpiration), "Large csv file upload test was ignored!");
 
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
 
-            Assert.That(_enttityHelper.DbContext.ValidateConnection());
+            Assert.That(eh.DbContext.ValidateConnection());
 
             DateTime startTime = DateTime.Now;
             Debug.WriteLine($"Start: {startTime}");
@@ -848,10 +848,10 @@ namespace TestEH_UnitTest
             int batchSize = 100_000;
             int timeOutSeconds = 50; // Timeout in seconds to insert 1 batch (max)
 
-            if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
+            if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
 
             // Act
-            int result = _enttityHelper.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds);
+            int result = eh.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds);
 
             DateTime endTime = DateTime.Now;
             Debug.WriteLine($"End: {endTime}");
@@ -865,7 +865,8 @@ namespace TestEH_UnitTest
         [Test]
         public void LoadTXT_ShouldInsertData()
         {
-            Assert.That(_enttityHelper.DbContext.ValidateConnection());
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            Assert.That(eh.DbContext.ValidateConnection());
 
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoIrregular.txt";
             var insertCount = 100;
@@ -877,16 +878,17 @@ namespace TestEH_UnitTest
             bool hasHeader = true; // The header exists
             if (hasHeader) insertCount--; // Remove the header
 
-            if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
+            if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
 
-            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader);
+            int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader);
             Assert.That(result, Is.EqualTo(insertCount));
         }
 
         [Test]
         public void LoadCSV_WithoutHeader1()
         {
-            Assert.That(_enttityHelper.DbContext.ValidateConnection());
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            Assert.That(eh.DbContext.ValidateConnection());
 
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoVazio.csv";
             var insertCount = 100; // J100
@@ -897,10 +899,10 @@ namespace TestEH_UnitTest
             char delimiter = ';';
             bool hasHeader = true; // The header exists, but is empty
 
-            if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
+            if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
 
             // Act
-            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader);
+            int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader);
 
             // Assert
             Assert.AreEqual(insertCount - 1, result); // -1 because the first row is the blank header
@@ -909,7 +911,8 @@ namespace TestEH_UnitTest
         [Test]
         public void LoadCSV_WithoutHeader2()
         {
-            Assert.That(_enttityHelper.DbContext.ValidateConnection());
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            Assert.That(eh.DbContext.ValidateConnection());
 
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoInexistente.csv";
             var insertCount = 101_254; // AB101254
@@ -919,14 +922,12 @@ namespace TestEH_UnitTest
             int timeout = 60;
             char delimiter = ';';
             bool hasHeader = false; // The CSV file doesn't
+            if(hasHeader) insertCount--; // Remove the header
 
-            if (_enttityHelper.CheckIfExist(tableName)) _enttityHelper.ExecuteNonQuery($"DROP TABLE {tableName}");
-
-            // Act
-            int result = _enttityHelper.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader);
-
-            // Assert
-            Assert.AreEqual(insertCount - 0, result); // -0 because the first row isn't the header
+            if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
+           
+            int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader);
+            Assert.AreEqual(insertCount, result);
         }
 
 
