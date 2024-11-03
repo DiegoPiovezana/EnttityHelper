@@ -138,11 +138,11 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public bool CheckIfExist(string tableName, string? filter = null, int quantity = 0)
+        public bool CheckIfExist(string tableName, int minRecords = 0, string? filter = null)
         {
             try
             {
-                return _features.CheckIfExist(tableName, filter, quantity);
+                return _features.CheckIfExist(tableName, minRecords, filter);
             }
             catch (Exception)
             {

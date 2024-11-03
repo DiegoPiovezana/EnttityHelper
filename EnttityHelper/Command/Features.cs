@@ -5,7 +5,6 @@ using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
@@ -97,7 +96,7 @@ namespace EH.Command
 
                 tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
 
-                if (!CheckIfExist(tableName, null, 0) && createTable)
+                if (!CheckIfExist(tableName, 0, null) && createTable)
                 {
                     CreateTable(dataTable, tableName);
                 }
@@ -109,7 +108,7 @@ namespace EH.Command
             {
                 if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
 
-                if (!CheckIfExist(tableName, null, 0) && createTable)
+                if (!CheckIfExist(tableName, 0, null) && createTable)
                 {
                     _enttityHelper.DbContext.CreateOpenConnection();
                     var dt = dataReader.GetFirstRows(10);
@@ -147,7 +146,12 @@ namespace EH.Command
                     {
                         string tableNamefkProp = ToolsProp.GetTableName(fkProp.Value.GetType(), _enttityHelper.ReplacesTableName);
                         var pkFk = fkProp.Value.GetPK();
-                        if (!CheckIfExist(tableNamefkProp, $"{pkFk.Name} = {pkFk.GetValue(fkProp.Value, null)}", 1)) throw new InvalidOperationException($"Entity or table '{tableNamefkProp}' does not exist!");
+
+                        string pkNameFk = pkFk.Name;
+                        string pkValueFk = pkFk.GetValue(fkProp.Value, null).ToString();
+
+                        if (!CheckIfExist(tableNamefkProp, 1, $"{pkNameFk} = {pkValueFk}"))
+                            throw new InvalidOperationException($"Entity {fkProp.Value.GetType()} {pkValueFk} or table '{tableNamefkProp}' does not exist!");
                     }
                 }
 
@@ -162,7 +166,7 @@ namespace EH.Command
                             Type propInverseType = inverseProp.PropertyType.GetGenericArguments()[0];
                             string tableNameInverseProp = ToolsProp.GetTableName(propInverseType, _enttityHelper.ReplacesTableName);
 
-                            if (!CheckIfExist(tableNameInverseProp, null, 0))
+                            if (!CheckIfExist(tableNameInverseProp, 0, null))
                             {
                                 if (createTable) CreateTable<TEntity>(false, null, tableNameInverseProp);
                                 else throw new InvalidOperationException($"Table '{tableNameInverseProp}' does not exist!");
@@ -177,7 +181,7 @@ namespace EH.Command
 
                 tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
 
-                if (!CheckIfExist(tableName, null, 0))
+                if (!CheckIfExist(tableName, 0, null))
                 {
                     if (createTable) CreateTable<TEntity>(false, null, tableName);
                     else throw new InvalidOperationException($"Table '{tableName}' does not exist!");
@@ -190,7 +194,7 @@ namespace EH.Command
                         var properties = ToolsProp.GetProperties(entityItem, true, false);
 
                         // Check if entity exists (duplicates)
-                        if (CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))
+                        if (CheckIfExist(tableName, 1, $"{namePropUnique} = '{properties[namePropUnique]}'"))
                         {
                             Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
                             return -101;
@@ -320,7 +324,7 @@ namespace EH.Command
 
                 tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
 
-                if (!CheckIfExist(tableName, null, 0) && createTable)
+                if (!CheckIfExist(tableName, 0, null) && createTable)
                 {
                     CreateTable(dataTable, tableName);
                 }
@@ -364,13 +368,6 @@ namespace EH.Command
 
         public int Update<TEntity>(TEntity entity, string? nameId, string? tableName, bool ignoreInversePropertyProperties) where TEntity : class
         {
-            //string? updateQuery = _enttityHelper.GetQuery.Update(entity, nameId, _enttityHelper.ReplacesTableName, tableName);
-            //return ExecuteNonQuery(updateQuery, 1);
-
-            //Collection<TEntity> entities;
-            //if (entity is Collection<TEntity> collection) { entities = collection; }
-            //else { entities = new Collection<TEntity> { entity }; }
-
             // Entity or IEnumerable<Entity>
             var updatesQueriesEntities = new Dictionary<object, List<string?>?>();
             var entities = entity as IEnumerable ?? new[] { entity };
@@ -413,7 +410,7 @@ namespace EH.Command
             return entities.FirstOrDefault();
         }
 
-        public bool CheckIfExist(string tableName, string? filter, int quantity)
+        public bool CheckIfExist(string tableName, int minRecords, string? filter)
         {
             try
             {
@@ -423,18 +420,16 @@ namespace EH.Command
                 using IDbCommand command = _enttityHelper.DbContext.CreateCommand($"SELECT COUNT(*) FROM {tableName} WHERE {filter ?? "1 = 1"}");
                 object result = command.ExecuteScalar(); // >= 0
 
-                if (result != null && result != DBNull.Value) { return Convert.ToInt32(result) >= quantity; }
+                if (result != null && result != DBNull.Value) { return Convert.ToInt32(result) >= minRecords; }
                 return false;
             }
-            catch (OracleException ex)
+            catch (OracleException ex) when (ex.Number == 942)
             {
-                if (ex.Number == 942) return false; // ORA-00942: table or view does not exist
-                else throw;
+                return false; // ORA-00942: table or view does not exist
             }
-            catch (SqlException ex)
+            catch (SqlException ex) when (ex.Number == 208)
             {
-                if (ex.Number == 208) return false; // Invalid object name 'tableName'.
-                else throw;
+                return false; // Invalid object name 'tableName'.
             }
             //catch (SQLiteException ex) when (ex.ErrorCode == SQLiteErrorCode.Table)
             //{
@@ -515,7 +510,7 @@ namespace EH.Command
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
             tableName ??= ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
-            if (CheckIfExist(tableName, null, 0)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
+            if (CheckIfExist(tableName, 0, null)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
             return CreateTable<TEntity>(createOnlyPrimaryTable, ignoreProps, tableName);
         }
 
@@ -540,7 +535,7 @@ namespace EH.Command
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
             tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
-            if (CheckIfExist(tableName, null, 0)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
+            if (CheckIfExist(tableName, 0, null)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
             return CreateTable(dataTable, tableName);
         }
 
@@ -567,15 +562,27 @@ namespace EH.Command
 
         public int Delete<TEntity>(TEntity entity, string? nameId, string? tableName) where TEntity : class
         {
-            Collection<TEntity> entities;
-            if (entity is Collection<TEntity> collection) { entities = collection; }
-            else { entities = new Collection<TEntity> { entity }; }
+            // Entity or IEnumerable<Entity>
+            var deletesQueriesEntities = new Dictionary<object, List<string?>?>();
+            var entities = entity as IEnumerable ?? new[] { entity };
+
+            var itemType = typeof(TEntity).IsGenericType && typeof(IEnumerable).IsAssignableFrom(typeof(TEntity))
+                ? typeof(TEntity).GetGenericArguments()[0]
+                : typeof(TEntity);
+
+            tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
+
+            foreach (object entityItem in entities)
+            {
+                var queryDelete = _enttityHelper.GetQuery.Delete(entityItem, nameId, _enttityHelper.ReplacesTableName, tableName);
+                deletesQueriesEntities[entityItem] = new List<string?>() { queryDelete };
+            }
 
             int deletions = 0;
-            foreach (var entityItem in entities)
+            foreach (var deleteQueriesEntity in deletesQueriesEntities)
             {
-                string? deleteQuery = _enttityHelper.GetQuery.Delete(entity, nameId, _enttityHelper.ReplacesTableName, tableName);
-                deletions += ExecuteNonQuery(deleteQuery, 1);
+                if (deleteQueriesEntity.Value == null) throw new Exception("EH-000: Delete query does not exist!");
+                deletions += deleteQueriesEntity.Value.Sum(deleteQuery => deleteQuery is null ? throw new Exception($"EH-000: Error delete query!") : ExecuteNonQuery(deleteQuery, 1));
             }
 
             return deletions;

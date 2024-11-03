@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace EH.Commands
@@ -83,14 +84,15 @@ namespace EH.Commands
                     command.Transaction = transaction;
 
                     int rowsAffected = command.ExecuteNonQuery();
-                    //Debug.WriteLine(query);
-
-                    if (expectedChanges != -1 && rowsAffected != expectedChanges)
-                    {
-                        throw new InvalidOperationException($"Expected {expectedChanges} changes, but {rowsAffected} were made.");
-                    }
+                    //Debug.WriteLine(query);                   
 
                     result.Add(rowsAffected);
+                }
+
+                int changes = result.Sum();
+                if (expectedChanges != -1 && changes != expectedChanges)
+                {
+                    throw new InvalidOperationException($"Expected {expectedChanges} changes, but {changes} were made.");
                 }
 
                 transaction.Commit(); // Possible only for DML

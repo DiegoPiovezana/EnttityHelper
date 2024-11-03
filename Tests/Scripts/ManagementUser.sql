@@ -639,6 +639,15 @@ SELECT * FROM TESTTABLE_BIGCSV;
 
 DROP TABLE TESTTABLE_BIGCSV;
 
+
+
+SELECT * FROM TB_CAREERS;
+SELECT * FROM TB_USER;
+
+
+
+--------------------------------------------------------------------------------------------
+
 -- Check space
 SELECT TABLESPACE_NAME, BYTES/1024/1024 AS FREE_MB
 FROM DBA_FREE_SPACE

@@ -298,7 +298,9 @@ namespace EH.Connection
 
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
 
-            return $@"DELETE FROM {tableName} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')";
+            // TODO: typeof(TEntity) vs entity.GetType()
+
+            return $@"DELETE FROM {tableName} WHERE ({idPropName} = '{entity.GetType().GetProperty(idPropName).GetValue(entity, null)}')";
         }
 
         /// <summary>

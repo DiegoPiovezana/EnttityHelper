@@ -125,10 +125,10 @@ namespace EH.Command
         /// Checks if table exists (>= 0) and it is filled (> 0).
         /// </summary>
         /// <param name="tableName">Name of the table to check if it exists.</param>
+        /// <param name="minRecords">(Optional) The minimum number of records to check for existence in the table. Enter 0 if you just want to check if the table exists.</param>
         /// <param name="filter">(Optional) Possible filter.</param>
-        /// <param name="quantity">(Optional) The minimum number of records to check for existence in the table. Enter 0 if you just want to check if the table exists.</param>
         /// <returns>True, if table exists and (optionally) it is filled</returns>
-        public bool CheckIfExist(string tableName, string? filter = null, int quantity = 0);
+        public bool CheckIfExist(string tableName, int minRecords = 0, string? filter = null);
 
         /// <summary>
         /// Counts the number of records in a specified table, with an optional filter for conditional counting.
@@ -195,7 +195,7 @@ namespace EH.Command
         /// Allow to delete an entity in the database.
         /// </summary>
         /// <param name="entity">Entity that will have its FK entities included.</param>
-        /// <param name="nameId">(Optional) Entity Id column name. By default, PK will be used.</param>
+        /// <param name="nameId">(Optional) Entity ID column name. By default, PK will be used.</param>
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>Number of exclusions made.</returns>
         public int Delete<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class;

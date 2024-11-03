@@ -468,16 +468,19 @@ namespace TestEH_UnitTest
                 eh.CreateTableIfNotExist<Group>(true); // Necessary to then create the MxN relationship table
                 eh.CreateTableIfNotExist<User>(false);
 
+                eh.CreateTableIfNotExist<Career>(true);
+                Career carrer1 = new() { IdCareer = 10, Name = "Manag", CareerLevel = 5, Active = true };
+
                 // Test for one entity
-                User entityTest = new("Diego Piovezana One") { Id = 21, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 1 };
+                User entityTest = new("Diego Piovezana One") { Id = 21, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 10 };
                 bool result1 = eh.Insert(entityTest, nameof(entityTest.GitHub), true) == 1;
                 if (result1) { eh.Delete(entityTest); }
                 Assert.That(result1, Is.EqualTo(true));
 
                 // Create many entities
-                User user1 = new("Diego Piovezana One Repeat") { Id = 21, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                User user2 = new("User Test One") { Id = 22, GitHub = "@UserTestOne", DtCreation = DateTime.Now, IdCareer = 2 };
-                User user3 = new("User Test Two") { Id = 23, GitHub = "@UserTestTwo", DtCreation = DateTime.Now, IdCareer = 3 };
+                User user1 = new("Diego Piovezana One Repeat") { Id = 21, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 10 };
+                User user2 = new("User Test One") { Id = 22, GitHub = "@UserTestOne", DtCreation = DateTime.Now, IdCareer = 10 };
+                User user3 = new("User Test Two") { Id = 23, GitHub = "@UserTestTwo", DtCreation = DateTime.Now, IdCareer = 10 };
 
                 List<User>? users = new() { user1, user2, user3 };
 
@@ -486,11 +489,16 @@ namespace TestEH_UnitTest
 
                 Assert.That(result2 == 3, Is.EqualTo(true));
 
+                // Test for one entity
+                User entityError = new("John Tester") { Id = 21, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 10 };
+                eh.Insert(entityTest, nameof(entityTest.GitHub), true);
+                Assert.That(result1, Is.EqualTo(true));
+
             }
         }
 
         [Test, Order(105)]
-        public void TestInsertEntityWithoutEntity()
+        public void TestInsertEntityWithoutEntity_AndManyDelete()
         {
             EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
@@ -498,23 +506,45 @@ namespace TestEH_UnitTest
                 eh.CreateTableIfNotExist<Group>(true); // Necessary to then create the MxN relationship table
                 eh.CreateTableIfNotExist<User>(false);
 
-                // Test for one entity
-                User entityTest = new("Diego Piovezana One") { Id = 1051, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now}; // Without Career
-                bool result1 = eh.Insert(entityTest, nameof(entityTest.GitHub), true) == 1;
-                if (result1) { eh.Delete(entityTest); }
-                Assert.That(result1, Is.EqualTo(true));
+                eh.CreateTableIfNotExist<Career>(true);
+                Career carrer1 = new() { IdCareer = 1, Name = "Junior", CareerLevel = 1, Active = true };
+                Career carrer2 = new() { IdCareer = 2, Name = "Pleno", CareerLevel = 2, Active = true };
+                Career carrer3 = new() { IdCareer = 3, Name = "Senior", CareerLevel = 3, Active = true };
+                if (eh.CheckIfExist(eh.GetTableName<Career>(), 1, $"{nameof(Career.IdCareer)} = {carrer1.IdCareer}")) eh.Delete(carrer1, nameof(Career.IdCareer));
+                if (eh.CheckIfExist(eh.GetTableName<Career>(), 1, $"{nameof(Career.IdCareer)} = {carrer2.IdCareer}")) eh.Delete(carrer2);
+                if (eh.CheckIfExist(eh.GetTableName<Career>(), 1, $"{nameof(Career.IdCareer)} = {carrer3.IdCareer}")) eh.Delete(carrer3);
+                List<Career>? carrers = new() { carrer1, carrer2, carrer3 };
+                int result10 = eh.Insert(carrers);
+                Assert.AreEqual(result10, 3);
 
-                // Create many entities
-                User user1 = new("Diego Piovezana One Repeat") { Id = 1052, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                User user2 = new("User Test Two") { Id = 1053, GitHub = "@UserTestTwo", DtCreation = DateTime.Now }; // Without Career
-                User user3 = new("User Test Three") { Id = 1054, GitHub = "@UserTestThree", DtCreation = DateTime.Now, IdCareer = 2 };
+                // Many Delete
+                carrers = new() { carrer1, carrer1, carrer1 };  // Repeated
+                int result11 = eh.Delete(carrers);
+                Assert.AreEqual(result11, 1);
+                int result12 = eh.Insert(carrers);
+                Assert.AreEqual(result12, 1); // Cannot insert repeated mass (namePropUnique was not used) -- Can insert duplicates separately (if the database allows)
+                carrers = new() { carrer1, carrer2, carrer3 };
+                int result14 = eh.Delete(carrers);
+                Assert.AreEqual(result14, 3);
+                int result1 = eh.Insert(carrers);
+                Assert.AreEqual(result1, 3);
 
-                List<User>? users = new() { user1, user2, user3 };
 
-                // Inserts the entities
-                int result2 = eh.Insert(users);
 
-                Assert.That(result2 == 3, Is.EqualTo(true));
+                // Test for one entity - Without Career
+                User entityTest1 = new("Diego Piovezana One") { Id = 1051, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now };
+                int result2 = eh.Insert(entityTest1, nameof(entityTest1.GitHub), true);
+                Assert.AreEqual(result2, 1);
+
+                // Test for one entity - With Career
+                User entityTest2 = new("Diego Piovezana Two") { Id = 1052, GitHub = "@DiegoPiovezanaTwo", DtCreation = DateTime.Now, IdCareer = 3 };
+                int result3 = eh.Insert(entityTest2, nameof(entityTest2.GitHub), true);
+                Assert.AreEqual(result3, 1);
+                
+                if (result2 > 0) { eh.Delete(entityTest1); }
+                if (result3 > 0) { eh.Delete(entityTest2); }
+
+                eh.Delete(carrers);
             }
         }
 
