@@ -85,7 +85,13 @@ namespace EH.Command
 
         public int Insert<TEntity>(TEntity entity, string? namePropUnique, bool createTable, string? tableName, bool ignoreInversePropertyProperties, int timeOutSeconds) where TEntity : class
         {
-            if (entity is DataTable dataTable)
+            if (entity is DataTable dataTable) return InsertDataTable(createTable, ref tableName, timeOutSeconds, dataTable);
+            if (entity is IDataReader dataReader) return InsertIDataReader(createTable, tableName, timeOutSeconds, dataReader);
+            if (entity is DataRow[] dataRows) return InsertDataRows(tableName, timeOutSeconds, dataRows);
+            return InsertEntities(entity, namePropUnique, createTable, ref tableName, ignoreInversePropertyProperties); // Entity or IEnumerable<Entity>
+
+
+            int InsertDataTable(bool createTable, ref string? tableName, int timeOutSeconds, DataTable dataTable)
             {
                 if (dataTable.Rows.Count == 0) return 0;
 
@@ -99,7 +105,7 @@ namespace EH.Command
                 return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataTable, tableName, timeOutSeconds);
             }
 
-            if (entity is IDataReader dataReader)
+            int InsertIDataReader(bool createTable, string? tableName, int timeOutSeconds, IDataReader dataReader)
             {
                 if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
 
@@ -114,7 +120,7 @@ namespace EH.Command
                 return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataReader, tableName, timeOutSeconds);
             }
 
-            if (entity is DataRow[] dataRows)
+            int InsertDataRows(string? tableName, int timeOutSeconds, DataRow[] dataRows)
             {
                 if (dataRows.Length == 0) return 0;
 
@@ -123,98 +129,100 @@ namespace EH.Command
                 return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataRows, tableName, timeOutSeconds);
             }
 
-            // Entity or IEnumerable<Entity>
-            var insertsQueriesEntities = new Dictionary<object, List<string?>?>();
-            var entities = entity as IEnumerable ?? new[] { entity };
-
-            if (entity is null) throw new InvalidOperationException($"$'{nameof(entity)}' is null!");
-            var entityFirst = entities.Cast<object>().FirstOrDefault() ?? throw new InvalidOperationException($"$'{nameof(entity)}' is invalid!");
-
-            // TODO: If >100, use bulk insert - test performance
-
-            // Check FK table
-            Dictionary<object, object>? fkProperties = ToolsProp.GetFKProperties(entityFirst);
-            if (fkProperties != null)
+            int InsertEntities<TEntity>(TEntity entity, string? namePropUnique, bool createTable, ref string? tableName, bool ignoreInversePropertyProperties) where TEntity : class
             {
-                foreach (var fkProp in fkProperties)
-                {
-                    string tableNamefkProp = ToolsProp.GetTableName(fkProp.Value.GetType(), _enttityHelper.ReplacesTableName);
-                    var pkFk = fkProp.Value.GetPK();
-                    if (!CheckIfExist(tableNamefkProp, $"{pkFk.Name} = {pkFk.GetValue(fkProp.Value, null)}", 1)) throw new InvalidOperationException($"Entity or table '{tableNamefkProp}' does not exist!");
-                }
-            }
+                var insertsQueriesEntities = new Dictionary<object, List<string?>?>();
+                var entities = entity as IEnumerable ?? new[] { entity };
 
-            // Check MxN table
-            if (!ignoreInversePropertyProperties)
-            {
-                List<PropertyInfo>? inverseProperties = ToolsProp.GetInverseProperties(entityFirst);
-                if (inverseProperties != null)
+                if (entity is null) throw new InvalidOperationException($"$'{nameof(entity)}' is null!");
+                var entityFirst = entities.Cast<object>().FirstOrDefault() ?? throw new InvalidOperationException($"$'{nameof(entity)}' is invalid!");
+
+                // TODO: If >100, use bulk insert - test performance
+
+                // Check FK table
+                Dictionary<object, object>? fkProperties = ToolsProp.GetFKProperties(entityFirst);
+                if (fkProperties != null)
                 {
-                    foreach (var inverseProp in inverseProperties)
+                    foreach (var fkProp in fkProperties)
                     {
-                        Type propInverseType = inverseProp.PropertyType.GetGenericArguments()[0];
-                        string tableNameInverseProp = ToolsProp.GetTableName(propInverseType, _enttityHelper.ReplacesTableName);
+                        string tableNamefkProp = ToolsProp.GetTableName(fkProp.Value.GetType(), _enttityHelper.ReplacesTableName);
+                        var pkFk = fkProp.Value.GetPK();
+                        if (!CheckIfExist(tableNamefkProp, $"{pkFk.Name} = {pkFk.GetValue(fkProp.Value, null)}", 1)) throw new InvalidOperationException($"Entity or table '{tableNamefkProp}' does not exist!");
+                    }
+                }
 
-                        if (!CheckIfExist(tableNameInverseProp, null, 0))
+                // Check MxN table
+                if (!ignoreInversePropertyProperties)
+                {
+                    List<PropertyInfo>? inverseProperties = ToolsProp.GetInverseProperties(entityFirst);
+                    if (inverseProperties != null)
+                    {
+                        foreach (var inverseProp in inverseProperties)
                         {
-                            if (createTable) CreateTable<TEntity>(false, null, tableNameInverseProp);
-                            else throw new InvalidOperationException($"Table '{tableNameInverseProp}' does not exist!");
+                            Type propInverseType = inverseProp.PropertyType.GetGenericArguments()[0];
+                            string tableNameInverseProp = ToolsProp.GetTableName(propInverseType, _enttityHelper.ReplacesTableName);
+
+                            if (!CheckIfExist(tableNameInverseProp, null, 0))
+                            {
+                                if (createTable) CreateTable<TEntity>(false, null, tableNameInverseProp);
+                                else throw new InvalidOperationException($"Table '{tableNameInverseProp}' does not exist!");
+                            }
                         }
                     }
                 }
-            }
 
-            var itemType = typeof(TEntity).IsGenericType && typeof(IEnumerable).IsAssignableFrom(typeof(TEntity))
-                ? typeof(TEntity).GetGenericArguments()[0]
-                : typeof(TEntity);
+                var itemType = typeof(TEntity).IsGenericType && typeof(IEnumerable).IsAssignableFrom(typeof(TEntity))
+                    ? typeof(TEntity).GetGenericArguments()[0]
+                    : typeof(TEntity);
 
-            tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
+                tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
 
-            if (!CheckIfExist(tableName, null, 0))
-            {
-                if (createTable) CreateTable<TEntity>(false, null, tableName);
-                else throw new InvalidOperationException($"Table '{tableName}' does not exist!");
-            }
-
-            foreach (var entityItem in entities)
-            {
-                if (!string.IsNullOrEmpty(namePropUnique))
+                if (!CheckIfExist(tableName, null, 0))
                 {
-                    var properties = ToolsProp.GetProperties(entityItem, true, false);
+                    if (createTable) CreateTable<TEntity>(false, null, tableName);
+                    else throw new InvalidOperationException($"Table '{tableName}' does not exist!");
+                }
 
-                    // Check if entity exists (duplicates)
-                    if (CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))
+                foreach (var entityItem in entities)
+                {
+                    if (!string.IsNullOrEmpty(namePropUnique))
                     {
-                        Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
-                        return -101;
+                        var properties = ToolsProp.GetProperties(entityItem, true, false);
+
+                        // Check if entity exists (duplicates)
+                        if (CheckIfExist(tableName, $"{namePropUnique} = '{properties[namePropUnique]}'", 1))
+                        {
+                            Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
+                            return -101;
+                        }
+                    }
+
+                    insertsQueriesEntities[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.DbContext.Type, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();
+                }
+
+                int insertions = 0;
+
+                foreach (var insertQueriesEntity in insertsQueriesEntities)
+                {
+                    if (insertQueriesEntity.Value == null) throw new Exception("EH-000: Insert query does not exist!");
+
+                    var pk = ToolsProp.GetPK(insertQueriesEntity.Key);
+                    var id = ExecuteScalar(insertQueriesEntity.Value.First()); // Inserts the main entity
+                    var typePk = pk.PropertyType;
+                    var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id.ToString(), typePk);
+                    pk.SetValue(insertQueriesEntity.Key, convertedId);
+                    insertions++;
+
+                    // Useful for MxN
+                    for (int i = 1; i < insertQueriesEntity.Value.Count; i++)
+                    {
+                        insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'&ID1'", $"'{id}'");
+                        insertions += ExecuteNonQuery(insertQueriesEntity.Value[i], 1);
                     }
                 }
 
-                insertsQueriesEntities[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.DbContext.Type, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();
+                return insertions;
             }
-
-            int insertions = 0;
-
-            foreach (var insertQueriesEntity in insertsQueriesEntities)
-            {
-                if (insertQueriesEntity.Value == null) throw new Exception("EH-000: Insert query does not exist!");
-
-                var pk = ToolsProp.GetPK(insertQueriesEntity.Key);
-                var id = ExecuteScalar(insertQueriesEntity.Value.First()); // Inserts the main entity
-                var typePk = pk.PropertyType;
-                var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id.ToString(), typePk);
-                pk.SetValue(insertQueriesEntity.Key, convertedId);
-                insertions++;
-
-                // Useful for MxN
-                for (int i = 1; i < insertQueriesEntity.Value.Count; i++)
-                {
-                    insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'&ID1'", $"'{id}'");
-                    insertions += ExecuteNonQuery(insertQueriesEntity.Value[i], 1);
-                }
-            }
-
-            return insertions;
         }
 
 
