@@ -151,6 +151,19 @@ namespace EH
         }
 
         /// <inheritdoc/>
+        public long CountEntity<TEntity>(TEntity entity, string? tableName = null, string? nameId = null) where TEntity : class
+        {
+            try
+            {
+                return _features.CountEntity(entity, tableName, nameId);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <inheritdoc/>
         public long CountTable(string tableName, string? filter = null)
         {
             try

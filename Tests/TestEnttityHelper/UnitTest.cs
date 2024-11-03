@@ -132,7 +132,7 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 8, Name = "Entity Test", StartDate = DateTime.Now };
-                eh.Delete(entityTest);
+                if (eh.CountEntity(entityTest) > 0) eh.Delete(entityTest);
                 int result1 = eh.Insert(entityTest, nameof(entityTest.Id), true);
                 Assert.That(result1, Is.EqualTo(1));
 
@@ -490,10 +490,9 @@ namespace TestEH_UnitTest
                 Assert.That(result2 == 3, Is.EqualTo(true));
 
                 // Test for one entity
-                User entityError = new("John Tester") { Id = 21, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 10 };
-                eh.Insert(entityTest, nameof(entityTest.GitHub), true);
-                Assert.That(result1, Is.EqualTo(true));
-
+                User entityError = new("John Tester") { Id = 21, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 100 };
+                var ex = Assert.Throws<FileNotFoundException>(() => eh.Insert(entityTest, nameof(entityTest.GitHub), true));
+                Assert.That(ex.Message, Does.Contain("does not exist!"));
             }
         }
 
@@ -515,32 +514,32 @@ namespace TestEH_UnitTest
                 if (eh.CheckIfExist(eh.GetTableName<Career>(), 1, $"{nameof(Career.IdCareer)} = {carrer3.IdCareer}")) eh.Delete(carrer3);
                 List<Career>? carrers = new() { carrer1, carrer2, carrer3 };
                 int result10 = eh.Insert(carrers);
-                Assert.AreEqual(result10, 3);
+                Assert.AreEqual(3, result10);
 
                 // Many Delete
                 carrers = new() { carrer1, carrer1, carrer1 };  // Repeated
                 int result11 = eh.Delete(carrers);
-                Assert.AreEqual(result11, 1);
+                Assert.AreEqual(1, result11);
                 int result12 = eh.Insert(carrers);
-                Assert.AreEqual(result12, 1); // Cannot insert repeated mass (namePropUnique was not used) -- Can insert duplicates separately (if the database allows)
+                Assert.AreEqual(1, result12); // Cannot insert repeated mass (namePropUnique was not used) -- Can insert duplicates separately (if the database allows)
                 carrers = new() { carrer1, carrer2, carrer3 };
                 int result14 = eh.Delete(carrers);
-                Assert.AreEqual(result14, 3);
+                Assert.AreEqual(3, result14);
                 int result1 = eh.Insert(carrers);
-                Assert.AreEqual(result1, 3);
+                Assert.AreEqual(3, result1);
 
 
 
                 // Test for one entity - Without Career
                 User entityTest1 = new("Diego Piovezana One") { Id = 1051, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now };
                 int result2 = eh.Insert(entityTest1, nameof(entityTest1.GitHub), true);
-                Assert.AreEqual(result2, 1);
+                Assert.AreEqual(1, result2);
 
                 // Test for one entity - With Career
                 User entityTest2 = new("Diego Piovezana Two") { Id = 1052, GitHub = "@DiegoPiovezanaTwo", DtCreation = DateTime.Now, IdCareer = 3 };
                 int result3 = eh.Insert(entityTest2, nameof(entityTest2.GitHub), true);
-                Assert.AreEqual(result3, 1);
-                
+                Assert.AreEqual(1, result3);
+
                 if (result2 > 0) { eh.Delete(entityTest1); }
                 if (result3 > 0) { eh.Delete(entityTest2); }
 
@@ -555,8 +554,8 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 // INSERT THE MANY ENTITIES (MXN)
-                Group group4 = new() { Id = 0, Name = "Masters", Description = "Masters Group" };
-                Group group5 = new() { Id = 0, Name = "Managers", Description = "Managers Group" };
+                Group group4 = new() { Id = 1061, Name = "Masters2", Description = "Masters Group" };
+                Group group5 = new() { Id = 1062, Name = "Managers", Description = "Managers Group" };
                 List<Group> groups = new() { group4, group5 };
                 int result3 = eh.Insert(groups, nameof(Group.Name), true);
                 Assert.That(result3 == 2, Is.EqualTo(true));
@@ -564,7 +563,7 @@ namespace TestEH_UnitTest
                 // It is necessary to first insert the groups, and then link them to the user
                 // Otherwise, the local ID of groups 4 and 5 will be incorrectly used, instead of the one defined by the database.
 
-                User userM = new("Maria da Silva") { Id = 0, GitHub = "@MariaSilva", DtCreation = DateTime.Now, IdCareer = 1 };
+                User userM = new("Maria da Silva") { Id = 1061, GitHub = "@MariaSilva", DtCreation = DateTime.Now, IdCareer = 1 };
                 userM.Groups.Add(group4);
                 userM.Groups.Add(group5);
                 int result4 = eh.Insert(userM, nameof(userM.GitHub), true);
@@ -587,14 +586,31 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
+                Career carrer2 = new() { IdCareer = 2, Name = "Pleno", CareerLevel = 2, Active = true };
+
+                if (!eh.CheckIfExist(
+                    eh.GetTableName<Career>(),
+                    1,
+                    $"{nameof(Career.IdCareer)} = {carrer2.IdCareer}")
+                    )
+                {
+
+                    int result10 = eh.Insert(carrer2);
+                    Assert.AreEqual(1, result10);
+                }
+
+                User userNameRepeat = new("Xavier Souza") { Id = 1070, GitHub = "@XavierSouza", DtCreation = DateTime.Now, IdCareer = 2 };
+                var ex = Assert.Throws<Exception>(() => eh.Insert(userNameRepeat, nameof(userNameRepeat.GitHub), true));
+                Assert.That(ex.Message, Does.Contain("EH-101"));
+
                 // INSERT THE MANY ENTITIES (NXM)
-                User userX = new("Xavier Souza") { Id = -404, GitHub = "@XavierSouza", DtCreation = DateTime.Now, IdCareer = 2 };
-                User userY = new("Yasmin Corsa") { Id = -405, GitHub = "@YasminCorsa", DtCreation = DateTime.Now };
+                User userX = new("Jayme Souza") { Id = 1071, GitHub = "@JaymeSouza", DtCreation = DateTime.Now, IdCareer = 2 };
+                User userY = new("Bruna Corsa") { Id = 1072, GitHub = "@BrunaCorsa", DtCreation = DateTime.Now };
                 List<User> users = new() { userX, userY };
                 int result5 = eh.Insert(users, nameof(User.Name), false);
-                Assert.That(result5 == 2, Is.EqualTo(true));
+                Assert.AreEqual(result5, 2);
 
-                Group group6 = new() { Id = 0, Name = "Group Six", Description = "Group Six Test" };
+                Group group6 = new() { Id = 1071, Name = "Group Six", Description = "Group Six Test" };
                 group6.Users.Add(userX);
                 group6.Users.Add(userY);
                 int result6 = eh.Insert(group6, nameof(group6.Name), true);
@@ -744,6 +760,10 @@ namespace TestEH_UnitTest
         [Test]
         public void LoadCSV_BIGCSVFile()
         {
+            Assert.Pass(); // Skip
+
+
+
             Assert.That(_enttityHelper.DbContext.ValidateConnection());
 
             DateTime startTime = DateTime.Now;

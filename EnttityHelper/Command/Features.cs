@@ -151,7 +151,7 @@ namespace EH.Command
                         string pkValueFk = pkFk.GetValue(fkProp.Value, null).ToString();
 
                         if (!CheckIfExist(tableNamefkProp, 1, $"{pkNameFk} = {pkValueFk}"))
-                            throw new InvalidOperationException($"Entity {fkProp.Value.GetType()} {pkValueFk} or table '{tableNamefkProp}' does not exist!");
+                            throw new InvalidOperationException($"Entity {fkProp.Value.GetType()} with {pkNameFk} '{pkValueFk}' or table '{tableNamefkProp}' does not exist!");
                     }
                 }
 
@@ -196,8 +196,9 @@ namespace EH.Command
                         // Check if entity exists (duplicates)
                         if (CheckIfExist(tableName, 1, $"{namePropUnique} = '{properties[namePropUnique]}'"))
                         {
-                            Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
-                            return -101;
+                            //Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
+                            //return -101;
+                            throw new Exception($"EH-101: Entity with {namePropUnique} '{properties[namePropUnique]}' already exists in table '{tableName}'!");
                         }
                     }
 
@@ -430,6 +431,63 @@ namespace EH.Command
             catch (SqlException ex) when (ex.Number == 208)
             {
                 return false; // Invalid object name 'tableName'.
+            }
+            //catch (SQLiteException ex) when (ex.ErrorCode == SQLiteErrorCode.Table)
+            //{
+            //    return false;
+            //}
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                if (_enttityHelper.DbContext?.IDbConnection is not null && _enttityHelper.DbContext.IDbConnection.State == ConnectionState.Open)
+                    _enttityHelper.DbContext.IDbConnection.Close();
+            }
+        }
+
+        public long CountEntity<TEntity>(TEntity entity, string? tableName, string? nameId) where TEntity : class
+        {
+            try
+            {
+                // Entity or IEnumerable<Entity>
+                var countQueriesEntities = new Dictionary<object, List<string?>?>();
+                var entities = entity as IEnumerable ?? new[] { entity };
+
+                var itemType = typeof(TEntity).IsGenericType && typeof(IEnumerable).IsAssignableFrom(typeof(TEntity))
+                    ? typeof(TEntity).GetGenericArguments()[0]
+                    : typeof(TEntity);
+
+                tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
+                nameId ??= ToolsProp.GetPK(entity).Name;
+
+                foreach (var entityItem in entities)
+                {
+                    var queryCheck = _enttityHelper.GetQuery.Count(entityItem, nameId, _enttityHelper.ReplacesTableName, tableName);
+                    countQueriesEntities[entityItem] = new List<string?>() { queryCheck };
+                }
+
+                //int count = 0;
+                //foreach (var countQueriesEntity in countQueriesEntities)
+                //{
+                //    if (countQueriesEntity.Value == null) throw new Exception("EH-000: Count query does not exist!");
+
+                //    var result = ExecuteScalar(countQueriesEntity.Value);
+                //    if (result != null && result != DBNull.Value) count += Convert.ToInt32(result);
+                //}
+                var countQueries = countQueriesEntities.Values.SelectMany(x => x).ToList();
+                var result = ExecuteScalar(countQueries).FirstOrDefault();
+                if (result != null && result != DBNull.Value) { return Convert.ToInt64(result); }
+                return -1;
+            }
+            catch (OracleException ex) when (ex.Number == 942)
+            {
+                return -1; // ORA-00942: table or view does not exist
+            }
+            catch (SqlException ex) when (ex.Number == 208)
+            {
+                return -1; // Invalid object name 'tableName'.
             }
             //catch (SQLiteException ex) when (ex.ErrorCode == SQLiteErrorCode.Table)
             //{

@@ -304,6 +304,41 @@ namespace EH.Connection
         }
 
         /// <summary>
+        /// Generates an SQL query to count the occurrences of a specified entity in the database,
+        /// using its primary key property as a filter.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity to count.</typeparam>
+        /// <param name="entity">The entity instance containing the primary key value to filter by.</param>
+        /// <param name="idPropName">
+        /// (Optional) The name of the primary key property for filtering. If null, the method will attempt to identify the primary key automatically.
+        /// </param>
+        /// <param name="replacesTableName">
+        /// (Optional) A dictionary mapping class names to table names, allowing custom table name replacements.
+        /// </param>
+        /// <param name="tableName">
+        /// (Optional) The name of the table to query. If null, the method will attempt to identify the table name based on the entity type.
+        /// </param>
+        /// <returns>
+        /// An SQL string for counting occurrences of the specified entity in the table. Returns null if the primary key is not found.
+        /// </returns>
+        public string? Count<TEntity>(TEntity entity, string? idPropName = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null) where TEntity : class
+        {
+            idPropName ??= ToolsProp.GetPK(entity)?.Name;
+
+            if (idPropName is null)
+            {
+                Debug.WriteLine("No primary key found!");
+                return null;
+            }
+
+            tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
+
+            // TODO: typeof(TEntity) vs entity.GetType()
+
+            return $@"SELECT COUNT(*) FROM {tableName} WHERE ({idPropName} = '{entity.GetType().GetProperty(idPropName).GetValue(entity, null)}')";
+        }
+
+        /// <summary>
         /// Allows you to obtain the table creation query for TEntity./>.
         /// </summary>
         /// <typeparam name="TEntity">The type of main entity.</typeparam>

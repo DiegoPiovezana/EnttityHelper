@@ -131,6 +131,29 @@ namespace EH.Command
         public bool CheckIfExist(string tableName, int minRecords = 0, string? filter = null);
 
         /// <summary>
+        /// Checks if the specified table exists and returns the count of records for the given entity/entities in the table.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity to check.</typeparam>
+        /// <param name="entity">
+        /// The entity or collection of entities to check in the database. If it's a collection, it will process each entity individually.
+        /// </param>
+        /// <param name="tableName">
+        /// (Optional) The name of the table to query. If null, the method will attempt to identify the table name based on the entity type.
+        /// </param>
+        /// <param name="nameId">
+        /// (Optional) The name of the primary key or identifier property for filtering. If null, the method will attempt to identify the primary key automatically.
+        /// </param>
+        /// <returns>
+        /// A long integer indicating the count of records in the specified table that match the entity/entities provided.
+        /// Returns -1 if the table does not exist (i.e., database-specific exceptions for "table does not exist").
+        /// </returns>
+        /// <exception cref="Exception">
+        /// Throws an exception if an unexpected error occurs during execution.
+        /// </exception>
+        public long CountEntity<TEntity>(TEntity entity, string? tableName = null, string? nameId = null) where TEntity : class;
+
+
+        /// <summary>
         /// Counts the number of records in a specified table, with an optional filter for conditional counting.
         /// Returns the count of matching records or a specific error code if the table does not exist.
         ///
