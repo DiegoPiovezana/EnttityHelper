@@ -368,7 +368,7 @@ namespace TestEH_UnitTest
             }
         }
 
-        [Test, Order(14)]
+        [Test, Order(101)]
         public void TestInsertDataTable()
         {
             EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
@@ -396,7 +396,7 @@ namespace TestEH_UnitTest
             }
         }
 
-        [Test, Order(15)]
+        [Test, Order(102)]
         public void TestInsertLinkSelect()
         {
             EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
@@ -419,7 +419,7 @@ namespace TestEH_UnitTest
             }
         }
 
-        [Test, Order(16)]
+        [Test, Order(103)]
         public void TestFullEntityREADME()
         {
             // Create a connection with the database using the connection string
@@ -459,7 +459,7 @@ namespace TestEH_UnitTest
             }
         }
 
-        [Test, Order(17)]
+        [Test, Order(104)]
         public void TestManyInsertionsSimple()
         {
             EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
@@ -489,7 +489,36 @@ namespace TestEH_UnitTest
             }
         }
 
-        [Test, Order(17)]
+        [Test, Order(105)]
+        public void TestInsertEntityWithoutEntity()
+        {
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            if (eh.DbContext.ValidateConnection())
+            {
+                eh.CreateTableIfNotExist<Group>(true); // Necessary to then create the MxN relationship table
+                eh.CreateTableIfNotExist<User>(false);
+
+                // Test for one entity
+                User entityTest = new("Diego Piovezana One") { Id = 1051, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now}; // Without Career
+                bool result1 = eh.Insert(entityTest, nameof(entityTest.GitHub), true) == 1;
+                if (result1) { eh.Delete(entityTest); }
+                Assert.That(result1, Is.EqualTo(true));
+
+                // Create many entities
+                User user1 = new("Diego Piovezana One Repeat") { Id = 1052, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+                User user2 = new("User Test Two") { Id = 1053, GitHub = "@UserTestTwo", DtCreation = DateTime.Now }; // Without Career
+                User user3 = new("User Test Three") { Id = 1054, GitHub = "@UserTestThree", DtCreation = DateTime.Now, IdCareer = 2 };
+
+                List<User>? users = new() { user1, user2, user3 };
+
+                // Inserts the entities
+                int result2 = eh.Insert(users);
+
+                Assert.That(result2 == 3, Is.EqualTo(true));
+            }
+        }
+
+        [Test, Order(106)]
         public void TestManyInsertionsMxN()
         {
             EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
@@ -522,7 +551,7 @@ namespace TestEH_UnitTest
             }
         }
 
-        [Test, Order(17)]
+        [Test, Order(107)]
         public void TestManyInsertionsNxM()
         {
             EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
@@ -552,7 +581,7 @@ namespace TestEH_UnitTest
             }
         }
 
-        [Test, Order(18)]
+        [Test, Order(201)]
         public void TestManyUpdates()
         {
             EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");

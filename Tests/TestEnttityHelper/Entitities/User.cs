@@ -11,7 +11,7 @@ namespace TestEH_UnitTest.Entities
         [Required][MaxLength(300)] public string Name { get; internal set; }
         [Required][MaxLength(100)] public string? GitHub { get; internal set; }
         public DateTime DtCreation { get; internal set; }
-        [ForeignKey(nameof(Career))] public long IdCareer { get; internal set; }
+        [ForeignKey(nameof(Career))] public long? IdCareer { get; internal set; }
         public virtual Career? Career { get; internal set; }
         [InverseProperty(nameof(Group.Users))] public virtual ICollection<Group> Groups { get; internal set; } = new List<Group>();
        
