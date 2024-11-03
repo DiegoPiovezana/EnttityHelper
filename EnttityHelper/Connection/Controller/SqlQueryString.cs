@@ -171,7 +171,7 @@ namespace EH.Connection
 
                 void ValidateTableExist(string tableName)
                 {
-                    bool tableExists = (bool)checkIfExistMethod.Invoke(enttityHelper, new object[] { tableName, null, 0 });
+                    bool tableExists = (bool)checkIfExistMethod.Invoke(enttityHelper, new object[] { tableName, 0, null });
                     if (!tableExists) { throw new Exception($"Table '{tableName}' doesn't exist!"); }
                 }
 
