@@ -82,7 +82,7 @@ namespace TestEH_UnitTest
 
                 //if (result) { eh.Delete(entityTest); }
 
-                Assert.That(result == 1, Is.EqualTo(true));
+                Assert.AreEqual(result, 1);
             }
             else
             {
@@ -153,17 +153,9 @@ namespace TestEH_UnitTest
         [Test, Order(9)]
         public void TestGetEntity_FailureWhenNoConnection()
         {
-            // Arrange
-            EnttityHelper eh = new($"Data Source=invalid;User Id=invalid;Password=invalid");
-
-            // Act & Assert
-            var exception = Assert.Throws<SystemException>(() => eh.Get<EntityTest>());
-
-            // Verifica se a mensagem da exceção está correta
+            var exception = Assert.Throws<Exception>(() => new EnttityHelper($"Data Source=invalid;User Id=invalid;Password=invalid"));
             Assert.That(exception.Message, Is.EqualTo("Invalid database type!"));
         }
-
-
 
         [Test, Order(9)]
         public void TestNonQuery()
@@ -236,136 +228,154 @@ namespace TestEH_UnitTest
         [Test, Order(12)]
         public void TestManyToOne()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new("Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             if (eh.DbContext.ValidateConnection())
             {
-                //eh.CreateTableIfNotExist<Career>();
-                //eh.CreateTableIfNotExist<User>();
+                // Ensure tables exist or create if they do not
+                eh.CreateTableIfNotExist<Career>(createOnlyPrimaryTable: false);
+                eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false);
 
-                //Career carrer = new(1,"Developer");
-                //eh.Insert(carrer);
+                var deletesOld = eh.ExecuteNonQuery("DELETE FROM TB_USER WHERE TO_CHAR(ID) LIKE '12%'");
+                Assert.IsTrue(deletesOld >= 0 && deletesOld <= 2);
 
-                //User user = new("Diego Piovezana") { Id = 0, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                //eh.Insert(user);
+                // Insert a career entity
+                Career career = new Career(121, "Developer");
+                int careerInsertResult = eh.Insert(career);
+                Assert.AreEqual(1, careerInsertResult, "Career insertion failed.");
 
-                var carrers = eh.Get<Career>();
+                // Insert a user entity linked to the created career
+                User user = new User("Diego Piovezana")
+                {
+                    Id = 121,
+                    GitHub = "@DiegoPiovezana",
+                    DtCreation = DateTime.Now,
+                    IdCareer = 1
+                };
+                int userInsertResult = eh.Insert(user);
+                Assert.AreEqual(1, userInsertResult, "User insertion failed.");
+
+                // Retrieve and validate career entities
+                var careers = eh.Get<Career>();
+                Assert.IsNotNull(careers, "Failed to retrieve careers.");
+                Assert.IsTrue(careers.Any(), "No careers found.");
+
+                // Retrieve and validate user entities
                 var users = eh.Get<User>();
+                Assert.IsNotNull(users, "Failed to retrieve users.");
+                Assert.IsTrue(users.Any(), "No users found.");
 
+                // Additional validation can be added as needed
                 Assert.Pass();
             }
             else
             {
-                Assert.Fail();
+                Assert.Fail("Database connection validation failed.");
             }
         }
+
 
         [Test, Order(13)]
         public void TestManyToMany()
         {
             EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
-            if (eh.DbContext.ValidateConnection())
+            Assert.That(eh.DbContext.ValidateConnection(), Is.EqualTo(true));
+
+            /////////////////////////////////////////////////// 
+            // CREATE TABLE
+
+            if (eh.CheckIfExist(eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups)))) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))}");
+            if (eh.CheckIfExist(eh.GetTableName<Group>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Group>()}");
+            if (eh.CheckIfExist(eh.GetTableName<User>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<User>()}");
+            if (eh.CheckIfExist(eh.GetTableName<Career>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Career>()}");
+
+            //eh.CreateTableIfNotExist<Group>(true);
+            //eh.CreateTableIfNotExist<User>(false);
+
+            eh.CreateTableIfNotExist<User>(true);
+            eh.CreateTableIfNotExist<Group>(false);
+
+            // TODO: Entity FK necessary only for the Get (include)
+            eh.CreateTableIfNotExist<Career>(false);
+
+            /////////////////////////////////////////////////// 
+            // INSERT
+
+            Career carrer1 = new() { IdCareer = 131, Name = "Pleno", CareerLevel = 2, Active = true };
+            //eh.Insert(carrer);
+
+            Career carrer2 = new() { IdCareer = 133, Name = "Trainee", CareerLevel = 0, Active = true };
+            //eh.Insert(carrer2);
+
+            int resultCarrers = eh.Insert(new List<Career>() { carrer1, carrer2 });
+            Assert.That(resultCarrers == 2, Is.EqualTo(true));
+
+            Group group1 = new() { Id = 131, Name = "Developers", Description = "Developer Group" };
+            //eh.Insert(group1);
+
+            Group group2 = new() { Id = 132, Name = "Testers", Description = "Tester Group" };
+            //eh.Insert(group2);
+
+            int resultGroups = eh.Insert(new List<Group>() { group1, group2 });
+            Assert.That(resultGroups == 2, Is.EqualTo(true));
+
+            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()}"); // DELETE FROM TB_USER
+
+            // Insert user with group
+            User user1 = new() { Id = 131, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 131 };
+            List<Group> groupsUserAdd = new() { group1, group2 };
+            foreach (var group in groupsUserAdd) { user1.Groups.Add(group); }
+            Assert.That(eh.Insert(user1) == 3, Is.EqualTo(true));
+
+            // Insert group with user
+            User user2 = new() { Id = 132, Name = "John Victor", GitHub = "@JohnVictor", DtCreation = DateTime.Now, IdCareer = 133 };
+            Assert.That(eh.Insert(user2) == 1, Is.EqualTo(true));
+
+            // Insert new group with user
+            Group group3 = new() { Id = 133, Name = "Operation", Description = "Operation Group" };
+            group3.Users.Add(user2);
+            Assert.That(eh.Insert(group3) == 2, Is.EqualTo(true));
+
+
+            /////////////////////////////////////////////////// 
+            // GET
+            List<Career>? carrers = eh.Get<Career>();
+            List<Group>? groups = eh.Get<Group>();
+            List<User>? users = eh.Get<User>();
+            Assert.Multiple(() =>
             {
-                /////////////////////////////////////////////////// 
-                // CREATE TABLE
+                Assert.That(carrers.Count == 2, Is.EqualTo(true));
+                Assert.That(groups.Count == 3, Is.EqualTo(true));
+                Assert.That(users.Count == 2, Is.EqualTo(true));
+            });
 
-                if (eh.CheckIfExist(eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups)))) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))}");
-                if (eh.CheckIfExist(eh.GetTableName<Group>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Group>()}");
-                if (eh.CheckIfExist(eh.GetTableName<User>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<User>()}");
-                if (eh.CheckIfExist(eh.GetTableName<Career>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Career>()}");
+            /////////////////////////////////////////////////// 
+            // UPDATE
+            //User userUpdate = new() { Id = 1, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
+            user1.Groups = new List<Group>() { group1 }; // Remove group2
+            eh.Update(user1);
 
-                //eh.CreateTableIfNotExist<Group>(true);
-                //eh.CreateTableIfNotExist<User>(false);
+            List<User>? usersUpdated = eh.Get<User>();
+            Assert.That(usersUpdated.Count == 2, Is.EqualTo(true));
 
-                eh.CreateTableIfNotExist<User>(true);
-                eh.CreateTableIfNotExist<Group>(false);
-
-                // TODO: Entity FK necessary only for the Get (include)
-                eh.CreateTableIfNotExist<Career>(false);
-
-                /////////////////////////////////////////////////// 
-                // INSERT
-
-                Career carrer1 = new() { IdCareer = 1, Name = "Pleno", CareerLevel = 2, Active = true };
-                //eh.Insert(carrer);
-
-                Career carrer2 = new() { IdCareer = 3, Name = "Trainee", CareerLevel = 0, Active = true };
-                //eh.Insert(carrer2);
-
-                int resultCarrers = eh.Insert(new List<Career>() { carrer1, carrer2 });
-                Assert.That(resultCarrers == 2, Is.EqualTo(true));
-
-                Group group1 = new() { Id = 1, Name = "Developers", Description = "Developer Group" };
-                //eh.Insert(group1);
-
-                Group group2 = new() { Id = 2, Name = "Testers", Description = "Tester Group" };
-                //eh.Insert(group2);
-
-                int resultGroups = eh.Insert(new List<Group>() { group1, group2 });
-                Assert.That(resultGroups == 2, Is.EqualTo(true));
-
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()}"); // DELETE FROM TB_USER
-
-                // Insert user with group
-                User user1 = new() { Id = 1, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                List<Group> groupsUserAdd = new() { group1, group2 };
-                foreach (var group in groupsUserAdd) { user1.Groups.Add(group); }
-                Assert.That(eh.Insert(user1) == 3, Is.EqualTo(true));
-
-                // Insert group with user
-                User user2 = new() { Id = 2, Name = "John Victor", GitHub = "@JohnVictor", DtCreation = DateTime.Now, IdCareer = 3 };
-                Assert.That(eh.Insert(user2) == 1, Is.EqualTo(true));
-
-                // Insert new group with user
-                Group group3 = new() { Id = 3, Name = "Operation", Description = "Operation Group" };
-                group3.Users.Add(user2);
-                Assert.That(eh.Insert(group3) == 2, Is.EqualTo(true));
-
-
-                /////////////////////////////////////////////////// 
-                // GET
-                List<Career>? carrers = eh.Get<Career>();
-                List<Group>? groups = eh.Get<Group>();
-                List<User>? users = eh.Get<User>();
-                Assert.Multiple(() =>
-                {
-                    Assert.That(carrers.Count == 2, Is.EqualTo(true));
-                    Assert.That(groups.Count == 3, Is.EqualTo(true));
-                    Assert.That(users.Count == 2, Is.EqualTo(true));
-                });
-
-                /////////////////////////////////////////////////// 
-                // UPDATE
-                //User userUpdate = new() { Id = 1, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-                user1.Groups = new List<Group>() { group1 };
-                eh.Update(user1);
-
-                List<User>? usersUpdated = eh.Get<User>();
-                Assert.That(usersUpdated.Count == 2, Is.EqualTo(true));
-
-                var groupsUser1 = usersUpdated.Where(u => u.Id == 1).FirstOrDefault().Groups;
-                Assert.Multiple(() =>
-                {
-                    Assert.That(groupsUser1.Count == 1, Is.EqualTo(true));
-                    Assert.That(groupsUser1.FirstOrDefault().Name.Equals("Developers"), Is.EqualTo(true));
-                });
-
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))}"); // DELETE FROM TB_GROUP_USERStoGROUPS
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()}");
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()}");
-
-                // Insert new group with new user
-                User user3 = new() { Id = 3, Name = "Maria Joaquina", GitHub = "@MariaJoaquina", DtCreation = DateTime.Now, IdCareer = 1 };
-                Assert.That(eh.Insert(user3) == 1, Is.EqualTo(true)); // TODO: Insert together
-                Group group4 = new() { Id = 4, Name = "Analyst", Description = "Analyst Group" };
-                group4.Users.Add(user3);
-                Assert.That(eh.Insert(group4), Is.EqualTo(2)); // user + group + aux_tb = 3
-
-                Assert.Pass();
-            }
-            else
+            var groupsUser1 = usersUpdated.Where(u => u.Id == 1).FirstOrDefault().Groups;
+            Assert.Multiple(() =>
             {
-                Assert.Fail("Connection failed!");
-            }
+                Assert.That(groupsUser1.Count == 1, Is.EqualTo(true));
+                Assert.That(groupsUser1.FirstOrDefault().Name.Equals("Developers"), Is.EqualTo(true));
+            });
+
+            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))}"); // DELETE FROM TB_GROUP_USERStoGROUPS
+            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()}");
+            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()}");
+
+            // Insert new group with new user
+            User user3 = new() { Id = 133, Name = "Maria Joaquina", GitHub = "@MariaJoaquina", DtCreation = DateTime.Now, IdCareer = 131 };
+            Assert.That(eh.Insert(user3) == 1, Is.EqualTo(true)); // TODO: Insert together
+            Group group4 = new() { Id = 134, Name = "Analyst", Description = "Analyst Group" };
+            group4.Users.Add(user3);
+            Assert.That(eh.Insert(group4), Is.EqualTo(2)); // user + group + aux_tb = 3
+
+
         }
 
         [Test, Order(101)]
@@ -384,11 +394,11 @@ namespace TestEH_UnitTest
                 if (eh.CheckIfExist("TableX")) eh.ExecuteNonQuery($"DROP TABLE TableX");
 
                 // Possible to insert the DataTable considering different scenarios
-                eh.Insert(dt, null, true, "TableX");
+                var result = eh.Insert(dt, null, true, "TableX");
                 //eh.Insert(dt, null, true); // The table name will automatically be the name of the spreadsheet tab (removing special characters)
                 //eh.Insert(dt, null, false); // The table will not be created and only the DataTable will be inserted              
 
-                Assert.Pass();
+                Assert.That(result, Is.EqualTo(dt.Rows.Count));
             }
             else
             {
@@ -397,26 +407,63 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(102)]
-        public void TestInsertLinkSelect()
+        public void InsertLinkSelect_ByCSV()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
-            if (eh.DbContext.ValidateConnection())
+            // Create a connection with the database 1
+            EnttityHelper eh1 = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            Assert.IsTrue(eh1.DbContext.ValidateConnection());
+
+            // Create a new connection to database 2
+            EnttityHelper eh2 = new($"Data Source=localhost:49262/xe;User Id=system;Password=oracle");
+            Assert.IsTrue(eh2.DbContext.ValidateConnection());
+
+            DateTime startTime = DateTime.Now;
+            Debug.WriteLine($"Start Load CSV: {startTime}");
+
+            // CSV file
+            string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ExcelCsvGerado_1000000x10.csv";
+            var insertCount = 1_000_000;
+
+            bool createTable = true;
+            string tableName = "TestTable1M_Csv";
+            int batchSize = 100_000;
+            int timeOutSeconds = 50; // Timeout in seconds to insert 1 batch (max)
+            char delimiter = ';';
+            bool hasHeader = true; // The CSV file has a header
+            if (hasHeader) insertCount--;
+
+            string tableNameDestiny = "TEST_LINKSELECT_CSV";
+
+            if (!_enttityHelper.CheckIfExist(tableName))
             {
-                // Select from database table from database 1
-                string query = "SELECT * FROM SHEET8";
-
-                // Create a new connection to database 2
-                EnttityHelper eh2 = new($"Data Source=152.27.13.90:49262/xe2;User Id=system2;Password=oracle2");
-
-                // Insert the result of the select into the database table 2
-                eh.InsertLinkSelect(query, eh2, "TEST_LINKSELECT");
-
-                Assert.Pass();
+                // Act
+                int result = _enttityHelper.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds, delimiter, hasHeader);
+                Assert.That(result, Is.EqualTo(insertCount));
             }
-            else
-            {
-                Assert.Fail();
-            }
+
+            DateTime endTime = DateTime.Now;
+            Debug.WriteLine($"End Load CSV: {endTime}");
+            Debug.WriteLine($"Elapsed Load CSV: {endTime - startTime}");
+
+            startTime = DateTime.Now;
+            Debug.WriteLine($"Start Link Select: {startTime}");
+
+            // Select from database table from database 1
+            string query = $"SELECT * FROM {tableName}";
+
+            // Insert the result of the select into the database table of database 2
+            eh1.InsertLinkSelect(query, eh2, tableNameDestiny);
+
+            endTime = DateTime.Now;
+            Debug.WriteLine($"End Link Select: {endTime}");
+            Debug.WriteLine($"Elapsed Link Select: {endTime - startTime}");
+
+            var countDb1 = eh1.ExecuteScalar($"SELECT COUNT(*) FROM {tableName}");
+            var countDb2 = eh2.ExecuteScalar($"SELECT COUNT(*) FROM {tableNameDestiny}");
+            Assert.That(countDb1, Is.EqualTo(insertCount));
+
+            eh1.ExecuteNonQuery($"DROP TABLE {tableName}");
+            eh2.ExecuteNonQuery($"DROP TABLE {tableNameDestiny}");
         }
 
         [Test, Order(103)]
@@ -470,29 +517,40 @@ namespace TestEH_UnitTest
 
                 eh.CreateTableIfNotExist<Career>(true);
                 Career carrer1 = new() { IdCareer = 10, Name = "Manag", CareerLevel = 5, Active = true };
+                long countCarrer1 = eh.CountEntity(carrer1);
+                Assert.IsTrue(countCarrer1 == 0 || countCarrer1 == 1);
+                if (countCarrer1 == 0)
+                {
+                    var result = eh.Insert(carrer1);
+                    Assert.AreEqual(result, 1);
+                }
+
+                var deletesOld = eh.ExecuteNonQuery("DELETE FROM TB_USER WHERE TO_CHAR(ID) LIKE '104%'");
+                Assert.IsTrue(deletesOld >= 0 && deletesOld <= 4);
 
                 // Test for one entity
-                User entityTest = new("Diego Piovezana One") { Id = 21, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 10 };
+                User entityTest = new("Diego Piovezana One") { Id = 1041, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 10 };
                 bool result1 = eh.Insert(entityTest, nameof(entityTest.GitHub), true) == 1;
-                if (result1) { eh.Delete(entityTest); }
+                if (result1) { Assert.AreEqual(eh.Delete(entityTest), 1); }
                 Assert.That(result1, Is.EqualTo(true));
 
                 // Create many entities
-                User user1 = new("Diego Piovezana One Repeat") { Id = 21, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 10 };
-                User user2 = new("User Test One") { Id = 22, GitHub = "@UserTestOne", DtCreation = DateTime.Now, IdCareer = 10 };
-                User user3 = new("User Test Two") { Id = 23, GitHub = "@UserTestTwo", DtCreation = DateTime.Now, IdCareer = 10 };
-
+                User user1 = new("Diego Piovezana One Repeat") { Id = 1042, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 10 };
+                User user2 = new("User Test One") { Id = 1043, GitHub = "@UserTestOne", DtCreation = DateTime.Now, IdCareer = 10 };
+                User user3 = new("User Test Two") { Id = 1044, GitHub = "@UserTestTwo", DtCreation = DateTime.Now, IdCareer = 10 };
                 List<User>? users = new() { user1, user2, user3 };
 
-                // Inserts the entities
+                // Inserts the entities                
                 int result2 = eh.Insert(users);
-
-                Assert.That(result2 == 3, Is.EqualTo(true));
+                Assert.AreEqual(result2, 3);
 
                 // Test for one entity
-                User entityError = new("John Tester") { Id = 21, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 100 };
-                var ex = Assert.Throws<FileNotFoundException>(() => eh.Insert(entityTest, nameof(entityTest.GitHub), true));
-                Assert.That(ex.Message, Does.Contain("does not exist!"));
+                User entityError = new("John Tester") { Id = 1045, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 100 };
+                var ex = Assert.Throws<InvalidOperationException>(() => eh.Insert(entityError, nameof(entityTest.GitHub), true));
+                Assert.That(ex.Message, Does.Contain("Career with IdCareer '100' or table 'TB_CAREERS' does not exist!"));
+
+                Assert.AreEqual(eh.Delete(carrer1), 1);
+                Assert.AreEqual(eh.Delete(users), 3);
             }
         }
 
