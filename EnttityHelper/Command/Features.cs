@@ -571,6 +571,8 @@ namespace EH.Command
                 }              
             }            
             
+            if(createsTablesQueries.Count == 0) return true;
+
             var queryCreates = createsTablesQueries.Values.Reverse().ToList();
             var creates = ExecuteNonQuery(queryCreates, -1); // The last table is the main table
             return createsTablesQueries.Count == creates.Count;
