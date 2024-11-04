@@ -348,12 +348,12 @@ namespace EH.Connection
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>  
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>Table creation query. If it is necessary to create an auxiliary table, for an M:N relationship for example, more than one query will be returned.</returns>
-        public ICollection<string?> CreateTable<TEntity>(Dictionary<string, string>? typesSql, bool onlyPrimaryTable, ICollection<string>? ignoreProps = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
+        public Dictionary<string, string?> CreateTable<TEntity>(Dictionary<string, string>? typesSql, bool onlyPrimaryTable, ICollection<string>? ignoreProps = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
         {
             if (typesSql is null) { throw new ArgumentNullException(nameof(typesSql)); }
             ignoreProps ??= new List<string>();
 
-            ICollection<string?> createsTable = new List<string?>();
+            Dictionary<string, string?> createsTable = new();
             StringBuilder queryBuilderPrincipal = new();
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
 
@@ -416,18 +416,19 @@ namespace EH.Connection
                     Property? propEntity2 = properties[prop.Value.Name]; // Group
                     string? pkEntity1 = pk.Name;
 
-                    string queryCollection = CreateTableFromCollectionProp(entity1Type, propEntity2, pkEntity1, replacesTableName);
-                    createsTable.Add(queryCollection);
+                    var queryCollection = CreateTableFromCollectionProp(entity1Type, propEntity2, pkEntity1, replacesTableName);
+                    createsTable[queryCollection.TbName] = queryCollection.Query;
                 }
             }
 
             queryBuilderPrincipal.Length -= 2; // Remove the last comma and space
             queryBuilderPrincipal.Append(")");
-            createsTable.Add(queryBuilderPrincipal.ToString());
+            //createsTable.Add(queryBuilderPrincipal.ToString());
+            createsTable[tableName] = queryBuilderPrincipal.ToString();
             return createsTable;
         }
 
-        private static string CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, string? pkEntity1, Dictionary<string, string>? replacesTableName)
+        private static (string TbName, string Query) CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, string? pkEntity1, Dictionary<string, string>? replacesTableName)
         {
             string tableEntity1 = ToolsProp.GetTableName(entity1Type, replacesTableName);
 
@@ -454,7 +455,7 @@ namespace EH.Connection
                 $@"FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2}({pkEntity2}) " +
                 $")";
 
-            return queryCollection;
+            return (tableNameManyToMany, queryCollection);
         }
 
         /// <summary>
