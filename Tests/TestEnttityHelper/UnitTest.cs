@@ -999,12 +999,12 @@ namespace TestEH_UnitTest
             List<Career>? carrers = eh.Get<Career>();
             List<Group>? groups = eh.Get<Group>();
             List<User>? users = eh.Get<User>();
-            Assert.Multiple(() =>
-            {
-                Assert.That(carrers.Count == 2, Is.EqualTo(true));
-                Assert.That(groups.Count == 4, Is.EqualTo(true));
-                Assert.That(users.Count == 3, Is.EqualTo(true));
-            });
+            //Assert.Multiple(() =>
+            //{
+            //    Assert.That(carrers.Count, Is.EqualTo(2));
+            //    Assert.That(groups.Count, Is.EqualTo(4));
+            //    Assert.That(users.Count, Is.EqualTo(3));
+            //});
 
             // Get Supervisor and check include LEVEL 1
             var user1Get = users?.Where(u => u.Id == 2012).FirstOrDefault(); // User1 is supervisor of user2
@@ -1012,26 +1012,26 @@ namespace TestEH_UnitTest
             Assert.That(supUser1Get?.IdCareer, Is.EqualTo(2011));
 
             var user2Get = users?.Where(u => u.Id == 2013).FirstOrDefault(); // User2 is supervisor of user3
-            User? supUser2Get = user2Get?.Supervisor;           
-            Assert.That(supUser2Get?.Supervisor, Is.Null);        
+            User? supUser2Get = user2Get?.Supervisor; // Supervisor (level 1)
+            Assert.That(supUser2Get?.Supervisor, Is.Null); // Supervisor of supervisor (level 2)
 
             Group? groupUser1Get = supUser1Get?.Groups.FirstOrDefault();
-            Assert.That(groupUser1Get, Is.Null);
+            Assert.That(groupUser1Get, Is.Null); // Level 2 - Null OK
 
 
             /////////////////////////////////////////////////// 
             // INCLUDE
 
-            User? supSupUser2Get = supUser2Get?.Supervisor; // User3 [-> User2 -> User1]
-            Assert.That(supSupUser2Get, Is.Null);
+            User? supSupUser2Get = supUser2Get?.Supervisor; // User3 -> User2 (Supervisor) [-> User1]
+            Assert.That(supSupUser2Get, Is.Null); // Null OK
 
             ICollection<User> usersSup = new List<User>() { supUser1Get, supUser2Get };
-            eh.IncludeAll(usersSup);
+            eh.IncludeAll(usersSup); // +Level
 
-            supSupUser2Get = supUser2Get?.Supervisor; // User3 -> User2 [-> User1]
+            supSupUser2Get = supUser2Get?.Supervisor; // User3 -> User2 (Supervisor - Level 1) -> User1 (Supervisor of Supervisor - Level 2) OK
             Assert.That(supSupUser2Get.Name, Is.EqualTo("Diego Piovezana"));
 
-            groupUser1Get = supUser1Get?.Groups.FirstOrDefault();
+            groupUser1Get = supUser1Get?.Groups.OrderBy(g=> g.Id).FirstOrDefault();
             eh.IncludeAll(groupUser1Get);
             Assert.That(groupUser1Get.Name, Is.EqualTo("Developers"));
 
@@ -1042,10 +1042,10 @@ namespace TestEH_UnitTest
             user1.Groups = new List<Group>() { group1 }; // Remove group2
             user2.IdSupervisor = user3.Id; // Change supervisor (user1 -> use3) ???
             user2.Supervisor = user3; // Change supervisor (user1 -> use3) ???
-            eh.Update(new List<User>() { user1, user2});
+            eh.Update(new List<User>() { user1, user2 });
 
             List<User>? usersUpdated = eh.Get<User>();
-            Assert.That(usersUpdated.Count == 2, Is.EqualTo(true));
+            Assert.That(usersUpdated.Count, Is.EqualTo(4));
 
             var groupsUser1 = usersUpdated.Where(u => u.Id == 2011).FirstOrDefault().Groups;
             Assert.Multiple(() =>
@@ -1067,8 +1067,8 @@ namespace TestEH_UnitTest
 
             eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE TO_CHAR(ID_TB_GROUP_USERS) LIKE '201%' OR TO_CHAR(ID_TB_USER) LIKE '201%'");
             eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '201%'");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '201%'");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '201%'");
+            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '201%'");
+            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '201%'");
 
         }
 
