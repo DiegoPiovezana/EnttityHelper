@@ -307,11 +307,11 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public bool IncludeAll<TEntity>(IEnumerable<TEntity>? entities)
+        public bool IncludeAllRange<TEntity>(IEnumerable<TEntity>? entities)
         {
             try
             {
-                return _features.IncludeAll(entities);
+                return _features.IncludeAllRange(entities);
             }
             catch (Exception)
             {

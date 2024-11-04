@@ -399,7 +399,7 @@ namespace EH.Command
         {
             string? querySelect = _enttityHelper.GetQuery.Get<TEntity>(filter, _enttityHelper.ReplacesTableName, tableName);
             var entities = ExecuteSelect<TEntity>(querySelect);
-            if (includeAll) { _ = IncludeAll(entities); }
+            if (includeAll) { _ = IncludeAllRange(entities); }
             return entities;
         }
 
@@ -720,11 +720,11 @@ namespace EH.Command
         public bool IncludeAll<TEntity>(TEntity entity)
         {
             // Check if the entity is an IEnumerable and not a string (to avoid treating strings as collections)
-            if (entity is IEnumerable<object> entityList && entity is not string) { return IncludeAll(entityList); }
-            return IncludeAll(new List<TEntity> { entity });
+            if (entity is IEnumerable<object> entityList && entity is not string) { return IncludeAllRange(entityList); }
+            return IncludeAllRange(new List<TEntity> { entity });
         }
 
-        public bool IncludeAll<TEntity>(IEnumerable<TEntity>? entities)
+        public bool IncludeAllRange<TEntity>(IEnumerable<TEntity>? entities)
         {
             if (entities?.Any() != true) return false;
             Entities.Inclusions? inclusions = new(_enttityHelper);

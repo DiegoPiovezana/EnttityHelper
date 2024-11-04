@@ -1006,16 +1006,14 @@ namespace TestEH_UnitTest
                 Assert.That(users.Count == 3, Is.EqualTo(true));
             });
 
-            // Get Supervisor
+            // Get Supervisor and check include LEVEL 1
             var user1Get = users?.Where(u => u.Id == 2012).FirstOrDefault(); // User1 is supervisor of user2
             User? supUser1Get = user1Get?.Supervisor;
+            Assert.That(supUser1Get?.IdCareer, Is.EqualTo(2011));
 
             var user2Get = users?.Where(u => u.Id == 2013).FirstOrDefault(); // User2 is supervisor of user3
             User? supUser2Get = user2Get?.Supervisor;           
-
-            // Check include
-            Assert.That(supUser1Get?.IdCareer, Is.EqualTo(2011));
-            Assert.That(supUser2Get?.Supervisor, Is.Null);
+            Assert.That(supUser2Get?.Supervisor, Is.Null);        
 
             Group? groupUser1Get = supUser1Get?.Groups.FirstOrDefault();
             Assert.That(groupUser1Get, Is.Null);
@@ -1030,9 +1028,11 @@ namespace TestEH_UnitTest
             ICollection<User> usersSup = new List<User>() { supUser1Get, supUser2Get };
             eh.IncludeAll(usersSup);
 
-            supSupUser2Get = supUser2Get?.Supervisor; // User3 -> User2 -> User1
+            supSupUser2Get = supUser2Get?.Supervisor; // User3 -> User2 [-> User1]
             Assert.That(supSupUser2Get.Name, Is.EqualTo("Diego Piovezana"));
 
+            groupUser1Get = supUser1Get?.Groups.FirstOrDefault();
+            eh.IncludeAll(groupUser1Get);
             Assert.That(groupUser1Get.Name, Is.EqualTo("Developers"));
 
 
