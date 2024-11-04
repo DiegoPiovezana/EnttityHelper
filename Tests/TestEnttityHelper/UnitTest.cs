@@ -941,8 +941,8 @@ namespace TestEH_UnitTest
             /////////////////////////////////////////////////// 
             // CREATE TABLE
 
-            eh.CreateTableIfNotExist<User>(false);
-            eh.CreateTableIfNotExist<Group>(false);
+            eh.CreateTableIfNotExist<Group>(true); // The M:N auxiliary table will not be created here
+            eh.CreateTableIfNotExist<User>(false); // It will be created here
             eh.CreateTableIfNotExist<Career>(false);
 
 

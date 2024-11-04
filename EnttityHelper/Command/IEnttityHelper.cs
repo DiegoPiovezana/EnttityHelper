@@ -180,7 +180,7 @@ namespace EH.Command
         /// Allows you to create a table in the database according to the provided objectEntity object.
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to create the table.</typeparam>
-        /// <param name="createOnlyPrimaryTable">(Optional) If true, tables used for M:N relationships, for example, will not be created. By default they are created too.</param>
+        /// <param name="createOnlyPrimaryTable">(Optional) If true, tables used for M:N relationships, for example, will not be created. By default they are created too. Attention: Entity 2 table must already exist!</param>
         /// <param name="ignoreProps">A collection of property names to ignore when creating the table.</param>
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>True, if table was created and false, if not created.</returns>
@@ -191,7 +191,7 @@ namespace EH.Command
         /// Creates a table for the specified entity if it does not already exist in the database.
         /// </summary>
         /// <typeparam name="TEntity">The type of entity for which to create the table.</typeparam>
-        /// <param name="createOnlyPrimaryTable">Specifies whether to create only the primary table or include auxiliary tables for relationships.</param>
+        /// <param name="createOnlyPrimaryTable">Specifies whether to create only the primary table or include auxiliary tables for relationships. Attention: Entity 2 table must already exist!</param>
         /// <param name="ignoreProps">A collection of property names to ignore when creating the table.</param>
         /// <param name="tableName">The name of the table. If not provided, the name will be inferred from the entity type.</param>
         /// <returns>True if the table was created or already exists, otherwise false.</returns>

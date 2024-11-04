@@ -542,25 +542,9 @@ namespace EH.Command
         public bool CreateTable<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps, string? tableName)
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
-
             var createsTableQuery = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, createOnlyPrimaryTable, ignoreProps, _enttityHelper.ReplacesTableName, tableName);
-
-            //foreach (string? createTableQuery in createsTableQuery.Reverse()) // The last table is the main table
-            //{
-            //    if (ExecuteNonQuery(createTableQuery) != 0) // Return = -1
-            //    {
-            //        Debug.WriteLine("Table created!");
-            //    }
-            //    else
-            //    {
-            //        throw new InvalidOperationException("Table not created!");
-            //    }
-            //    //if (createOnlyPrimaryTable) { break; }
-            //}
-
-            //return true;
-
-            var creates = ExecuteNonQuery(createsTableQuery.Reverse().ToList(), -1); // The last table is the main table
+            var queryCreates = createsTableQuery.Values.Reverse().ToList();
+            var creates = ExecuteNonQuery(queryCreates, -1); // The last table is the main table
             return createsTableQuery.Count == creates.Count;
         }
 
@@ -568,8 +552,28 @@ namespace EH.Command
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
             tableName ??= ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
-            if (CheckIfExist(tableName, 0, null)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
-            return CreateTable<TEntity>(createOnlyPrimaryTable, ignoreProps, tableName);
+
+            if (CheckIfExist(tableName, 0, null))
+            {
+                Debug.WriteLine($"Table '{tableName}' already exists!");
+                if (createOnlyPrimaryTable) return true;
+            }
+
+            //return CreateTable<TEntity>(createOnlyPrimaryTable, ignoreProps, tableName);
+
+            Dictionary<string, string?>? createsTablesQueries = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, createOnlyPrimaryTable, ignoreProps, _enttityHelper.ReplacesTableName, tableName);
+            foreach (KeyValuePair<string, string?> createTableQuery in createsTablesQueries)
+            {
+                if (CheckIfExist(createTableQuery.Key, 0, null))
+                {
+                    Debug.WriteLine($"Table '{createTableQuery.Key}' already exists!");
+                    createsTablesQueries.Remove(createTableQuery.Key);
+                }              
+            }            
+            
+            var queryCreates = createsTablesQueries.Values.Reverse().ToList();
+            var creates = ExecuteNonQuery(queryCreates, -1); // The last table is the main table
+            return createsTablesQueries.Count == creates.Count;
         }
 
         public bool CreateTable(DataTable dataTable, string? tableName)

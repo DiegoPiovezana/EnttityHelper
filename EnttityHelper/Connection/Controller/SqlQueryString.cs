@@ -353,7 +353,7 @@ namespace EH.Connection
             if (typesSql is null) { throw new ArgumentNullException(nameof(typesSql)); }
             ignoreProps ??= new List<string>();
 
-            Dictionary<string, string?> createsTable = new();
+            Dictionary<string, string?> queryCreatesTable = new();
             StringBuilder queryBuilderPrincipal = new();
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
 
@@ -417,19 +417,41 @@ namespace EH.Connection
                     string? pkEntity1 = pk.Name;
 
                     var queryCollection = CreateTableFromCollectionProp(entity1Type, propEntity2, pkEntity1, replacesTableName);
-                    createsTable[queryCollection.TbName] = queryCollection.Query;
+
+                    // Merged Dictionary (prioritizing the value of createsTable)
+                    queryCreatesTable =
+                        queryCollection
+                        .Concat(queryCreatesTable)
+                        .GroupBy(pair => pair.Key)
+                        .ToDictionary(group => group.Key, group => group.Last().Value);
+
+                    var entity2Collection = queryCreatesTable.FirstOrDefault(pair => pair.Value == "???");
+                    if (entity2Collection.Key is not null && entity2Collection.Key != tableName)
+                    {
+                        //Type collection2Type = propEntity2.PropertyInfo.PropertyType;
+                        //Type entity2Type = collection2Type.GetGenericArguments()[0];
+
+                        //// Use reflection to call CreateTable<T> with the dynamic type entity2Type
+                        //var methodCreateTable = typeof(EnttityHelper).GetMethod("CreateTable").MakeGenericMethod(entity2Type);
+
+                        //// Call the method using reflection, passing the required parameters
+                        //var queryCreateTableEntity2 = (Dictionary<string, string?>?)methodCreateTable.Invoke(this, new object[] { typesSql, true, ignoreProps, replacesTableName, entity2Collection.Key });
+                        //queryCreatesTable[entity2Collection.Key] = queryCreateTableEntity2[entity2Collection.Key];
+                    }
                 }
             }
 
             queryBuilderPrincipal.Length -= 2; // Remove the last comma and space
             queryBuilderPrincipal.Append(")");
             //createsTable.Add(queryBuilderPrincipal.ToString());
-            createsTable[tableName] = queryBuilderPrincipal.ToString();
-            return createsTable;
+            queryCreatesTable[tableName] = queryBuilderPrincipal.ToString();
+            return queryCreatesTable;
         }
 
-        private static (string TbName, string Query) CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, string? pkEntity1, Dictionary<string, string>? replacesTableName)
+        private static Dictionary<string, string?> CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, string? pkEntity1, Dictionary<string, string>? replacesTableName)
         {
+            Dictionary<string, string?> createsTable = new();
+
             string tableEntity1 = ToolsProp.GetTableName(entity1Type, replacesTableName);
 
             Type collection2Type = propEntity2.PropertyInfo.PropertyType;
@@ -455,7 +477,9 @@ namespace EH.Connection
                 $@"FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2}({pkEntity2}) " +
                 $")";
 
-            return (tableNameManyToMany, queryCollection);
+            createsTable[tableNameManyToMany] = queryCollection;
+            //createsTable[tableEntity2] = "???";
+            return createsTable;
         }
 
         /// <summary>
