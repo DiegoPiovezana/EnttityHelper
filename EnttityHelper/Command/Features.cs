@@ -719,14 +719,16 @@ namespace EH.Command
 
         public bool IncludeAll<TEntity>(TEntity entity)
         {
+            // Check if the entity is an IEnumerable and not a string (to avoid treating strings as collections)
+            if (entity is IEnumerable<object> entityList && entity is not string) { return IncludeAll(entityList); }
             return IncludeAll(new List<TEntity> { entity });
         }
 
-        public bool IncludeAll<TEntity>(List<TEntity>? entities)
+        public bool IncludeAll<TEntity>(IEnumerable<TEntity>? entities)
         {
-            if (entities == null || entities.Count == 0) return false;
+            if (entities?.Any() != true) return false;
             Entities.Inclusions? inclusions = new(_enttityHelper);
-            foreach (TEntity entity in entities.ToList())
+            foreach (TEntity entity in entities)
             {
                 inclusions.IncludeForeignKeyEntities(entity);
                 inclusions.IncludeInverseProperties(entity, _enttityHelper.ReplacesTableName, _enttityHelper, null);

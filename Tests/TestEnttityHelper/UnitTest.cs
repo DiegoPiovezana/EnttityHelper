@@ -1028,7 +1028,7 @@ namespace TestEH_UnitTest
             Assert.That(supSupUser2Get, Is.Null);
 
             ICollection<User> usersSup = new List<User>() { supUser1Get, supUser2Get };
-            eh.IncludeAll(usersSup.ToList());
+            eh.IncludeAll(usersSup);
 
             supSupUser2Get = supUser2Get?.Supervisor; // User3 -> User2 -> User1
             Assert.That(supSupUser2Get.Name, Is.EqualTo("Diego Piovezana"));

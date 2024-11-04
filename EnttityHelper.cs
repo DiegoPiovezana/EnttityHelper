@@ -307,7 +307,7 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public bool IncludeAll<TEntity>(List<TEntity>? entities)
+        public bool IncludeAll<TEntity>(IEnumerable<TEntity>? entities)
         {
             try
             {

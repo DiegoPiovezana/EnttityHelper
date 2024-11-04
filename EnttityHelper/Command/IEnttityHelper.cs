@@ -275,7 +275,7 @@ namespace EH.Command
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entities">Entities that will have their FK entities included.</param>
         /// <returns>True, if it's ok.</returns>
-        public bool IncludeAll<TEntity>(List<TEntity>? entities);
+        public bool IncludeAll<TEntity>(IEnumerable<TEntity>? entities);
 
         /// <summary>
         /// Includes a specific FK entity only.
