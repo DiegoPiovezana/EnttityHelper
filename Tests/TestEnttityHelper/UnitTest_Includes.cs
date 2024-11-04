@@ -44,18 +44,7 @@ namespace TestEH_UnitTest
 
             // Assert
             Assert.IsFalse(isIncluded);
-        }
-
-        [Test]
-        public void IncludeAll_NullEntityList_ReturnsFalse()
-        {
-            // Act
-            TestEntity entity = null;
-            bool isIncluded = _enttityHelper.IncludeAll(entity);
-
-            // Assert
-            Assert.IsFalse(isIncluded);
-        }
+        }       
 
         [Test]
         public void IncludeEntityFK_ValidEntityAndForeignKey_ReturnsTrue()

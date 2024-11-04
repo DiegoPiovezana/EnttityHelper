@@ -673,7 +673,57 @@ DELETE FROM TB_CAREERS WHERE TO_CHAR(IDCAREER) LIKE '%&ID_TEST%';
 COMMIT
 
 
+-------------
+-- Test includes
 
+SELECT
+    ID_TB_GROUP_USERS,
+    ID_TB_USER
+FROM
+    TB_GROUP_USERSTOGROUPS
+WHERE
+    ID_TB_GROUP_USERS = NUMBER
+    AND ID_TB_USER = NUMBER;
+
+
+
+--------------------------------------------------------------------------------------------
+-- Cleanning
+
+DROP TABLE TestTableCsvHeader2;
+DROP TABLE TestTableCsvHeader1;
+DROP TABLE TestTable1M_Csv;
+DROP TABLE TestTable_Txt;
+DROP TABLE TestTable_BigCsv;
+DROP TABLE TestTable;
+DROP TABLE TABLEX;
+DROP TABLE TB_ENTITY_TEST;
+DROP TABLE TB_CAREERS;
+DROP TABLE TB_GROUP_USERSTOGROUPS;
+DROP TABLE TB_GROUP_USERS;
+DROP TABLE TB_USER;
+
+
+
+
+--------------------------------------------------------------------------------------------
+
+-- Consulta para exibir o nome das tabelas e a quantidade de registros estimada
+SELECT 
+    t.table_name AS "Table Name",
+    t.tablespace_name AS "Tablespace",
+    t.num_rows AS "Estimated Rows",
+    t.blocks AS "Blocks",
+    t.avg_row_len AS "Average Row Length (Bytes)"
+FROM 
+    all_tables t
+ORDER BY 
+    t.num_rows DESC NULLS LAST;
+
+-- Atualiza count
+EXEC DBMS_STATS.GATHER_SCHEMA_STATS(OWNNAME => 'NOME_DO_ESQUEMA');
+
+SELECT * FROM SOURCE$;
 
 
 
