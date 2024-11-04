@@ -7,9 +7,9 @@ namespace TestEH_UnitTest.Entities
     [Table("TB_USER")]
     internal class User
     {
-        [Key()] public int Id { get; internal set; }
+        [Key()] public long Id { get; internal set; }
         [Required][MaxLength(300)] public string Name { get; internal set; }
-        [Required][MaxLength(100)] public string? GitHub { get; internal set; }
+        [Required][MaxLength(100)] public string GitHub { get; internal set; }
         public DateTime DtCreation { get; internal set; }
         [ForeignKey(nameof(Career))] public long? IdCareer { get; internal set; }
         public virtual Career? Career { get; internal set; }

@@ -102,7 +102,7 @@ namespace EH.Properties
 
             foreach (var propFkKey in propertiesFk.Keys.ToList())
             {
-                if(propertiesFk[propFkKey] == null) { continue; }
+                if(propertiesFk[propFkKey] == null) { continue; } // If PropFk not assigned
                 var propFk = propertiesVirtual[propFkKey];
                 propFk.GetType().GetProperty(GetPK(propFk).Name).SetValue(propFk, propertiesFk[propFkKey]);
                 propertiesObj.Add(propFkKey, propFk);

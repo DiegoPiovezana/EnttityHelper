@@ -1002,8 +1002,8 @@ namespace TestEH_UnitTest
             Assert.Multiple(() =>
             {
                 Assert.That(carrers.Count == 2, Is.EqualTo(true));
-                Assert.That(groups.Count == 3, Is.EqualTo(true));
-                Assert.That(users.Count == 2, Is.EqualTo(true));
+                Assert.That(groups.Count == 4, Is.EqualTo(true));
+                Assert.That(users.Count == 3, Is.EqualTo(true));
             });
 
             // Get Supervisor
@@ -1015,23 +1015,25 @@ namespace TestEH_UnitTest
 
             // Check include
             Assert.That(supUser1Get?.IdCareer, Is.EqualTo(2011));
-            Assert.That(supUser2Get?.Supervisor.Name, Is.EqualTo("Diego Piovezana"));
+            Assert.That(supUser2Get?.Supervisor, Is.Null);
 
             Group? groupUser1Get = supUser1Get?.Groups.FirstOrDefault();
-            Assert.That(groupUser1Get.Name, Is.EqualTo("Developers"));
+            Assert.That(groupUser1Get, Is.Null);
 
 
             /////////////////////////////////////////////////// 
             // INCLUDE
 
-            User? supSupUser2Get = supUser2Get?.Supervisor; // User3 -> User2 [-> User1]
+            User? supSupUser2Get = supUser2Get?.Supervisor; // User3 [-> User2 -> User1]
             Assert.That(supSupUser2Get, Is.Null);
 
             ICollection<User> usersSup = new List<User>() { supUser1Get, supUser2Get };
-            eh.IncludeAll(usersSup);
+            eh.IncludeAll(usersSup.ToList());
 
             supSupUser2Get = supUser2Get?.Supervisor; // User3 -> User2 -> User1
             Assert.That(supSupUser2Get.Name, Is.EqualTo("Diego Piovezana"));
+
+            Assert.That(groupUser1Get.Name, Is.EqualTo("Developers"));
 
 
             /////////////////////////////////////////////////// 

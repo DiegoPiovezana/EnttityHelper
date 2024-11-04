@@ -568,10 +568,10 @@ namespace EH.Command
                 {
                     Debug.WriteLine($"Table '{createTableQuery.Key}' already exists!");
                     createsTablesQueries.Remove(createTableQuery.Key);
-                }              
-            }            
-            
-            if(createsTablesQueries.Count == 0) return true;
+                }
+            }
+
+            if (createsTablesQueries.Count == 0) return true;
 
             var queryCreates = createsTablesQueries.Values.Reverse().ToList();
             var creates = ExecuteNonQuery(queryCreates, -1); // The last table is the main table
@@ -726,7 +726,7 @@ namespace EH.Command
         {
             if (entities == null || entities.Count == 0) return false;
             Entities.Inclusions? inclusions = new(_enttityHelper);
-            foreach (TEntity entity in entities)
+            foreach (TEntity entity in entities.ToList())
             {
                 inclusions.IncludeForeignKeyEntities(entity);
                 inclusions.IncludeInverseProperties(entity, _enttityHelper.ReplacesTableName, _enttityHelper, null);
