@@ -284,38 +284,50 @@ namespace EH.Command
                 int rowCount = File.ReadLines(csvFilePath).Count();
                 var rowsSelected = Definitions.DefineRows(rowsToLoad, rowCount);
                 var hashRowsSelected = new HashSet<int>(rowsSelected);
-                int rowIndex = 1;
+                int rowIndex = 0;
+
+                DataTable dataTable = new()
+                {
+                    TableName = Path.GetFileNameWithoutExtension(csvFilePath)
+                };
 
                 using StreamReader reader = new(csvFilePath);
-                DataTable dataTable = new();
 
-                string[] headers = reader.ReadLine()?.Split(delimiter)
-                    ?? throw new InvalidOperationException("CSV/TXT file is empty or headers are missing."); // Header must contain at least the delimiters 
-
-                dataTable.TableName = Path.GetFileNameWithoutExtension(csvFilePath);
-
-                if (hasHeader)
+                string[]? headers = null;
+                int indexFirstRow = hashRowsSelected.Min();
+                while (rowIndex < indexFirstRow)
                 {
-                    for (int i = 0; i < headers.Length; i++)
-                    {
-                        string columnName = string.IsNullOrWhiteSpace(headers[i]) ? $"ColumnEmpty_{i + 1}" : headers[i].Trim();
-                        dataTable.Columns.Add(new DataColumn(columnName));
-                    }
+                    // Read the first row
+                    // Header must contain at least the delimiters 
+                    headers = reader.ReadLine()?.Split(delimiter) ?? throw new InvalidOperationException("CSV/TXT file is empty or headers are missing."); 
+                    rowIndex++;
                 }
-                else
+
+                if (headers != null)
                 {
-                    for (int i = 0; i < headers.Length; i++)
+                    if (hasHeader)
                     {
-                        dataTable.Columns.Add(new DataColumn($"Column{i + 1}"));
+                        for (int i = 0; i < headers.Length; i++)
+                        {
+                            string columnName = string.IsNullOrWhiteSpace(headers[i]) ? $"ColumnEmpty_{i + 1}" : headers[i].Trim();
+                            dataTable.Columns.Add(new DataColumn(columnName));
+                        }
                     }
-
-                    DataRow firstRow = dataTable.NewRow();
-                    for (int i = 0; i < headers.Length; i++)
+                    else
                     {
-                        firstRow[i] = headers[i];
-                    }
+                        for (int i = 0; i < headers.Length; i++)
+                        {
+                            dataTable.Columns.Add(new DataColumn($"Column{i + 1}"));
+                        }
 
-                    if (hashRowsSelected.Contains(1)) dataTable.Rows.Add(firstRow);
+                        DataRow firstRow = dataTable.NewRow();
+                        for (int i = 0; i < headers.Length; i++)
+                        {
+                            firstRow[i] = headers[i];
+                        }
+
+                        if (hashRowsSelected.Contains(indexFirstRow)) dataTable.Rows.Add(firstRow);
+                    }
                 }
 
                 tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
@@ -325,13 +337,17 @@ namespace EH.Command
                     CreateTable(dataTable, tableName);
                 }
 
-                // Load rows
+                // Read and load rows
                 while (!reader.EndOfStream)
                 {
                     string[] rows = reader.ReadLine()?.Split(delimiter) ?? throw new InvalidOperationException("Error reading a row from the CSV/TXT file.");
                     rowIndex++;
 
-                    if (rows.Length != headers.Length) { throw new InvalidOperationException("Mismatch between CSV/TXT header and row column count."); }
+                    if (rows.Length != headers.Length)
+                    {
+                        Debug.WriteLine($"Mismatch between CSV/TXT header and row column count in row {rowIndex}");
+                        throw new InvalidOperationException($"Mismatch between CSV/TXT header and row column count in row {rowIndex}.");
+                    }
 
                     DataRow row = dataTable.NewRow();
                     for (int i = 0; i < headers.Length; i++) { row[i] = rows[i]?.Trim(); }
