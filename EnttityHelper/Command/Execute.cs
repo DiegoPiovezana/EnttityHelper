@@ -173,14 +173,15 @@ namespace EH.Commands
                     using IDbCommand command = DbContext.CreateCommand(query);
                     command.Transaction = transaction;
 
+                    //var parameter = new OracleParameter(":Result", OracleDbType.Int32) { Direction = ParameterDirection.Output }; // Result can be varchar
+                    //var parameter = new OracleParameter("Result", OracleDbType.Varchar2,4000) { Direction = ParameterDirection.Output }; // Result OK
+                    //command.Parameters.Add(parameter);
 
-                    //var parameter = new OracleParameter(":Result", OracleDbType.Int32) { Direction = ParameterDirection.Output };
-                    //command.Parameters.Add(resultParam);
-
-                    // Criação de parâmetro genérico
+                    // Generic Parameter
                     var parameter = command.CreateParameter();
                     parameter.ParameterName = "Result";
-                    parameter.DbType = DbType.Int32;
+                    parameter.DbType = DbType.String; // Int32, String, etc
+                    parameter.Size = 4000; // Mandatory
                     parameter.Direction = ParameterDirection.Output;
                     command.Parameters.Add(parameter);
 
