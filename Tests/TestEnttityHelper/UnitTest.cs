@@ -930,6 +930,29 @@ namespace TestEH_UnitTest
             Assert.AreEqual(insertCount, result);
         }
 
+        [Test]
+        public void LoadCSV_RangeRows()
+        {
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            Assert.That(eh.DbContext.ValidateConnection());
+
+            string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoIrregular.csv";
+
+            string tableName = "TestTableCsv_RangeRows";
+            int batchSize = 100;
+            int timeout = 15;
+            char delimiter = ';';
+            bool hasHeader = false;
+            string rangeRows = "1:20,30 ,50,99,-1"; // "1:23, -34:56, 70, 75, -1"
+            var insertCount = 24;
+            if (hasHeader) insertCount--; // Remove the header
+
+            if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
+
+            int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
+            Assert.AreEqual(insertCount, result);
+        }
+
 
 
         [Test, Order(201)]
@@ -1031,7 +1054,7 @@ namespace TestEH_UnitTest
             supSupUser2Get = supUser2Get?.Supervisor; // User3 -> User2 (Supervisor - Level 1) -> User1 (Supervisor of Supervisor - Level 2) OK
             Assert.That(supSupUser2Get.Name, Is.EqualTo("Diego Piovezana"));
 
-            groupUser1Get = supUser1Get?.Groups.OrderBy(g=> g.Id).FirstOrDefault();
+            groupUser1Get = supUser1Get?.Groups.OrderBy(g => g.Id).FirstOrDefault();
             eh.IncludeAll(groupUser1Get);
             Assert.That(groupUser1Get.Name, Is.EqualTo("Developers"));
 

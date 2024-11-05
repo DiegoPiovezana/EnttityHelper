@@ -617,6 +617,10 @@ CREATE TABLE TB_TEST(
 
 DROP TABLE TB_TEST;
 
+---------------------------------------------------------
+-- load CSV
+
+
 -- OracleException: ORA-01653: não é possível estender a tabela SYSTEM.TESTTABLE_BIGCSV em 1024 no tablespace SYSTEM
 
 SELECT COUNT(*) FROM TESTTABLE;
@@ -636,6 +640,9 @@ WHERE ROWNUM <= 3;
 SELECT * FROM TESTTABLE_BIGCSV;
 
 DROP TABLE TESTTABLE_BIGCSV;
+
+
+SELECT * FROM TestTableCsv_RangeRows;
 
 
 ------------
@@ -684,6 +691,9 @@ FROM
 WHERE
     ID_TB_GROUP_USERS = NUMBER
     AND ID_TB_USER = NUMBER;
+
+
+
 
 
 

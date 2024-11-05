@@ -274,13 +274,18 @@ namespace EH.Command
         }
 
 
-        public int LoadCSV(string csvFilePath, bool createTable, string? tableName, int batchSize, int timeOutSeconds, char delimiter, bool hasHeader)
+        public int LoadCSV(string csvFilePath, bool createTable, string? tableName, int batchSize, int timeOutSeconds, char delimiter, bool hasHeader, string? rowsToLoad)
         {
             Validations.Validate.IsFileValid(csvFilePath);
             int totalInserts = 0;
 
             try
             {
+                int rowCount = File.ReadLines(csvFilePath).Count();
+                var rowsSelected = Definitions.DefineRows(rowsToLoad, rowCount);
+                var hashRowsSelected = new HashSet<int>(rowsSelected);
+                int rowIndex = 1;
+
                 using StreamReader reader = new(csvFilePath);
                 DataTable dataTable = new();
 
@@ -289,17 +294,6 @@ namespace EH.Command
 
                 dataTable.TableName = Path.GetFileNameWithoutExtension(csvFilePath);
 
-                //for (int i = 0; i < headers.Length; i++)
-                //{
-                //    if (string.IsNullOrWhiteSpace(headers[i]))
-                //    {
-                //        //throw new InvalidOperationException("CSV file contains empty or invalid header names.");
-                //        headers[i] = $"ColumnEmpty_{i + 1}";
-                //    }
-                //    dataTable.Columns.Add(new DataColumn(headers[i].Trim()));
-                //}                
-
-                // Definir colunas, seja a partir do cabeçalho ou com nomes genéricos
                 if (hasHeader)
                 {
                     for (int i = 0; i < headers.Length; i++)
@@ -320,7 +314,8 @@ namespace EH.Command
                     {
                         firstRow[i] = headers[i];
                     }
-                    dataTable.Rows.Add(firstRow);
+
+                    if (hashRowsSelected.Contains(1)) dataTable.Rows.Add(firstRow);
                 }
 
                 tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
@@ -330,22 +325,18 @@ namespace EH.Command
                     CreateTable(dataTable, tableName);
                 }
 
+                // Load rows
                 while (!reader.EndOfStream)
                 {
-                    string[] rows = reader.ReadLine()?.Split(delimiter)
-                        ?? throw new InvalidOperationException("Error reading a row from the CSV/TXT file.");
+                    string[] rows = reader.ReadLine()?.Split(delimiter) ?? throw new InvalidOperationException("Error reading a row from the CSV/TXT file.");
+                    rowIndex++;
 
-                    if (rows.Length != headers.Length)
-                    {
-                        throw new InvalidOperationException("Mismatch between CSV/TXT header and row column count.");
-                    }
+                    if (rows.Length != headers.Length) { throw new InvalidOperationException("Mismatch between CSV/TXT header and row column count."); }
 
                     DataRow row = dataTable.NewRow();
-                    for (int i = 0; i < headers.Length; i++)
-                    {
-                        row[i] = rows[i]?.Trim();
-                    }
-                    dataTable.Rows.Add(row);
+                    for (int i = 0; i < headers.Length; i++) { row[i] = rows[i]?.Trim(); }
+
+                    if (hashRowsSelected.Contains(rowIndex)) dataTable.Rows.Add(row);
 
                     if (dataTable.Rows.Count >= batchSize)
                     {
@@ -354,7 +345,7 @@ namespace EH.Command
                     }
                 }
 
-                if (dataTable.Rows.Count > 0) // Remaing rows
+                if (dataTable.Rows.Count > 0) // Remaing selected rows
                 {
                     totalInserts += _enttityHelper.DbContext.PerformBulkCopyOperation(dataTable, tableName, timeOutSeconds);
                 }
