@@ -30,7 +30,7 @@ namespace EH
         /// <summary>
         /// Allows you to obtain the main commands to be executed on the database.
         /// </summary>
-        public SqlQueryString GetQuery = new();
+        public SqlQueryString GetQuery { get; private set; }
 
 
         private readonly Features _features;
@@ -45,6 +45,7 @@ namespace EH
             DbContext = new Database(connectionString);
             _features = new(this);
             _features.DefineTypesDefaultDb(DbContext);
+            GetQuery = new(this);
         }
 
         /// <summary>

@@ -299,7 +299,7 @@ namespace EH.Command
                 {
                     // Read the first row
                     // Header must contain at least the delimiters 
-                    headers = reader.ReadLine()?.Split(delimiter) ?? throw new InvalidOperationException("CSV/TXT file is empty or headers are missing."); 
+                    headers = reader.ReadLine()?.Split(delimiter) ?? throw new InvalidOperationException("CSV/TXT file is empty or headers are missing.");
                     rowIndex++;
                 }
 
@@ -346,7 +346,7 @@ namespace EH.Command
                     if (rows.Length != headers.Length)
                     {
                         Debug.WriteLine($"Mismatch between CSV/TXT header and row column count in row {rowIndex}");
-                        throw new InvalidOperationException($"Mismatch between CSV/TXT header and row column count in row {rowIndex}.");
+                        throw new InvalidOperationException($"Mismatch between CSV/TXT header ({headers.Length} columns) and row column count in row {rowIndex} ({rows.Length} columns).");
                     }
 
                     DataRow row = dataTable.NewRow();

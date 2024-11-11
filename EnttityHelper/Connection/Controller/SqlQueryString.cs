@@ -18,6 +18,17 @@ namespace EH.Connection
     /// </summary>
     public class SqlQueryString //: IEnttityHelper
     {
+        EnttityHelper EnttityHelper { get; set; }
+
+
+        public SqlQueryString() { }
+
+        public SqlQueryString(EnttityHelper enttityHelper)
+        {
+            EnttityHelper = enttityHelper;
+        }
+
+
         /// <summary>
         /// Gets the insert command.
         /// </summary>
@@ -28,9 +39,9 @@ namespace EH.Connection
         /// <param name="tableName1">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <param name="ignoreInversePropertyProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
         /// <returns>String command.</returns>
-        public ICollection<string?> Insert<TEntity>(TEntity entity, Enums.DbType? dbType, Dictionary<string, string>? replacesTableName = null, string? tableName1 = null, bool ignoreInversePropertyProperties = false) where TEntity : class
+        public ICollection<string?> Insert<TEntity>(TEntity entity, Enums.DbType? dbType = null, Dictionary<string, string>? replacesTableName = null, string? tableName1 = null, bool ignoreInversePropertyProperties = false) where TEntity : class
         {
-            if (dbType == null) throw new ArgumentNullException("The type of database is invalid!");
+            //if (dbType == null) throw new ArgumentNullException("The type of database is invalid!");
 
             List<string?> queries = new();
 
@@ -39,6 +50,9 @@ namespace EH.Connection
             Dictionary<string, Property>? filteredProperties = properties.Where(p => p.Value.IsVirtual == false).ToDictionary(p => p.Key, p => p.Value);
             string columns = string.Join(", ", filteredProperties.Keys);
             string values = string.Join("', '", filteredProperties.Values);
+
+            dbType ??= EnttityHelper.DbContext.Type;
+            replacesTableName ??= EnttityHelper.ReplacesTableName;
             tableName1 ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
             var pk = ToolsProp.GetPK(entity);
 

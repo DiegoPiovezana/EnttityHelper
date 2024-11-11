@@ -936,15 +936,20 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             Assert.That(eh.DbContext.ValidateConnection());
 
-            string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoIrregular.csv";
+            string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoIrregular.csv"; // J100
 
             string tableName = "TestTableCsv_RangeRows";
             int batchSize = 100;
             int timeout = 15;
             char delimiter = ';';
             bool hasHeader = false;
-            string rangeRows = "1:20,30 ,50,99,-1"; // "1:23, -34:56, 70, 75, -1"
-            var insertCount = 24;
+
+            //string rangeRows = "1:20,30 ,50,99,-1"; // "1:23, -34:56, 70, 75, -1"
+            //var insertCount = 24;
+
+            string rangeRows = "2:-2"; // second to penultimat row
+            var insertCount = 98;
+
             if (hasHeader) insertCount--; // Remove the header
 
             if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
@@ -1094,6 +1099,38 @@ namespace TestEH_UnitTest
             eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '201%'");
 
         }
+
+
+        [Test, Order(202)]
+        public void Insert_GetQuery()
+        {
+            // Arrange
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            Assert.That(eh.DbContext.ValidateConnection());
+
+            User user = new()
+            {
+                Id = 2021,
+                Name = "John Victor",
+                GitHub = "@JohnVictor",
+                DtCreation = DateTime.Now,
+                IdCareer = 2012,
+                IdSupervisor = 2011
+            };
+
+            // Act
+            var results = eh.GetQuery.Insert(user);
+            var result = results.FirstOrDefault();
+
+            // Assert
+            StringAssert.StartsWith("INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor) VALUES ('2021', 'John Victor', '@JohnVictor', '", result);
+            StringAssert.Contains("'2012'", result);
+            StringAssert.Contains("'2011'", result);
+            StringAssert.EndsWith("RETURNING Id INTO :Result", result);
+
+            Debug.WriteLine(result);
+        }
+
 
 
     }
