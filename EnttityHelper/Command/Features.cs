@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace EH.Command
 {
@@ -228,42 +229,14 @@ namespace EH.Command
 
                 return insertions;
             }
-        }
-
-
-
-        //public int Insert(DataTable dataTable, bool createTable = false, string? tableName = null)
-        //{
-        //    if (dataTable.Rows.Count == 0) return 0;
-        //    tableName ??= dataTable.TableName;
-
-        //    if (!CheckIfExist(tableName) && createTable)
-        //    {
-        //        CreateTable(dataTable, tableName);
-        //    }
-
-        //    return Commands.Execute.PerformBulkCopyOperation(DbContext, dataTable, tableName) ? dataTable.Rows.Count : 0;
-        //}
-
-        //public int Insert<TEntity>(DataRow[] dataRow, string? tableName = null)
-        //{
-        //    if (dataRow.Length == 0) return 0;
-        //    if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
-        //    return Commands.Execute.PerformBulkCopyOperation(DbContext, dataRow, tableName) ? dataRow.Length : 0;
-        //}
-
-        //public bool Insert<TEntity>(IDataReader dataReader, string? tableName = null)
-        //{
-        //    if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
-        //    return Commands.Execute.PerformBulkCopyOperation(DbContext, dataReader, tableName);
-        //}
+        }       
 
         public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds)
         {
             int inserts;
             do
             {
-                var dataReaderSelect = (IDataReader?)_enttityHelper.DbContext.ExecuteReader<IDataReader>(selectQuery, true);
+                var dataReaderSelect = (IDataReader?)_enttityHelper.DbContext.ExecuteReader<IDataReader>(selectQuery, true, null, 0, null, null, true);
                 if (dataReaderSelect is null) return 0;
                 inserts = db2.Insert(dataReaderSelect, null, true, tableName, true, timeOutSeconds);
                 dataReaderSelect.Close();
@@ -402,10 +375,10 @@ namespace EH.Command
             return updates;
         }
 
-        public List<TEntity>? Get<TEntity>(bool includeAll, string? filter, string? tableName) where TEntity : class
+        public List<TEntity>? Get<TEntity>(bool includeAll, string? filter, string? tableName, int? pageSize, int pageIndex, string? sortColumn, bool sortAscending) where TEntity : class
         {
             string? querySelect = _enttityHelper.GetQuery.Get<TEntity>(filter, _enttityHelper.ReplacesTableName, tableName);
-            var entities = ExecuteSelect<TEntity>(querySelect);
+            var entities = ExecuteSelect<TEntity>(querySelect, pageSize, pageIndex, null, sortColumn, sortAscending);
             if (includeAll) { _ = IncludeAllRange(entities); }
             return entities;
         }
@@ -413,7 +386,7 @@ namespace EH.Command
         public TEntity? Search<TEntity>(TEntity entity, bool includeAll, string? idPropName, string? tableName) where TEntity : class
         {
             string? selectQuery = _enttityHelper.GetQuery.Search(entity, idPropName, _enttityHelper.ReplacesTableName, tableName);
-            var entities = ExecuteSelect<TEntity>(selectQuery);
+            var entities = ExecuteSelect<TEntity>(selectQuery, null, 0, null, null, true);
             if (includeAll) { _ = IncludeAll(entities.FirstOrDefault()); }
             return entities.FirstOrDefault();
         }
@@ -522,6 +495,47 @@ namespace EH.Command
                 object result = command.ExecuteScalar();
 
                 return (result != null && result != DBNull.Value) ? Convert.ToInt64(result) : 0;
+            }
+            catch (OracleException ex) when (ex.Number == 942) // ORA-00942: table or view does not exist
+            {
+                return -1;
+            }
+            catch (SqlException ex) when (ex.Number == 208) // Invalid object name 'tableName'
+            {
+                return -1;
+            }
+            //catch (SQLiteException ex) when (ex.ErrorCode == SQLiteErrorCode.Table)
+            //{
+            //    return -1;
+            //}
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                if (_enttityHelper.DbContext?.IDbConnection is not null && _enttityHelper.DbContext.IDbConnection.State == ConnectionState.Open)
+                    _enttityHelper.DbContext.IDbConnection.Close();
+            }
+        }
+
+        public async Task<int> GetTotalRecordCountAsync(string baseQuery, string? filter = null)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(baseQuery))
+                    throw new ArgumentException("Base query cannot be null or empty.", nameof(baseQuery));
+
+                var countQuery = new SqlQueryString().CountQuery(baseQuery, filter);
+
+                using (var connection = _enttityHelper.DbContext.CreateOpenConnection())
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = countQuery;
+
+                    var result = Task.Run(() => command.ExecuteScalar()).Result;
+                    return Convert.ToInt32(result);
+                }
             }
             catch (OracleException ex) when (ex.Number == 942) // ORA-00942: table or view does not exist
             {
@@ -669,16 +683,16 @@ namespace EH.Command
             return Execute.ExecuteNonQuery(_enttityHelper.DbContext, queries, expectedChanges);
         }
 
-        public List<TEntity>? ExecuteSelect<TEntity>(string? query)
+        public List<TEntity>? ExecuteSelect<TEntity>(string? query, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
         {
-            return (List<TEntity>?)Execute.ExecuteReader<TEntity>(_enttityHelper.DbContext, query);
+            return (List<TEntity>?)Execute.ExecuteReader<TEntity>(_enttityHelper.DbContext, query, false, pageSize, pageIndex, filterPage, sortColumnPage, sortAscendingPage);
         }
 
-        public DataTable? ExecuteSelectDt(string? query)
+        public DataTable? ExecuteSelectDt(string? query, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
         {
             try
             {
-                if (Commands.Execute.ExecuteReader<IDataReader>(_enttityHelper.DbContext, query, true) is not IDataReader resultSelect) return null;
+                if (Execute.ExecuteReader<IDataReader>(_enttityHelper.DbContext, query, true, pageSize, pageIndex, filterPage, sortColumnPage, sortAscendingPage) is not IDataReader resultSelect) return null;
                 DataTable dtResult = resultSelect.ToDataTable();
                 resultSelect.Close();
                 _enttityHelper.DbContext.CloseConnection();
@@ -698,19 +712,6 @@ namespace EH.Command
         {
             try
             {
-                //if (string.IsNullOrEmpty(query?.Trim())) throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
-                //var connection = _enttityHelper.DbContext.CreateOpenConnection();
-
-                //if (connection != null)
-                //{
-                //    var command = connection.CreateCommand();
-                //    command.CommandText = query;
-                //    var result = command.ExecuteScalar();
-                //    connection.Close();
-                //    return result?.ToString() ?? "";
-                //}
-                //return null;
-
                 return ExecuteScalar(new List<string?>() { query }).FirstOrDefault();
             }
             catch (Exception)

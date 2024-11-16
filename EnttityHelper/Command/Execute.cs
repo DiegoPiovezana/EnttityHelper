@@ -14,18 +14,50 @@ namespace EH.Commands
     internal static class Execute
     {
         /// <summary>
-        /// Executes a SQL command, either non-query or select, based on the provided query.
+        /// Executes a query and retrieves data from the database, with optional support for pagination.
         /// </summary>
-        /// <typeparam name="TEntity">The type of entities to retrieve.</typeparam>
-        /// <param name="DbContext">Database where the entities will be manipulated.</param>
-        /// <param name="getDataReader">(Optional) If true and it is a select, it will return a dataReader filled with the result obtained.</param>       
+        /// <typeparam name="TEntity">The type of entity to map the retrieved data to.</typeparam>
+        /// <param name="DbContext">The database context providing the connection and command execution.</param>
+        /// <param name="query">The SQL query to be executed.</param>
+        /// <param name="getDataReader">
+        /// (Optional) If <c>true</c>, the method returns the <see cref="IDataReader"/> object instead of mapped entities.
+        /// Defaults to <c>false</c>.
+        /// </param>
+        /// <param name="pageSize">
+        /// (Optional) The number of records to retrieve per page. If specified, the query will be paginated.
+        /// </param>
+        /// <param name="pageIndex">
+        /// The zero-based index of the page to retrieve. Ignored if <paramref name="pageSize"/> is <c>null</c>.
+        /// Defaults to 0.
+        /// </param>
+        /// <param name="filterPage">
+        /// (Optional) Additional filtering criteria for the paginated query. Applied only if <paramref name="pageSize"/> is specified.
+        /// </param>
+        /// <param name="sortColumnPage">
+        /// (Optional) The column name to sort the paginated query. Applied only if <paramref name="pageSize"/> is specified.
+        /// </param>
+        /// <param name="sortAscendingPage">
+        /// Determines the sorting order for the paginated query. 
+        /// <c>true</c> for ascending order; <c>false</c> for descending order. Defaults to <c>true</c>.
+        /// Applied only if <paramref name="pageSize"/> is specified.
+        /// </param>
         /// <returns>
-        /// If the command is a select, returns a list of entities retrieved from the database.
+        /// Either a list of mapped entities of type <typeparamref name="TEntity"/> or an <see cref="IDataReader"/> object, 
+        /// depending on the value of <paramref name="getDataReader"/>.
         /// </returns>
-        internal static object? ExecuteReader<TEntity>(this Database DbContext, string? query, bool getDataReader = false)
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if the database connection is null or if the query is not provided.
+        /// </exception>
+        /// <remarks>
+        /// - If <paramref name="pageSize"/> is not specified, the query will execute without pagination.
+        /// - The method uses the specified filtering and sorting options only if <paramref name="pageSize"/> is provided.
+        /// </remarks>
+        internal static object? ExecuteReader<TEntity>(this Database DbContext, string? query, bool getDataReader, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
         {
             if (DbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
             if (query is null) { throw new InvalidOperationException("Query does not exist."); }
+
+            if (pageSize != null) query = new SqlQueryString().PaginatedQuery(query, pageSize ?? 0, pageIndex, filterPage, sortColumnPage, sortAscendingPage);
 
             IDbConnection connection = DbContext.CreateOpenConnection();
             using IDbCommand command = DbContext.CreateCommand(query);

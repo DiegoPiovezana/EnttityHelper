@@ -3,6 +3,7 @@ using EH.Connection;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Threading.Tasks;
 
 namespace EH
 {
@@ -113,11 +114,11 @@ namespace EH
         }
 
         /// <inheritdoc/> 
-        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null) where TEntity : class
+        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null, int? pageSize = null, int pageIndex = 0, string? sortColumn = null, bool sortAscending = true) where TEntity : class
         {
             try
             {
-                return _features.Get<TEntity>(includeAll, filter, tableName);
+                return _features.Get<TEntity>(includeAll, filter, tableName, pageSize, pageIndex, sortColumn, sortAscending);
             }
             catch (Exception)
             {
@@ -176,6 +177,20 @@ namespace EH
                 throw;
             }
         }
+
+        /// <inheritdoc/>
+        public async Task<int> GetTotalRecordCountAsync(string baseQuery, string? filter = null)
+        {
+            try
+            {
+                return await _features.GetTotalRecordCountAsync(baseQuery, filter);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
 
         /// <inheritdoc/>    
         public bool CreateTable<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps = null, string? tableName = null)
@@ -256,11 +271,11 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public List<TEntity>? ExecuteSelect<TEntity>(string? query)
+        public List<TEntity>? ExecuteSelect<TEntity>(string? query, int? pageSize = null, int pageIndex = 0, string? filterPage = null, string? sortColumnPage = null, bool sortAscendingPage = true)
         {
             try
             {
-                return _features.ExecuteSelect<TEntity>(query);
+                return _features.ExecuteSelect<TEntity>(query, pageSize, pageIndex, filterPage, sortColumnPage, sortAscendingPage);
             }
             catch (Exception)
             {
@@ -269,11 +284,11 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public DataTable? ExecuteSelectDt(string? query)
+        public DataTable? ExecuteSelectDt(string? query, int? pageSize = null, int pageIndex = 0, string? filterPage = null, string? sortColumnPage = null, bool sortAscendingPage = true)
         {
             try
             {
-                return _features.ExecuteSelectDt(query);
+                return _features.ExecuteSelectDt(query, pageSize, pageIndex, filterPage, sortColumnPage, sortAscendingPage);
             }
             catch (Exception)
             {
