@@ -1,68 +1,55 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Threading.Tasks;
 
 namespace EH.Command
 {
     interface IEnttityHelper
     {
         /// <summary>
-        /// Allow to insert an entity in the database.
+        /// Inserts data into the database, supporting multiple data formats and advanced configurations.
         /// </summary>
-        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
-        /// <param name="entity">Entity to be inserted into the database.</param>      
-        /// <param name="namePropUnique">(Optional) Name of the property to be considered as a uniqueness criterion.</param> 
-        /// <param name="createTable">(Optional) If the table that will receive the insertion does not exist, it can be created.</param> 
-        /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
-        /// <param name="ignoreInversePropertyProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
-        /// <param name="timeOutSeconds">(Optional) Maximum time (in seconds) to wait for the insertion to occur. By default, the maximum time is up to 10 minutes.</param>
+        /// <typeparam name="TEntity">The type of the entity or data structure being inserted.</typeparam>
+        /// <param name="entity">
+        /// The data to be inserted, which can be an entity, a collection of entities, a DataTable, IDataReader, or an array of DataRow.
+        /// </param>
+        /// <param name="namePropUnique">
+        /// (Optional) The name of a property used to ensure unique entries in the database. 
+        /// If specified, the method checks for duplicates based on this property before inserting.
+        /// </param>
+        /// <param name="createTable">
+        /// Indicates whether to create the target table if it does not exist. If set to <c>true</c>, 
+        /// the table will be created automatically.
+        /// </param>
+        /// <param name="tableName">
+        /// (Optional) The name of the target table in the database. If not provided, the table name will 
+        /// be inferred based on the entity's metadata or data structure.
+        /// </param>
+        /// <param name="ignoreInversePropertyProperties">
+        /// Determines whether inverse property relationships should be ignored during the insertion process. 
+        /// If set to <c>true</c>, related properties marked with inverse relationships will be skipped.
+        /// </param>
+        /// <param name="timeOutSeconds">
+        /// The timeout duration, in seconds, for the operation. This is particularly relevant for bulk insertions.
+        /// </param>
         /// <returns>
-        /// True, if one or more entities are inserted into the database.
-        /// <para>If the return is negative, it indicates that the insertion did not happen due to some established criteria.</para>
+        /// The number of rows successfully inserted into the database.
         /// </returns>
+        /// <remarks>
+        /// - Supports various data formats such as single entities, collections of entities, DataTable, 
+        /// IDataReader, and arrays of DataRow.
+        /// - Automatically validates and creates foreign key or many-to-many (MxN) relationship tables if necessary.
+        /// - Ensures no duplicate entries are inserted when <paramref name="namePropUnique"/> is specified.
+        /// - Suitable for both single insertions and bulk operations.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">Thrown if required parameters like <paramref name="tableName"/> are null in certain contexts.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if the entity is invalid, related tables do not exist and <paramref name="createTable"/> is set to <c>false</c>, 
+        /// or if duplicate entries are detected when <paramref name="namePropUnique"/> is specified.
+        /// </exception>
+        /// <exception cref="Exception">Thrown for other errors, such as missing insert queries or execution failures.</exception>
         public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class;
-
-        ///// <summary>
-        ///// Inserts data from a DataTable into the specified database table.
-        ///// </summary>
-        ///// <typeparam name="TEntity">The type of entity corresponding to the table.</typeparam>
-        ///// <param name="dataTable">The DataTable containing the data to be inserted.</param>
-        ///// <param name="createTable">(Optional) If true and the destination table does not exist, it will be created based on the structure of the DataTable.</param>
-        ///// <param name="tableName">Optional. The name of the table where the data will be inserted. If not specified, the name of the DataTable will be used.</param>
-        ///// <returns>The number of rows successfully inserted into the database table.</returns>
-
-        //public int Insert(DataTable dataTable, bool createTable = false, string? tableName = null)
-        //{
-        //    if (dataTable.Rows.Count == 0) return 0;
-        //    tableName ??= dataTable.TableName;
-
-        //    if (!CheckIfExist(tableName) && createTable)
-        //    {
-        //        CreateTable(dataTable, tableName);
-        //    }
-
-        //    return Commands.Execute.PerformBulkCopyOperation(DbContext, dataTable, tableName) ? dataTable.Rows.Count : 0;
-        //}
-
-        ///// <summary>
-        ///// Inserts data from an array of DataRow into the specified database table.
-        ///// </summary>
-        ///// <typeparam name="TEntity">The type of entity corresponding to the table.</typeparam>
-        ///// <param name="dataRow">An array of DataRow objects containing the data to be inserted.</param>
-        ///// <param name="tableName">Optional. The name of the table where the data will be inserted. If not specified, the name of the entity type will be used.</param>
-        ///// <returns>The number of rows successfully inserted into the database table.</returns>
-        ///// <exception cref="ArgumentNullException">Thrown if the tableName parameter is null.</exception>
-        //public int Insert<TEntity>(DataRow[] dataRow, string? tableName = null);     
-
-        ///// <summary>
-        ///// Inserts data from an IDataReader into the specified database table.
-        ///// </summary>
-        ///// <typeparam name="TEntity">The type of entity corresponding to the table.</typeparam>
-        ///// <param name="dataReader">The IDataReader containing the data to be inserted.</param>
-        ///// <param name="tableName">Optional. The name of the table where the data will be inserted. If not specified, the name of the entity type will be used.</param>
-        ///// <returns>True if the data is inserted successfully, otherwise False.</returns>
-        ///// <exception cref="ArgumentNullException">Thrown if the tableName parameter is null.</exception>
-        //public bool Insert<TEntity>(IDataReader dataReader, string? tableName = null);        
 
         /// <summary>
         /// Executes a SELECT query on one database and inserts the result into another database (or in the same).
@@ -84,7 +71,7 @@ namespace EH.Command
         /// <param name="timeOutSeconds">The timeout duration for the operation in seconds. Default is 600 seconds.</param>
         /// <param name="delimiter">The delimiter character used in the CSV/TXT file. Default is ';'</param>
         /// <param name="hasHeader">Indicates whether the CSV/TXT file contains headers. Default is true.</param>
-        /// <param name="rowsToLoad">Enter the rows or their range. E.g.: "1:23, -34:56, 70, 75, -1". For default, all rows will be loaded. ATENTION: Order and duplicates will not be considered!</param>
+        /// <param name="rowsToLoad">Enter the rows or their range. E.g.: "1:23, 34:-56, 70, 75, -1". For default, all rows will be loaded. ATENTION: Order and duplicates will not be considered!</param>
         /// <returns>The number of records inserted into the database.</returns>
         /// <exception cref="ArgumentException">Thrown when the CSV/TXT file is invalid or cannot be loaded.</exception>
         int LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';', bool hasHeader = true, string? rowsToLoad = null);
@@ -100,16 +87,19 @@ namespace EH.Command
         /// <returns>Number of entities updated in the database.</returns>
         public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class;
 
-
         /// <summary>
-        /// Gets one or more entities from the database.
+        /// Retrieves one or more entities from the database with optional filtering, pagination, and sorting.
         /// </summary>
-        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
-        /// <param name="includeAll">(Optional) If true, all entities that are properties of the parent property will be included (this is the default behavior).</param>
-        /// <param name="filter">(Optional) Entity search criteria.</param>     
-        /// <param name="tableName">(Optional) Name of the table where the entities are inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
-        /// <returns>Entities list.</returns>
-        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null) where TEntity : class;
+        /// <typeparam name="TEntity">The type of the entity to retrieve.</typeparam>
+        /// <param name="includeAll">(Optional) If true, all related entities (foreign keys and inverse properties) will be included. Default is true.</param>
+        /// <param name="filter">(Optional) A filter string to specify search criteria for the entities.</param>
+        /// <param name="tableName">(Optional) The name of the table where the entities are stored. If not provided, the table name will be inferred from the "Table" attribute on the entity class.</param>
+        /// <param name="pageSize">(Optional) The number of entities to retrieve per page. If null, no pagination will be applied.</param>
+        /// <param name="pageIndex">(Optional) The zero-based index of the page to retrieve. Default is 0.</param>
+        /// <param name="sortColumn">(Optional) The name of the column by which to sort the results. If null, no sorting will be applied.</param>
+        /// <param name="sortAscending">(Optional) Indicates whether the sorting should be in ascending order. Default is true.</param>
+        /// <returns>A list of entities that match the specified criteria.</returns>
+        public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null, int? pageSize = null, int pageIndex = 0, string? sortColumn = null, bool sortAscending = true) where TEntity : class;
 
         /// <summary>
         /// Search the specific entity by <paramref name="idPropName"/>
@@ -178,6 +168,23 @@ namespace EH.Command
         public long CountTable(string tableName, string? filter = null);
 
         /// <summary>
+        /// Asynchronously retrieves the total number of records from the database based on a base query and an optional filter.
+        /// </summary>
+        /// <param name="baseQuery">The base SQL query to determine the total number of records. This query should be structured to allow a COUNT operation.</param>
+        /// <param name="filter">(Optional) A filter to be applied to the query to refine the count of records.</param>
+        /// <returns>
+        /// The total number of records as an integer. 
+        /// Returns -1 if the table or view referenced in the query does not exist.
+        /// </returns>
+        /// <exception cref="ArgumentException">Thrown when the <paramref name="baseQuery"/> is null or empty.</exception>
+        /// <exception cref="Exception">Re-throws any unexpected exceptions that occur during execution.</exception>
+        /// <remarks>
+        /// This method internally constructs a count query using the base query and applies the optional filter.
+        /// It handles database-specific exceptions (e.g., Oracle and SQL Server) to return a specific value for missing tables or views.
+        /// </remarks>
+        public Task<int> GetTotalRecordCountAsync(string baseQuery, string? filter = null);
+
+        /// <summary>
         /// Allows you to create a table in the database according to the provided objectEntity object.
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to create the table.</typeparam>
@@ -226,29 +233,85 @@ namespace EH.Command
 
         /// <summary>
         /// Executes the non query (Create, Alter, Drop, Insert, Update or Delete) on the database.
-        /// </summary>   
+        /// </summary>
         /// <param name="query">Query to be executed.</param>
         /// <param name="expectedChanges">(Optional) Expected amount of changes to the database. If the amount of changes is not expected, the change will be rolled back and an exception will be thrown.</param> 
         /// <returns>Number of affected rows.</returns>
         public int ExecuteNonQuery(string? query, int expectedChanges = -1);
 
         /// <summary>
-        /// Executes a SELECT query in the database and returns a list of entities obtained from the query result.
+        /// Executes a SELECT query and retrieves a list of mapped entities, with optional support for pagination.
         /// </summary>
-        /// <typeparam name="TEntity">The type of entities to be obtained.</typeparam>
-        /// <param name="query">The SELECT query to be executed.</param>
-        /// <returns>A list of entities retrieved from the database, or null if the query execution fails.</returns>
-        public List<TEntity>? ExecuteSelect<TEntity>(string? query);
+        /// <typeparam name="TEntity">The type of entity to map the retrieved data to.</typeparam>
+        /// <param name="query">The SQL SELECT query to be executed.</param>
+        /// <param name="pageSize">
+        /// (Optional) The number of records to retrieve per page. If specified, the query will be paginated.
+        /// </param>
+        /// <param name="pageIndex">
+        /// The zero-based index of the page to retrieve. Ignored if <paramref name="pageSize"/> is <c>null</c>.
+        /// Defaults to 0.
+        /// </param>
+        /// <param name="filterPage">
+        /// (Optional) Additional filtering criteria for the paginated query. Applied only if <paramref name="pageSize"/> is specified.
+        /// </param>
+        /// <param name="sortColumnPage">
+        /// (Optional) The column name to sort the paginated query. Applied only if <paramref name="pageSize"/> is specified.
+        /// </param>
+        /// <param name="sortAscendingPage">
+        /// Determines the sorting order for the paginated query. 
+        /// <c>true</c> for ascending order; <c>false</c> for descending order. Defaults to <c>true</c>.
+        /// Applied only if <paramref name="pageSize"/> is specified.
+        /// </param>
+        /// <returns>
+        /// A list of mapped entities of type <typeparamref name="TEntity"/>, or <c>null</c> if no data is retrieved.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if the <paramref name="query"/> is <c>null</c> or invalid.
+        /// </exception>
+        /// <remarks>
+        /// - If <paramref name="pageSize"/> is not specified, the query will execute without pagination.
+        /// - The method uses the specified filtering and sorting options only if <paramref name="pageSize"/> is provided.
+        /// - Ensure that <paramref name="query"/> is a valid SQL SELECT statement.
+        /// </remarks>
+        public List<TEntity>? ExecuteSelect<TEntity>(string? query, int? pageSize = null, int pageIndex = 0, string? filterPage = null, string? sortColumnPage = null, bool sortAscendingPage = true);
 
         /// <summary>
-        /// Executes a SELECT query in the database and returns the result as a DataTable.
+        /// Executes a SELECT query and retrieves the results as a <see cref="DataTable"/>, with optional support for pagination.
         /// </summary>
-        /// <typeparam name="TEntity">The type of entities to be obtained.</typeparam>
-        /// <param name="query">The SELECT query to be executed.</param>
+        /// <param name="query">The SQL SELECT query to be executed.</param>
+        /// <param name="pageSize">
+        /// (Optional) The number of records to retrieve per page. If specified, the query will be paginated.
+        /// </param>
+        /// <param name="pageIndex">
+        /// The zero-based index of the page to retrieve. Ignored if <paramref name="pageSize"/> is <c>null</c>.
+        /// Defaults to 0.
+        /// </param>
+        /// <param name="filterPage">
+        /// (Optional) Additional filtering criteria for the paginated query. Applied only if <paramref name="pageSize"/> is specified.
+        /// </param>
+        /// <param name="sortColumnPage">
+        /// (Optional) The column name to sort the paginated query. Applied only if <paramref name="pageSize"/> is specified.
+        /// </param>
+        /// <param name="sortAscendingPage">
+        /// Determines the sorting order for the paginated query. 
+        /// <c>true</c> for ascending order; <c>false</c> for descending order. Defaults to <c>true</c>.
+        /// Applied only if <paramref name="pageSize"/> is specified.
+        /// </param>
         /// <returns>
-        /// A DataTable containing the result of the query, or null if the query execution fails.
+        /// A <see cref="DataTable"/> containing the query results, or <c>null</c> if no data is retrieved.
         /// </returns>
-        public DataTable? ExecuteSelectDt(string? query);
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if the <paramref name="query"/> is <c>null</c> or invalid.
+        /// </exception>
+        /// <exception cref="Exception">
+        /// Thrown for any other error encountered during query execution.
+        /// </exception>
+        /// <remarks>
+        /// - If <paramref name="pageSize"/> is not specified, the query will execute without pagination.
+        /// - The method uses the specified filtering and sorting options only if <paramref name="pageSize"/> is provided.
+        /// - Closes the database connection after execution, regardless of success or failure.
+        /// </remarks>
+        public DataTable? ExecuteSelectDt(string? query, int? pageSize = null, int pageIndex = 0, string? filterPage = null, string? sortColumnPage = null, bool sortAscendingPage = true);
 
         /// <summary>
         /// Executes a SQL query and returns the scalar result as a string.

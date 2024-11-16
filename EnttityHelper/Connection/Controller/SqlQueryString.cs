@@ -462,7 +462,7 @@ namespace EH.Connection
             return queryCreatesTable;
         }
 
-        private static Dictionary<string, string?> CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, string? pkEntity1, Dictionary<string, string>? replacesTableName)
+        internal static Dictionary<string, string?> CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, string? pkEntity1, Dictionary<string, string>? replacesTableName)
         {
             Dictionary<string, string?> createsTable = new();
 
@@ -550,13 +550,61 @@ namespace EH.Connection
         /// <returns>A SQL query to add the foreign key constraint.</returns>
         public string AddForeignKeyConstraint(string tableName, string childKeyColumn, string parentTableName, string parentKeyColumn, string foreignKeyName)
         {
-            string sqlQuery = $@"
+            return $@"
                 ALTER TABLE {tableName}
                 ADD CONSTRAINT {foreignKeyName}
                 FOREIGN KEY ({childKeyColumn})
                 REFERENCES {parentTableName}({parentKeyColumn});";
-
-            return sqlQuery;
         }
+
+        /// <summary>
+        /// Builds a paginated SQL query by applying optional filtering, sorting, and pagination parameters to a base query.
+        /// </summary>
+        /// <param name="baseQuery">The base SQL query to which pagination, filtering, and sorting will be applied.</param>
+        /// <param name="pageSize">The number of records to retrieve per page. Must be a positive integer.</param>
+        /// <param name="pageIndex">The zero-based index of the page to retrieve. Must be a non-negative integer.</param>
+        /// <param name="filter">(Optional) A SQL-compatible filter condition to be appended to the query (e.g., "ColumnName = 'Value'").</param>
+        /// <param name="sortColumn">(Optional) The name of the column to be used for sorting the query results.</param>
+        /// <param name="sortAscending">Determines the sorting direction. Set to true for ascending order; false for descending order. Default is true.</param>
+        /// <returns>
+        /// A string representing the paginated SQL query with the specified filtering, sorting, and pagination applied.
+        /// </returns>
+        /// <remarks>
+        /// - If <paramref name="filter"/> is null or empty, no filtering clause is added.
+        /// - If <paramref name="sortColumn"/> is null or empty, no sorting clause is added.
+        /// - Uses the OFFSET-FETCH syntax for pagination, compatible with SQL Server, Oracle (12c+), and other SQL dialects.
+        /// - Ensure the <paramref name="baseQuery"/> does not already include conflicting filters or sorting logic unless intended.
+        /// </remarks>
+
+        public string PaginatedQuery(string baseQuery, int pageSize, int pageIndex, string? filter, string? sortColumn, bool sortAscending)
+        {
+            var offset = pageSize * pageIndex;
+            var filterClause = !string.IsNullOrEmpty(filter) ? $"WHERE {filter}" : string.Empty;
+            var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : string.Empty;
+
+            return $"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
+        }
+
+        /// <summary>
+        /// Builds a SQL query to count the total number of records from a base query, optionally applying a filter condition.
+        /// </summary>
+        /// <param name="baseQuery">The base SQL query to count records from. Should not include SELECT or ORDER BY clauses.</param>
+        /// <param name="filter">(Optional) A SQL-compatible filter condition to limit the records being counted (e.g., "ColumnName = 'Value'").</param>
+        /// <returns>
+        /// A string representing the SQL query to count the records.
+        /// </returns>
+        /// <remarks>
+        /// - If <paramref name="filter"/> is null or empty, the count query is generated without a WHERE clause.
+        /// - Ensure the <paramref name="baseQuery"/> does not conflict with the added filter logic.
+        /// - The method assumes the <paramref name="baseQuery"/> is well-formed and valid for counting.
+        /// </remarks>
+        public string CountQuery(string baseQuery, string? filter)
+        {
+            var mainQuery = baseQuery.Split(new[] { "ORDER BY" }, StringSplitOptions.RemoveEmptyEntries)[0];
+            var filterClause = !string.IsNullOrEmpty(filter) ? $"WHERE {filter}" : string.Empty;
+            return $"SELECT COUNT(*) FROM ({mainQuery} {filterClause}) AS TotalCount";
+        }
+
+
     }
 }
