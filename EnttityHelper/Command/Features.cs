@@ -316,21 +316,25 @@ namespace EH.Command
                     string[] rows = reader.ReadLine()?.Split(delimiter) ?? throw new InvalidOperationException("Error reading a row from the CSV/TXT file.");
                     rowIndex++;
 
-                    if (rows.Length != headers.Length)
+                    if (hashRowsSelected.Contains(rowIndex))
                     {
-                        Debug.WriteLine($"Mismatch between CSV/TXT header and row column count in row {rowIndex}");
-                        throw new InvalidOperationException($"Mismatch between CSV/TXT header ({headers.Length} columns) and row column count in row {rowIndex} ({rows.Length} columns).");
-                    }
+                        if (rows.Length != headers.Length)
+                        {
+                            Debug.WriteLine($"Mismatch between CSV/TXT header and row column count in row {rowIndex}");
+                            throw new InvalidOperationException($"Mismatch between CSV/TXT header ({headers.Length} columns) and row column count in row {rowIndex} ({rows.Length} columns).");
+                        }
 
-                    DataRow row = dataTable.NewRow();
-                    for (int i = 0; i < headers.Length; i++) { row[i] = rows[i]?.Trim(); }
+                        DataRow row = dataTable.NewRow();
+                        for (int i = 0; i < headers.Length; i++) { row[i] = rows[i]?.Trim(); }
 
-                    if (hashRowsSelected.Contains(rowIndex)) dataTable.Rows.Add(row);
+                        //if (hashRowsSelected.Contains(rowIndex)) 
+                        dataTable.Rows.Add(row);
 
-                    if (dataTable.Rows.Count >= batchSize)
-                    {
-                        totalInserts += _enttityHelper.DbContext.PerformBulkCopyOperation(dataTable, tableName, timeOutSeconds);
-                        dataTable.Clear();
+                        if (dataTable.Rows.Count >= batchSize)
+                        {
+                            totalInserts += _enttityHelper.DbContext.PerformBulkCopyOperation(dataTable, tableName, timeOutSeconds);
+                            dataTable.Clear();
+                        }
                     }
                 }
 
