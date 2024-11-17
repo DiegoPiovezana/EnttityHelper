@@ -813,6 +813,44 @@ SELECT *
                 ORDER BY GroupId, UserId NULLS LAST
 
 
+-- Query com WITH e JOIN - 27 registros
+WITH UserGroupSummary AS (
+    SELECT 
+        u.Id AS UserId,
+        u.Name AS UserName,
+        g.Id AS GroupId,
+        g.Name AS GroupName
+    FROM TB_USERS u
+    JOIN TB_GROUP_USERStoGROUPS ug ON u.Id = ug.ID_TB_USERS
+    JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+)
+SELECT * FROM UserGroupSummary 
+WHERE TO_CHAR(UserId) LIKE '206%'
+ORDER BY GroupName, UserName
+
+--  Query com UNION - 8 registros
+SELECT Id, Name 
+FROM TB_USERS
+WHERE Id < 20605
+AND TO_CHAR(Id) LIKE '206%'
+UNION ALL
+SELECT Id, Name 
+FROM TB_GROUP_USERS
+WHERE Id < 20605
+AND TO_CHAR(Id) LIKE '206%'
+ORDER BY Name
+
+-- Query simples sem cláusulas adicionais - 20 registros
+SELECT Id, Name FROM TB_USERS  WHERE TO_CHAR(Id) LIKE '206%'
+
+-- Query com subquery - 6 registros
+SELECT u.Id, u.Name
+FROM TB_USERS u
+WHERE u.Id IN (SELECT ug.ID_TB_USERS FROM TB_GROUP_USERStoGROUPS ug WHERE ug.ID_TB_GROUP_USERS = 20601)
+
+
+
+
 ---------- Paginated query
 
                 SELECT /*+ FIRST_ROWS(10) */ * FROM ( SELECT inner_query.*, ROWNUM AS rnum FROM ( 
@@ -887,6 +925,7 @@ SELECT COUNT(1) FROM (
     JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
     GROUP BY g.Id, g.Name
 ) CountQuery
+
 
 
 
