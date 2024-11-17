@@ -624,12 +624,22 @@ namespace EH.Connection
         /// - Ensure the <paramref name="baseQuery"/> does not conflict with the added filter logic.
         /// - The method assumes the <paramref name="baseQuery"/> is well-formed and valid for counting.
         /// </remarks>
-        public string CountQuery(string baseQuery, string? filter)
-        {
-            var mainQuery = baseQuery.Split(new[] { "ORDER BY" }, StringSplitOptions.RemoveEmptyEntries)[0];
-            var filterClause = !string.IsNullOrEmpty(filter) ? $"WHERE {filter}" : string.Empty;
-            return $"SELECT COUNT(*) FROM ({mainQuery} {filterClause}) AS TotalCount";
+        public string CountQuery(string baseQuery, string? filter = null)
+        {            
+            var orderByIndex = baseQuery.ToUpperInvariant().LastIndexOf("ORDER BY");
+
+            var mainQuery = orderByIndex >= 0
+                ? baseQuery.Substring(0, orderByIndex).Trim()
+                : baseQuery.Trim();
+
+            var filterClause = !string.IsNullOrEmpty(filter)
+                ? $"WHERE {filter}"
+                : string.Empty;
+
+            return $"SELECT COUNT(1) FROM ({mainQuery}) CountQuery {filterClause}";
         }
+
+
 
 
     }

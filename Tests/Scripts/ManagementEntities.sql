@@ -858,6 +858,35 @@ SELECT *
                ) inner_query WHERE ROWNUM <= 10 ) WHERE rnum > 0
 
 
+---------- Count query
+
+
+
+WITH UserGroupSummary AS (
+    SELECT 
+        u.Id AS UserId,
+        u.Name AS UserName,
+        g.Id AS GroupId,
+        g.Name AS GroupName,
+        c.Name AS CareerName,
+        COUNT(ug.ID_TB_USER) AS UserCountInGroup
+    FROM TB_USER u
+    JOIN TB_GROUP_USERStoGROUPS ug ON u.Id = ug.ID_TB_USER
+    JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+    JOIN TB_CAREERS c ON u.IdCareer = c.IdCareer
+    GROUP BY u.Id, u.Name, g.Id, g.Name, c.Name
+)
+SELECT COUNT(1) FROM (
+    SELECT 1
+    FROM UserGroupSummary
+
+    UNION ALL
+
+    SELECT 1
+    FROM TB_GROUP_USERStoGROUPS ug
+    JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+    GROUP BY g.Id, g.Name
+) CountQuery
 
 
 

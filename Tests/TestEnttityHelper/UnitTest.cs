@@ -1367,13 +1367,13 @@ namespace TestEH_UnitTest
                 var paginatedResult = eh.ExecuteSelectDt(complexQuery, pageSize: 10, pageIndex: 0);
                 Assert.AreEqual(10, paginatedResult.Rows.Count);
 
-                var secondPageResult = eh.ExecuteSelectDt(complexQuery, pageSize: 10, pageIndex: 1);
-                Assert.IsTrue(secondPageResult.Rows.Count > 0); // Segunda página deve ter registros (dependendo da quantidade de dados)
+                var secondPageResult = eh.ExecuteSelectDt(complexQuery, pageSize: 10, pageIndex: 3); // Total: 32 (4 pages)
+                Assert.AreEqual(2, secondPageResult.Rows.Count); // Segunda página deve ter registros (dependendo da quantidade de dados)
 
 
                 // Teste de contagem total
                 int totalRecords = await eh.GetTotalRecordCountAsync(complexQuery);
-                Assert.IsTrue(totalRecords > 0); // Deve retornar a quantidade total de registros da query
+                Assert.AreEqual(32, totalRecords); // Deve retornar a quantidade total de registros da query
 
 
                 // Validação cruzada
@@ -1390,6 +1390,9 @@ namespace TestEH_UnitTest
                 eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '205%'");
             }
         }
+
+
+
 
 
 
