@@ -596,7 +596,7 @@ namespace EH.Connection
 
             var offset = pageSize * pageIndex;
             var filterClause = !string.IsNullOrEmpty(filter) ? $"WHERE {filter}" : string.Empty;
-            var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : "ORDER BY 1"; // Oracle needs a defined order for ROW_NUMBER
+            var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : string.Empty;
 
             //return $"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
 

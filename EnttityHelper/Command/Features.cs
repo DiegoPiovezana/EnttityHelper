@@ -229,7 +229,7 @@ namespace EH.Command
 
                 return insertions;
             }
-        }       
+        }
 
         public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds)
         {

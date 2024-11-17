@@ -210,9 +210,6 @@ namespace EH.Properties
             PropertyInfo? prop1Collection = null; // Entity 1 in entity 2
             if (!string.IsNullOrEmpty(nameProp2Collection)) { prop1Collection = entity2Type.GetProperty(nameProp2Collection); }
 
-            //Type? collection1Type = null;
-            //if (prop1Collection != null) { collection1Type = prop2Collection.PropertyType; }
-
             string nameProp1Collection = prop2Collection.Name;
 
             string tableName1 = GetTableName(entity1Type, replacesTableName);
@@ -225,36 +222,11 @@ namespace EH.Properties
                 (nameProp2Collection, nameProp1Collection) = (nameProp1Collection, nameProp2Collection);
             }
 
-            string tableNameResult = $"{tableName1.ToUpper()}to{nameProp2Collection.ToUpper()}";
-
-            //string tableName1 = string.Compare(nameTbEntity1, nameTbEntity2) > 0 ? nameTbEntity1 : nameTbEntity2;
-            //string tableName2 = string.Compare(nameTbEntity1, nameTbEntity2) > 0 ? nameTbEntity2 : nameTbEntity1;
-
-            //string tableNameResult = tableName1;
-
-            //if (tableNameResult.Length + tableName2.Length <= 30)
-            //{
-            //string tableNameResult = $"{tableName1.ToUpper()}to{tableName2.ToUpper()}";
-            //}
-            //else if (tableNameResult.Length + entity2.Name.Length <= 30)
-            //{
-            //    tableNameResult = $"{tableNameResult.ToUpper()}to{entity2.Name.ToUpper()}";
-            //}
-            //else
-            //{
-            //    string entity2Name = entity2.Name.ToUpper();
-            //    tableNameResult = $"{tableNameResult.ToUpper()}to{entity2Name}";
-            //}
+            string tableNameResult = $"{tableName1.ToUpper()}to{nameProp2Collection.ToUpper()}";            
 
             if (replacesTableName is not null) tableNameResult = replacesTableName.Aggregate(tableNameResult, (text, replace) => text.Replace(replace.Key, replace.Value));
-            tableNameResult = tableNameResult.Substring(0, Math.Min(tableNameResult.Length, 30));
-
-            return tableNameResult;
+            return tableNameResult.Substring(0, Math.Min(tableNameResult.Length, 30));
         }
-
-
-
-
 
 
     }

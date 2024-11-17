@@ -1247,7 +1247,149 @@ namespace TestEH_UnitTest
             }
         }
 
+        [Test, Order(205)]
+        public async Task ComplexQueryWithPaginationAndRecordCount()
+        {
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            Assert.That(eh.DbContext.ValidateConnection());
 
+            try
+            {
+
+                // Criação das tabelas
+                eh.CreateTableIfNotExist<Group>(createOnlyPrimaryTable: true); // Doesnt create the TB_GROUP_USERStoGROUPS table
+                eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false); // Cretes the TB_GROUP_USERStoGROUPS table
+                eh.CreateTableIfNotExist<Career>(createOnlyPrimaryTable: false);
+
+
+                // Inserção de carreira
+                Career career1 = new() { IdCareer = 20501, Name = "Junior", CareerLevel = 1, Active = true };
+                Career career2 = new() { IdCareer = 20502, Name = "Pleno", CareerLevel = 2, Active = true };
+                Assert.AreEqual(eh.Insert(new List<Career> { career1, career2 }), 2);
+
+
+                // Inserção de grupos
+                var groups = Enumerable.Range(20501, 5).Select(i => new Group
+                {
+                    Id = i,
+                    Name = $"Group {i}",
+                    Description = $"Description for Group {i}"
+                }).ToList();
+                Assert.AreEqual(eh.Insert(groups), groups.Count);
+
+
+                // Inserção de usuários
+                var users = Enumerable.Range(20501, 20).Select(i =>
+                {
+                    var user = new User
+                    {
+                        Id = i,
+                        Name = $"User {i}",
+                        GitHub = $"@User{i}",
+                        DtCreation = DateTime.Now,
+                        IdCareer = i % 2 == 0 ? 20501 : 20502
+                    };
+
+                    // Adiciona os grupos ao usuário
+                    user.Groups.Add(groups[i % groups.Count]);
+                    if (i % 3 == 0) // Adiciona outro grupo como exemplo
+                    {
+                        user.Groups.Add(groups[(i + 1) % groups.Count]);
+                    }
+
+                    return user;
+
+                }).ToList();
+
+                // Insere usuários e valida a quantidade de registros inseridos em ambas as tabelas
+                int expectedUserCount = users.Count;
+                int expectedAuxiliaryCount = users.Sum(u => u.Groups.Count); // Soma os relacionamentos User-Group
+                int totalExpectedInserts = expectedUserCount + expectedAuxiliaryCount;
+
+                // Realiza a inserção
+                int actualInsertCount = eh.Insert(users);
+
+                // Valida a quantidade total de inserções
+                Assert.AreEqual(totalExpectedInserts, actualInsertCount);
+
+
+                // Query complexa com JOIN, UNION, SUM, WITH, etc.
+                string complexQuery = @"
+                WITH UserGroupSummary AS (
+                    SELECT 
+                        u.Id AS UserId,
+                        u.Name AS UserName,
+                        g.Id AS GroupId,
+                        g.Name AS GroupName,
+                        c.Name AS CareerName,
+                        COUNT(ug.ID_TB_USER) AS UserCountInGroup
+                    FROM {0} u
+                    JOIN {1} ug ON u.Id = ug.ID_TB_USER
+                    JOIN {2} g ON ug.ID_TB_GROUP_USERS = g.Id
+                    JOIN {3} c ON u.IdCareer = c.IdCareer
+                    GROUP BY u.Id, u.Name, g.Id, g.Name, c.Name
+                )
+
+                SELECT 
+                    UserId,
+                    UserName,
+                    GroupId,
+                    GroupName,
+                    CareerName,
+                    UserCountInGroup
+                FROM UserGroupSummary
+
+                UNION ALL
+
+                SELECT 
+                    NULL AS UserId, 
+                    NULL AS UserName, 
+                    g.Id AS GroupId, 
+                    g.Name AS GroupName, 
+                    NULL AS CareerName, 
+                    COUNT(ug.ID_TB_USER) AS UserCountInGroup
+                FROM {1} ug
+                JOIN {2} g ON ug.ID_TB_GROUP_USERS = g.Id
+                GROUP BY g.Id, g.Name
+
+                ORDER BY GroupId, UserId NULLS LAST";
+
+
+                // Substituindo os nomes das tabelas na query
+                complexQuery = string.Format(complexQuery,
+                    eh.GetTableName<User>(),
+                    eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups)),
+                    eh.GetTableName<Group>(),
+                    eh.GetTableName<Career>());
+
+
+                // Teste de paginação
+                var paginatedResult = eh.ExecuteSelectDt(complexQuery, pageSize: 10, pageIndex: 0);
+                Assert.AreEqual(10, paginatedResult.Rows.Count);
+
+                var secondPageResult = eh.ExecuteSelectDt(complexQuery, pageSize: 10, pageIndex: 1);
+                Assert.IsTrue(secondPageResult.Rows.Count > 0); // Segunda página deve ter registros (dependendo da quantidade de dados)
+
+
+                // Teste de contagem total
+                int totalRecords = await eh.GetTotalRecordCountAsync(complexQuery);
+                Assert.IsTrue(totalRecords > 0); // Deve retornar a quantidade total de registros da query
+
+
+                // Validação cruzada
+                int allRecords = eh.ExecuteSelectDt(complexQuery, pageSize: null).Rows.Count;
+                Assert.AreEqual(totalRecords, allRecords);
+
+            }
+            finally
+            {
+                // Limpeza das tabelas
+                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))}");
+                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '205%'");
+                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '205%'");
+                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '205%'");
+            }
+        }
 
 
 

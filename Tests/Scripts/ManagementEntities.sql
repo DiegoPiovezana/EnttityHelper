@@ -771,6 +771,91 @@ SELECT *
 
 
 
+---------- Original query
+
+                WITH UserGroupSummary AS (
+                    SELECT 
+                        u.Id AS UserId,
+                        u.Name AS UserName,
+                        g.Id AS GroupId,
+                        g.Name AS GroupName,
+                        c.Name AS CareerName,
+                        COUNT(ug.ID_TB_USER) AS UserCountInGroup
+                    FROM TB_USER u
+                    JOIN TB_GROUP_USERStoGROUPS ug ON u.Id = ug.ID_TB_USER
+                    JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+                    JOIN TB_CAREERS c ON u.IdCareer = c.IdCareer
+                    GROUP BY u.Id, u.Name, g.Id, g.Name, c.Name
+                )
+
+                SELECT 
+                    UserId,
+                    UserName,
+                    GroupId,
+                    GroupName,
+                    CareerName,
+                    UserCountInGroup
+                FROM UserGroupSummary
+
+                UNION ALL
+
+                SELECT 
+                    NULL AS UserId, 
+                    NULL AS UserName, 
+                    g.Id AS GroupId, 
+                    g.Name AS GroupName, 
+                    NULL AS CareerName, 
+                    COUNT(ug.ID_TB_USER) AS UserCountInGroup
+                FROM TB_GROUP_USERStoGROUPS ug
+                JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+                GROUP BY g.Id, g.Name
+
+                ORDER BY GroupId, UserId NULLS LAST
+
+
+---------- Paginated query
+
+                SELECT /*+ FIRST_ROWS(10) */ * FROM ( SELECT inner_query.*, ROWNUM AS rnum FROM ( 
+                WITH UserGroupSummary AS (
+                    SELECT 
+                        u.Id AS UserId,
+                        u.Name AS UserName,
+                        g.Id AS GroupId,
+                        g.Name AS GroupName,
+                        c.Name AS CareerName,
+                        COUNT(ug.ID_TB_USER) AS UserCountInGroup
+                    FROM TB_USER u
+                    JOIN TB_GROUP_USERStoGROUPS ug ON u.Id = ug.ID_TB_USER
+                    JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+                    JOIN TB_CAREERS c ON u.IdCareer = c.IdCareer
+                    GROUP BY u.Id, u.Name, g.Id, g.Name, c.Name
+                )
+
+                SELECT 
+                    UserId,
+                    UserName,
+                    GroupId,
+                    GroupName,
+                    CareerName,
+                    UserCountInGroup
+                FROM UserGroupSummary
+
+                UNION ALL
+
+                SELECT 
+                    NULL AS UserId, 
+                    NULL AS UserName, 
+                    g.Id AS GroupId, 
+                    g.Name AS GroupName, 
+                    NULL AS CareerName, 
+                    COUNT(ug.ID_TB_USER) AS UserCountInGroup
+                FROM TB_GROUP_USERStoGROUPS ug
+                JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+                GROUP BY g.Id, g.Name
+
+                -- ORDER BY GroupId, UserId NULLS LAST ORDER BY 1) inner_query WHERE ROWNUM <= 10 ) WHERE rnum > 0
+                -- ORDER BY GroupId, UserId NULLS LAST) inner_query WHERE ROWNUM <= 10 ) WHERE rnum > 0
+               ) inner_query WHERE ROWNUM <= 10 ) WHERE rnum > 0
 
 
 
@@ -778,7 +863,23 @@ SELECT *
 
 
 
+--------------------------------------------------------------------------------------------
+-- Read
 
+SELECT * FROM TestTableCsvHeader2;
+SELECT * FROM TestTableCsvHeader1;
+SELECT * FROM TestTable1M_Csv;
+SELECT * FROM TestTable_Txt;
+SELECT * FROM TestTable_BigCsv;
+SELECT * FROM TestTableCsv_RangeRows;
+SELECT * FROM TestTableCsv_RangeRowsBig;
+SELECT * FROM TestTable;
+SELECT * FROM TABLEX;
+SELECT * FROM TB_ENTITY_TEST;
+SELECT * FROM TB_CAREERS;
+SELECT * FROM TB_GROUP_USERSTOGROUPS;
+SELECT * FROM TB_GROUP_USERS;
+SELECT * FROM TB_USER;
 
 
 
@@ -791,6 +892,7 @@ DROP TABLE TestTable1M_Csv;
 DROP TABLE TestTable_Txt;
 DROP TABLE TestTable_BigCsv;
 DROP TABLE TestTableCsv_RangeRows;
+DROP TABLE TestTableCsv_RangeRowsBig;
 DROP TABLE TestTable;
 DROP TABLE TABLEX;
 DROP TABLE TB_ENTITY_TEST;
