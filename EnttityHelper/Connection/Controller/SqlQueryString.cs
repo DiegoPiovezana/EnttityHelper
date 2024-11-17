@@ -16,16 +16,23 @@ namespace EH.Connection
     /// <summary>
     /// Allows you to obtain the main commands to be executed on the database.
     /// </summary>
-    public class SqlQueryString //: IEnttityHelper
+    public class SqlQueryString
     {
-        EnttityHelper EnttityHelper { get; set; }
+        EnttityHelper? EnttityHelper { get; set; }
+        Enums.DbType? DbType { get; set; }
 
 
-        public SqlQueryString() { }
+        //public SqlQueryString() { }
 
-        public SqlQueryString(EnttityHelper enttityHelper)
+        public SqlQueryString(EnttityHelper? enttityHelper)
         {
             EnttityHelper = enttityHelper;
+            DbType = enttityHelper?.DbContext.Type;
+        }
+
+        public SqlQueryString(Enums.DbType? dbType)
+        {
+            DbType = dbType;
         }
 
 
@@ -578,11 +585,30 @@ namespace EH.Connection
 
         public string PaginatedQuery(string baseQuery, int pageSize, int pageIndex, string? filter, string? sortColumn, bool sortAscending)
         {
+            if (DbType is null)
+                throw new ArgumentNullException("The database type is required to generate this query!");
+            if (string.IsNullOrEmpty(baseQuery))
+                throw new ArgumentNullException(nameof(baseQuery));
+            if (pageSize <= 0)
+                throw new ArgumentException("Page size must be greater than zero!", nameof(pageSize));
+            if (pageIndex < 0)
+                throw new ArgumentException("Page index cannot be negative!", nameof(pageIndex));
+
             var offset = pageSize * pageIndex;
             var filterClause = !string.IsNullOrEmpty(filter) ? $"WHERE {filter}" : string.Empty;
-            var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : string.Empty;
+            var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : "ORDER BY 1"; // Oracle needs a defined order for ROW_NUMBER
 
-            return $"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
+            //return $"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
+
+            return DbType switch
+            {
+                //Enums.DbType.Oracle => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM (SELECT a.*, ROW_NUMBER() OVER ({orderClause}) AS rnum FROM ({baseQuery} {filterClause}) a) WHERE rnum > {offset} AND rnum <= {offset + pageSize}",
+                Enums.DbType.Oracle => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM ( SELECT inner_query.*, ROWNUM AS rnum FROM ( {baseQuery} {filterClause} {orderClause} ) inner_query WHERE ROWNUM <= {offset + pageSize} ) WHERE rnum > {offset}",
+                Enums.DbType.Oracle12c => $@"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                Enums.DbType.SQLServer or Enums.DbType.PostgreSQL => $"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                Enums.DbType.MySQL => $"{baseQuery} {filterClause} {orderClause} LIMIT {pageSize} OFFSET {offset}",
+                _ => $"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+            };
         }
 
         /// <summary>
