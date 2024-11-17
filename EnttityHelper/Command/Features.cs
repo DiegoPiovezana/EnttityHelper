@@ -591,7 +591,7 @@ namespace EH.Command
             {
                 if (CheckIfExist(createTableQuery.Key, 0, null))
                 {
-                    Debug.WriteLine($"Table '{createTableQuery.Key}' already exists!");
+                    Debug.WriteLine($"Table '{createTableQuery.Key}' exists!");
                     createsTablesQueries.Remove(createTableQuery.Key);
                 }
             }
