@@ -530,7 +530,7 @@ namespace EH.Command
                 if (string.IsNullOrEmpty(baseQuery))
                     throw new ArgumentException("Base query cannot be null or empty.", nameof(baseQuery));
 
-                var countQuery = new SqlQueryString().CountQuery(baseQuery, filter);
+                var countQuery = new SqlQueryString(_enttityHelper).CountQuery(baseQuery, filter);
 
                 using (var connection = _enttityHelper.DbContext.CreateOpenConnection())
                 using (var command = connection.CreateCommand())

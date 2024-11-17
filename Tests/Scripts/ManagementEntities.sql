@@ -699,6 +699,87 @@ WHERE
 
 
 
+---------------------------------------------------------
+-- Get paginated
+
+SELECT * FROM v$version; -- Oracle Database 11g Express Edition Release 11.2.0.2.0 - 64bit Production
+
+-- DROP TABLE TestTableCsv_RangeRows2;
+-- DROP TABLE TestTableCsv_RangeRowsBig;
+
+SELECT COUNT(*) FROM TestTableCsv_RangeRowsBig;
+SELECT * FROM TestTableCsv_RangeRowsBig OFFSET 0 ROWS FETCH NEXT 20 ROWS ONLY;
+SELECT * FROM (SELECT * FROM (SELECT * FROM TestTableCsv_RangeRowsBig  )) WHERE ROWNUM <= 100 AND ROWNUM > 50;     -- 0
+SELECT COUNT(*) FROM (SELECT * FROM (SELECT * FROM TestTableCsv_RangeRowsBig  )) WHERE ROWNUM <= 100;              -- 98
+SELECT COUNT(*) FROM (SELECT * FROM (SELECT * FROM TestTableCsv_RangeRowsBig  )) WHERE ROWNUM > 50;                -- 0
+SELECT COUNT(*) FROM TestTableCsv_RangeRowsBig WHERE ROWNUM > 50;                                                  -- 0
+SELECT * FROM (SELECT * FROM TestTableCsv_RangeRowsBig) WHERE ROWNUM <= 100 AND ROWNUM > 50;
+SELECT * FROM (SELECT * FROM TestTableCsv_RangeRowsBig) WHERE ROWNUM <= 20;
+
+
+SELECT 
+ROWNUM, 
+T.* 
+FROM TestTableCsv_RangeRowsBig T 
+-- WHERE ROWNUM > 50
+;  
+
+SELECT * FROM 
+(
+SELECT ROWNUM AS N, T.* 
+FROM TestTableCsv_RangeRowsBig T 
+-- WHERE ROWNUM > 50
+)
+-- WHERE ROWNUM > 50 -- 0
+WHERE N > 50   -- OK
+;  
+
+SELECT COUNT(*) FROM (SELECT * FROM (SELECT * FROM TestTableCsv_RangeRowsBig  )) WHERE ROWNUM > 50;
+
+SELECT *
+FROM (
+    SELECT TestTableCsv_RangeRowsBig.*, ROW_NUMBER() OVER (ORDER BY your_column) AS rownum_alias
+    FROM TestTableCsv_RangeRowsBig
+)
+WHERE rownum_alias >= 51;
+
+
+SELECT * FROM (
+    SELECT * FROM TestTableCsv_RangeRowsBig
+    --ORDER BY {sortColumn} {sortDirection}
+) 
+WHERE ROWNUM <= 50 
+AND ROWNUM > 50;
+
+
+SELECT *
+FROM (
+    SELECT TestTableCsv_RangeRowsBig.*, ROWNUM AS rownum_alias
+    FROM TestTableCsv_RangeRowsBig
+    WHERE ROWNUM >= 51
+)
+WHERE rownum_alias >= 51;
+
+
+SELECT * 
+        FROM (
+            SELECT inner_query.*, ROWNUM AS row_number
+            FROM (SELECT * FROM TestTableCsv_RangeRowsBig) inner_query
+            WHERE ROWNUM <= 100
+        )
+        WHERE row_number >= 50;
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 --------------------------------------------------------------------------------------------

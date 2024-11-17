@@ -1,6 +1,7 @@
 using EH;
 using Oracle.ManagedDataAccess.Client;
 using SH;
+using System.Data;
 using System.Diagnostics;
 using TestEH_UnitTest.Entities;
 using TestEH_UnitTest.Entitities;
@@ -958,8 +959,6 @@ namespace TestEH_UnitTest
             Assert.AreEqual(insertCount, result);
         }
 
-
-
         [Test, Order(201)]
         public void TestIncludeAll()
         {
@@ -1097,9 +1096,7 @@ namespace TestEH_UnitTest
             eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '201%'");
             eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '201%'");
             eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '201%'");
-
         }
-
 
         [Test, Order(202)]
         public void Insert_GetQuery()
@@ -1130,6 +1127,112 @@ namespace TestEH_UnitTest
 
             Debug.WriteLine(result);
         }
+
+        [Test, Order(203)]
+        public void LoadCSV_And_GetPaginated()
+        {
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            Assert.That(eh.DbContext.ValidateConnection());
+
+            string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ExcelCsvGerado_1000000x10.csv"; // J100
+
+            string tableName = "TestTableCsv_RangeRowsBig";
+            int batchSize = 200_000;
+            int timeout = 15;
+            char delimiter = ';';
+            bool hasHeader = true;
+
+            string rangeRows = "2:-2"; // second to penultimat row
+            var insertCount = 999_998;
+            if (hasHeader) insertCount--; // Remove the header
+
+            if (!eh.CheckIfExist(tableName))
+            {
+                int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
+                Assert.AreEqual(insertCount, result);
+            }
+            //else
+            //{
+            //    eh.ExecuteNonQuery($"DROP TABLE {tableName}");
+            //    int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
+            //    Assert.AreEqual(insertCount, result);
+            //}
+
+            var paginated1 = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 20);
+            Assert.AreEqual(20, paginated1.Rows.Count);
+            var paginated2 = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 50, pageIndex: 6);
+            Assert.AreEqual(48, paginated2.Rows.Count);
+            var paginated3 = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 1_000_000, pageIndex: 0);
+            Assert.AreEqual(insertCount, paginated3.Rows.Count);
+
+
+            var paginated1a = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 60, pageIndex: 0);
+            Assert.AreEqual(60, paginated1a.Rows.Count);
+            var paginated1b = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 60, pageIndex: 1);
+            Assert.AreEqual(38, paginated1b.Rows.Count);
+            var paginated1c = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 60, pageIndex: 2);
+            Assert.AreEqual(0, paginated1c.Rows.Count);
+
+        }
+
+        [Test, Order(204)]
+        public void GetUserPaginated()
+        {
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            Assert.That(eh.DbContext.ValidateConnection());
+
+            eh.CreateTableIfNotExist<User>(false);
+            eh.CreateTableIfNotExist<Career>(false);
+
+            Career carrer1 = new() { IdCareer = 2041, Name = "Pleno", CareerLevel = 2, Active = true };
+            Assert.AreEqual(eh.Insert(carrer1), 1);
+
+            User user1 = new() { Id = 2041, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 2041 };
+            User user2 = new() { Id = 2042, Name = "John Victor", GitHub = "@JohnVictor", DtCreation = DateTime.Now, IdCareer = 2041, IdSupervisor = 2041 };
+            User user3 = new() { Id = 2043, Name = "Alice Souza", GitHub = "@AliceSouza", DtCreation = DateTime.Now, IdCareer = 2041 };
+            User user4 = new() { Id = 2044, Name = "Maria Oliveira", GitHub = "@MariaOliveira", DtCreation = DateTime.Now, IdCareer = 2041, IdSupervisor = 2041 };
+            User user5 = new() { Id = 2045, Name = "Carlos Silva", GitHub = "@CarlosSilva", DtCreation = DateTime.Now, IdCareer = 2041 };
+            User user6 = new() { Id = 2046, Name = "Bruna Ferreira", GitHub = "@BrunaFerreira", DtCreation = DateTime.Now, IdCareer = 2041, IdSupervisor = 2044 };
+            User user7 = new() { Id = 2047, Name = "Pedro Santos", GitHub = "@PedroSantos", DtCreation = DateTime.Now, IdCareer = 2041 };
+            User user8 = new() { Id = 2048, Name = "Fernanda Lima", GitHub = "@FernandaLima", DtCreation = DateTime.Now, IdCareer = 2041, IdSupervisor = 2045 };
+            User user9 = new() { Id = 2049, Name = "Lucas Pereira", GitHub = "@LucasPereira", DtCreation = DateTime.Now, IdCareer = 2041 };
+            User user10 = new() { Id = 2050, Name = "Júlia Alves", GitHub = "@JuliaAlves", DtCreation = DateTime.Now, IdCareer = 2041, IdSupervisor = 2047 };
+            User user11 = new() { Id = 2051, Name = "Gustavo Rocha", GitHub = "@GustavoRocha", DtCreation = DateTime.Now, IdCareer = 2041 };
+            User user12 = new() { Id = 2052, Name = "Letícia Costa", GitHub = "@LeticiaCosta", DtCreation = DateTime.Now, IdCareer = 2041, IdSupervisor = 2046 };
+            User user13 = new() { Id = 2053, Name = "Thiago Martins", GitHub = "@ThiagoMartins", DtCreation = DateTime.Now, IdCareer = 2041 };
+            User user14 = new() { Id = 2054, Name = "Natália Souza", GitHub = "@NataliaSouza", DtCreation = DateTime.Now, IdCareer = 2041, IdSupervisor = 2050 };
+            User user15 = new() { Id = 2055, Name = "Vinícius Oliveira", GitHub = "@ViniciusOliveira", DtCreation = DateTime.Now, IdCareer = 2041 };
+            User user16 = new() { Id = 2056, Name = "Amanda Ribeiro", GitHub = "@AmandaRibeiro", DtCreation = DateTime.Now, IdCareer = 2041, IdSupervisor = 2051 };
+            User user17 = new() { Id = 2057, Name = "Renato Almeida", GitHub = "@RenatoAlmeida", DtCreation = DateTime.Now, IdCareer = 2041 };
+            User user18 = new() { Id = 2058, Name = "Patrícia Silva", GitHub = "@PatriciaSilva", DtCreation = DateTime.Now, IdCareer = 2041, IdSupervisor = 2053 };
+            User user19 = new() { Id = 2059, Name = "Fábio Gomes", GitHub = "@FabioGomes", DtCreation = DateTime.Now, IdCareer = 2041 };
+            User user20 = new() { Id = 2060, Name = "Gabriela Santos", GitHub = "@GabrielaSantos", DtCreation = DateTime.Now, IdCareer = 2041, IdSupervisor = 2058 };
+
+            int countUsers = 20;
+            string nameTable = eh.GetTableName<User>();
+
+            var users = new List<User>() { user1, user2, user3, user4, user5, user6, user7, user8, user9, user10, user11, user12, user13, user14, user15, user16, user17, user18, user19, user20 };
+            Assert.AreEqual(eh.Insert(users), countUsers);
+
+            var notPaginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTable}", pageSize: null);
+            Assert.AreEqual(countUsers, notPaginated1.Rows.Count);
+            var notPaginated2 = eh.ExecuteSelect<DataRow>($"SELECT * FROM {nameTable}", pageSize: null);
+            Assert.AreEqual(countUsers, notPaginated2.Count);
+            var notPaginated3 = eh.Get<DataRow>(includeAll: false, null, nameTable, pageSize: null);
+            Assert.AreEqual(countUsers, notPaginated3.Count);
+
+            var paginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTable}", pageSize: 10, pageIndex: 0);
+            Assert.AreEqual(10, paginated1.Rows.Count);
+            var paginated2 = eh.ExecuteSelect<DataRow>($"SELECT * FROM {nameTable}", pageSize: 15, pageIndex: 1);
+            Assert.AreEqual(5, paginated2.Count);
+            var paginated3 = eh.Get<DataRow>(includeAll: false, filter: null, tableName: null, pageSize: 15, pageIndex: 1);
+            Assert.AreEqual(5, paginated3.Count);
+
+            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '204%'");
+            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '204%'");
+        }
+
+
 
 
 
