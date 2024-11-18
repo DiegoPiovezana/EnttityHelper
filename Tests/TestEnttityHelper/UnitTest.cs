@@ -1094,8 +1094,8 @@ namespace TestEH_UnitTest
             user2.Supervisor = user3; // Change supervisor (user1 -> use3) ???
             eh.Update(new List<User>() { user1, user2 });
 
-            List<User>? usersUpdated = eh.Get<User>();
-            Assert.That(usersUpdated.Count, Is.EqualTo(3)); // 3 or 4?
+            List<User>? usersUpdated = eh.Get<User>(true,$"TO_CHAR({nameof(User.Id)}) LIKE '201%'");
+            Assert.That(usersUpdated.Count, Is.EqualTo(3));  
 
             var groupsUser1 = usersUpdated.Where(u => u.Id == 20101).FirstOrDefault().Groups;
             Assert.Multiple(() =>
