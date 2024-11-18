@@ -402,5 +402,35 @@ namespace EH.Command
         /// <exception cref="ArgumentException">Thrown when the name is invalid.</exception>
         string NormalizeColumnOrTableName(string? name, bool replaceInvalidChars = true);
 
+        /// <summary>
+        /// Retrieve the version of the connected database.
+        /// </summary>
+        /// <param name="database">
+        /// An optional <see cref="Database"/> object containing the database connection. 
+        /// If <paramref name="database"/> is null, the default connection <see cref="Database.IDbConnection"/> is used.
+        /// </param>
+        /// <returns>
+        /// A string representing the database version, or "Unknown Version" if the version cannot be determined.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when no valid database connection is provided.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when an error occurs during query execution.
+        /// </exception>
+        /// <remarks>
+        /// This method generates and executes a database-specific query to retrieve the version of the connected database.
+        /// Supported databases include Oracle, SQL Server, MySQL, PostgreSQL, and SQLite.
+        /// </remarks>
+        /// <example>
+        /// Example usage:
+        /// <code>
+        /// var database = new Database(new SqlConnection("Data Source=localhost;Initial Catalog=master;User ID=sa;Password=your_password"));
+        /// string version = GetDatabaseVersion(database);
+        /// Console.WriteLine($"Database Version: {version}");
+        /// </code>
+        /// </example>
+        public string? GetDatabaseVersion(Connection.Database? database);
+
     }
 }

@@ -57,7 +57,7 @@ namespace EH.Commands
             if (DbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
             if (query is null) { throw new InvalidOperationException("Query does not exist."); }
 
-            if (pageSize != null) query = new SqlQueryString(DbContext.Type).PaginatedQuery(query, pageSize ?? 0, pageIndex, filterPage, sortColumnPage, sortAscendingPage);
+            if (pageSize != null) query = new SqlQueryString(DbContext).PaginatedQuery(query, pageSize ?? 0, pageIndex, filterPage, sortColumnPage, sortAscendingPage);
             //Debug.WriteLine(query);
 
             IDbConnection connection = DbContext.CreateOpenConnection();

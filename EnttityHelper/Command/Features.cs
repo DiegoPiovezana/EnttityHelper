@@ -25,64 +25,6 @@ namespace EH.Command
 
         }
 
-        internal void DefineTypesDefaultDb(Database? dbContext)
-        {
-            if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
-            if (dbContext.Type is null) throw new InvalidOperationException("DbContext Type cannot be null.");
-
-            if (dbContext.Type.Equals(Enums.DbType.Oracle))
-            {
-                _enttityHelper.TypesDefault = new Dictionary<string, string> {
-                { "String", "NVARCHAR2(1000)" },
-                { "Boolean", "NUMBER(1)" },
-                { "DateTime", "TIMESTAMP" },
-                { "Decimal", "NUMBER" },
-                { "Double", "NUMBER" },
-                { "Int16", "NUMBER" },
-                { "Int32", "NUMBER" },
-                { "Int64", "NUMBER" },
-                { "Single", "NUMBER" },
-                { "TimeSpan", "DATE" }
-                };
-            }
-            else if (dbContext.Type.Equals(Enums.DbType.SQLServer))
-            {
-                _enttityHelper.TypesDefault = new Dictionary<string, string>
-                {
-                { "String", "NVARCHAR(1000)" },
-                { "Boolean", "BIT" },
-                { "DateTime", "DATETIME" },
-                { "Decimal", "DECIMAL" },
-                { "Double", "FLOAT" },
-                { "Int16", "SMALLINT" },
-                { "Int32", "INT" },
-                { "Int64", "BIGINT" },
-                { "Single", "REAL" },
-                { "TimeSpan", "TIME" }
-                };
-            }
-            else if (dbContext.Type.Equals(Enums.DbType.SQLite))
-            {
-                _enttityHelper.TypesDefault = new Dictionary<string, string>
-                {
-                { "String", "TEXT" },
-                { "Boolean", "INTEGER" },
-                { "DateTime", "TEXT" },
-                { "Decimal", "REAL" },
-                { "Double", "REAL" },
-                { "Int16", "INTEGER" },
-                { "Int32", "INTEGER" },
-                { "Int64", "INTEGER" },
-                { "Single", "REAL" },
-                { "TimeSpan", "TEXT" }
-                };
-            }
-            else
-            {
-                throw new InvalidOperationException("Database type not supported.");
-            }
-        }
-
         public int Insert<TEntity>(TEntity entity, string? namePropUnique, bool createTable, string? tableName, bool ignoreInversePropertyProperties, int timeOutSeconds) where TEntity : class
         {
             if (entity is DataTable dataTable) return InsertDataTable(createTable, ref tableName, timeOutSeconds, dataTable);
@@ -782,6 +724,12 @@ namespace EH.Command
         public string NormalizeColumnOrTableName(string? name, bool replaceInvalidChars)
         {
             return Tools.NormalizeColumnOrTableName(name, replaceInvalidChars);
+        }
+
+        public string? GetDatabaseVersion(Database? database)
+        {
+            string queryDbVersion = new SqlQueryString(database).GetDatabaseVersion();
+            return ExecuteScalar(queryDbVersion)?.ToString() ?? "Unknown Version";
         }
 
 

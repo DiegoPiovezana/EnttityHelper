@@ -30,6 +30,8 @@ namespace EH.Connection
             {
                 ToolsDbConnect.MapDatabase(stringConnection, this);
                 CreateConnection();
+
+
             }
             catch (Exception)
             {

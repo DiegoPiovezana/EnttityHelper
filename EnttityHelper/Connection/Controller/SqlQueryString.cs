@@ -18,21 +18,22 @@ namespace EH.Connection
     /// </summary>
     public class SqlQueryString
     {
-        EnttityHelper? EnttityHelper { get; set; }
-        Enums.DbType? DbType { get; set; }
+        public EnttityHelper? EnttityHelper { get; set; }
+        public Database Database { get; set; }
 
 
+        //Enums.DbType? DbType { get; set; }
         //public SqlQueryString() { }
 
         public SqlQueryString(EnttityHelper? enttityHelper)
         {
             EnttityHelper = enttityHelper;
-            DbType = enttityHelper?.DbContext.Type;
+            Database = enttityHelper?.DbContext;
         }
 
-        public SqlQueryString(Enums.DbType? dbType)
+        public SqlQueryString(Database? database)
         {
-            DbType = dbType;
+            Database = database;
         }
 
 
@@ -584,7 +585,7 @@ namespace EH.Connection
 
         public string PaginatedQuery(string baseQuery, int pageSize, int pageIndex, string? filter, string? sortColumn, bool sortAscending)
         {
-            if (DbType is null)
+            if (Database?.Type is null)
                 throw new ArgumentNullException("The database type is required to generate this query!");
             if (string.IsNullOrEmpty(baseQuery))
                 throw new ArgumentNullException(nameof(baseQuery));
@@ -600,7 +601,7 @@ namespace EH.Connection
 
             //return $"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
 
-            return DbType switch
+            return Database.Type switch
             {
                 Enums.DbType.Oracle => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM (SELECT a.*, ROW_NUMBER() OVER ({orderClause}) AS rnum FROM ({baseQuery} {filterClause}) a) WHERE rnum > {offset} AND rnum <= {offset + pageSize}",
                 //Enums.DbType.Oracle => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM ( SELECT inner_query.*, ROWNUM AS rnum FROM ( {baseQuery} {filterClause} {orderClause} ) inner_query WHERE ROWNUM <= {offset + pageSize} ) WHERE rnum > {offset}",
@@ -637,6 +638,62 @@ namespace EH.Connection
                 : string.Empty;
 
             return $"SELECT COUNT(1) FROM ({mainQuery}) CountQuery {filterClause}";
+        }
+
+        /// <summary>
+        /// Generates a database-specific query to retrieve the version of the connected database.
+        /// </summary>
+        /// <param name="database">
+        /// An optional <see cref="Database"/> object containing the database connection. 
+        /// If <paramref name="database"/> is null, the default connection <see cref="Database.IDbConnection"/> is used.
+        /// </param>
+        /// <returns>
+        /// A string containing the SQL query to retrieve the database version.
+        /// This query should be executed manually to obtain the version information.
+        /// </returns>
+        /// <exception cref="NotSupportedException">
+        /// Thrown when the database type is not recognized or supported.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when no valid database connection is provided.
+        /// </exception>
+        /// <remarks>
+        /// This method generates a version query string based on the type of the database connection. 
+        /// Supported databases include Oracle, SQL Server, MySQL, PostgreSQL, and SQLite. 
+        /// Ensure the <paramref name="database"/> or its connection is properly configured before using this method.
+        /// </remarks>
+        /// <example>
+        /// Example usage for a SQL Server connection:
+        /// <code>
+        /// var database = new Database(new SqlConnection("Data Source=localhost;Initial Catalog=master;User ID=sa;Password=your_password"));
+        /// string query = GetDatabaseVersion(database);
+        /// Console.WriteLine($"Generated Query: {query}");
+        /// // Execute the query using the database connection.
+        /// </code>
+        /// </example>
+        public string GetDatabaseVersion(Database? database = null)
+        {
+            try
+            {
+                var connection = (database?.IDbConnection ?? Database.IDbConnection) ?? throw new ArgumentNullException(nameof(database), "Database or its connection cannot be null.");
+                string databaseType = connection.GetType().Name.ToLowerInvariant();
+
+                string queryVersion = databaseType switch
+                {
+                    "oracleconnection" => "SELECT BANNER FROM V$VERSION WHERE ROWNUM = 1",
+                    "sqlconnection" => "SELECT @@VERSION",
+                    "mysqlconnection" => "SELECT VERSION()",
+                    "npgsqlconnection" => "SHOW server_version",
+                    "sqliteconnection" => "SELECT sqlite_version()",
+                    _ => throw new NotSupportedException($"Unsupported database type: {databaseType}")
+                };
+
+                return queryVersion;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Error retrieving the database version.", ex);
+            }
         }
 
 

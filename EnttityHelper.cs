@@ -45,7 +45,8 @@ namespace EH
         {
             DbContext = new Database(connectionString);
             _features = new(this);
-            _features.DefineTypesDefaultDb(DbContext);
+            Definitions.DefineTypeDb(DbContext, _features);
+            Definitions.DefineTypesDefaultColumnsDb(DbContext, this);
             GetQuery = new(this);
         }
 
@@ -57,7 +58,8 @@ namespace EH
         {
             DbContext = db;
             _features = new(this);
-            _features.DefineTypesDefaultDb(DbContext);
+            Definitions.DefineTypeDb(db,_features);
+            Definitions.DefineTypesDefaultColumnsDb(DbContext, this);
         }
 
 
@@ -419,6 +421,19 @@ namespace EH
             try
             {
                 return _features.NormalizeColumnOrTableName(name, replaceInvalidChars);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <inheritdoc/>
+        public string GetDatabaseVersion(Database? database = null)
+        {
+            try
+            {
+                return _features.GetDatabaseVersion(database);
             }
             catch (Exception)
             {
