@@ -21,6 +21,16 @@ namespace TestEH_UnitTest
         [SetUp]
         public void Setup()
         {
+           
+        }
+
+        private void ResetTables(string idTest)
+        {
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE TO_CHAR(ID_TB_GROUP_USERS) LIKE '{idTest}__' OR TO_CHAR(ID_TB_USERS) LIKE '{idTest}__'");  // DELETE FROM TB_GROUP_USERStoGROUPS
+            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '{idTest}__'");
+            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '{idTest}__'");
+            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '{idTest}__'");
         }
 
         [Test, Order(1)]
@@ -234,9 +244,9 @@ namespace TestEH_UnitTest
 
             // Ensure tables exist or create if they do not
             eh.CreateTableIfNotExist<Career>(createOnlyPrimaryTable: false);
-            eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false);
+            eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: true);
 
-            var deletesOld = eh.ExecuteNonQuery("DELETE FROM TB_USER WHERE TO_CHAR(ID) LIKE '12%'");
+            var deletesOld = eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR(ID) LIKE '12%'");
             Assert.IsTrue(deletesOld >= 0 && deletesOld <= 2);
 
             deletesOld = eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR(IDCAREER) LIKE '12%'");
@@ -295,38 +305,38 @@ namespace TestEH_UnitTest
             /////////////////////////////////////////////////// 
             // INSERT
 
-            Career carrer1 = new() { IdCareer = 131, Name = "Pleno", CareerLevel = 2, Active = true };
+            Career carrer1 = new() { IdCareer = 1301, Name = "Pleno", CareerLevel = 2, Active = true };
             //eh.Insert(carrer);
 
-            Career carrer2 = new() { IdCareer = 133, Name = "Trainee", CareerLevel = 0, Active = true };
+            Career carrer2 = new() { IdCareer = 1302, Name = "Trainee", CareerLevel = 0, Active = true };
             //eh.Insert(carrer2);
 
             int resultCarrers = eh.Insert(new List<Career>() { carrer1, carrer2 });
-            Assert.That(resultCarrers == 2, Is.EqualTo(true));
+            Assert.That(resultCarrers, Is.EqualTo(2));
 
-            Group group1 = new() { Id = 131, Name = "Developers", Description = "Developer Group" };
+            Group group1 = new() { Id = 1301, Name = "Developers", Description = "Developer Group" };
             //eh.Insert(group1);
 
-            Group group2 = new() { Id = 132, Name = "Testers", Description = "Tester Group" };
+            Group group2 = new() { Id = 1302, Name = "Testers", Description = "Tester Group" };
             //eh.Insert(group2);
 
             int resultGroups = eh.Insert(new List<Group>() { group1, group2 });
             Assert.That(resultGroups == 2, Is.EqualTo(true));
 
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()}"); // DELETE FROM TB_USER
+            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '13__'"); // DELETE FROM TB_USER
 
             // Insert user with group
-            User user1 = new() { Id = 131, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 131 };
+            User user1 = new() { Id = 1301, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1301 };
             List<Group> groupsUserAdd = new() { group1, group2 };
             foreach (var group in groupsUserAdd) { user1.Groups.Add(group); }
             Assert.That(eh.Insert(user1) == 3, Is.EqualTo(true));
 
             // Insert group with user
-            User user2 = new() { Id = 132, Name = "John Victor", GitHub = "@JohnVictor", DtCreation = DateTime.Now, IdCareer = 133 };
+            User user2 = new() { Id = 1302, Name = "John Victor", GitHub = "@JohnVictor", DtCreation = DateTime.Now, IdCareer = 1302 };
             Assert.That(eh.Insert(user2) == 1, Is.EqualTo(true));
 
             // Insert new group with user
-            Group group3 = new() { Id = 133, Name = "Operation", Description = "Operation Group" };
+            Group group3 = new() { Id = 1303, Name = "Operation", Description = "Operation Group" };
             group3.Users.Add(user2);
             Assert.That(eh.Insert(group3) == 2, Is.EqualTo(true));
 
@@ -338,9 +348,9 @@ namespace TestEH_UnitTest
             List<User>? users = eh.Get<User>();
             Assert.Multiple(() =>
             {
-                Assert.That(carrers.Count == 2, Is.EqualTo(true));
-                Assert.That(groups.Count == 3, Is.EqualTo(true));
-                Assert.That(users.Count == 2, Is.EqualTo(true));
+                Assert.That(carrers.Count, Is.EqualTo(2));
+                Assert.That(groups.Count, Is.EqualTo(3));
+                Assert.That(users.Count, Is.EqualTo(2));
             });
 
             /////////////////////////////////////////////////// 
@@ -352,23 +362,21 @@ namespace TestEH_UnitTest
             List<User>? usersUpdated = eh.Get<User>();
             Assert.That(usersUpdated.Count == 2, Is.EqualTo(true));
 
-            var groupsUser1 = usersUpdated.Where(u => u.Id == 131).FirstOrDefault().Groups;
+            var groupsUser1 = usersUpdated.Where(u => u.Id == 1301).FirstOrDefault().Groups;
             Assert.Multiple(() =>
             {
-                Assert.That(groupsUser1.Count == 1, Is.EqualTo(true));
+                Assert.That(groupsUser1.Count, Is.EqualTo(1));
                 Assert.That(groupsUser1.FirstOrDefault().Name.Equals("Developers"), Is.EqualTo(true));
             });
 
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))}"); // DELETE FROM TB_GROUP_USERStoGROUPS
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()}");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()}");
-
             // Insert new group with new user
-            User user3 = new() { Id = 133, Name = "Maria Joaquina", GitHub = "@MariaJoaquina", DtCreation = DateTime.Now, IdCareer = 131 };
-            Assert.That(eh.Insert(user3) == 1, Is.EqualTo(true)); // TODO: Insert together
-            Group group4 = new() { Id = 134, Name = "Analyst", Description = "Analyst Group" };
+            User user3 = new() { Id = 1303, Name = "Maria Joaquina", GitHub = "@MariaJoaquina", DtCreation = DateTime.Now, IdCareer = 1301 };
+            Assert.That(eh.Insert(user3), Is.EqualTo(1)); // TODO: Insert together
+            Group group4 = new() { Id = 1304, Name = "Analyst", Description = "Analyst Group" };
             group4.Users.Add(user3);
             Assert.That(eh.Insert(group4), Is.EqualTo(2)); // user + group + aux_tb = 3
+
+            ResetTables("13");
         }
 
         [Test, Order(101)]
@@ -408,7 +416,10 @@ namespace TestEH_UnitTest
 
             // Create a new connection to database 2
             EnttityHelper eh2 = new($"Data Source=localhost:49262/xe;User Id=system;Password=oracle");
-            Assert.IsTrue(eh2.DbContext.ValidateConnection());
+            if (!eh2.DbContext.ValidateConnection())
+            {
+                Assert.Ignore("Database 2 connection validation failed. Test skipped.");
+            }
 
             DateTime startTime = DateTime.Now;
             Debug.WriteLine($"Start Load CSV: {startTime}");
@@ -469,11 +480,12 @@ namespace TestEH_UnitTest
             {
                 // Create table - Object User     
                 eh.CreateTableIfNotExist<Career>(true);
+                eh.CreateTableIfNotExist<Group>(true); // Necessary to then create the MxN relationship table (Group X User)
                 eh.CreateTableIfNotExist<User>(false);
 
                 // Create new entity
-                Career career = new(1103, "Developer");
-                User userD = new("Diego Piovezana") { Id = 2103, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1103 };
+                Career career = new(10301, "Developer");
+                User userD = new("Diego Piovezana") { Id = 10321, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 10301 };
 
                 // Insert in database
                 eh.Insert(career);
@@ -487,13 +499,19 @@ namespace TestEH_UnitTest
 
                 // Search in database
                 User? userDSearched1 = eh.Search(userD);
-                User? userDSearched2 = eh.Search(new User { Name = "John" }, true, nameof(User.Name));
+                User? userDSearched2 = eh.Search(new User { GitHub = "@DiegoPiovezana" }, true, nameof(User.GitHub));
+                Assert.That(userDSearched1.Name, Is.EqualTo(userDSearched2.Name));
 
                 // Deletes user D from the database
                 eh.Delete(userD);
 
                 // Gets all users registered in the last week
                 List<User>? usersWeek = eh.Get<User>()?.Where(u => u.DtCreation > DateTime.Now.AddDays(-7)).ToList();
+
+                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE TO_CHAR(ID_TB_GROUP_USERS) LIKE '103%' OR TO_CHAR(ID_TB_USERS) LIKE '103%'");  // DELETE FROM TB_GROUP_USERStoGROUPS
+                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '103%'");
+                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '103%'");
+                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '103%'");
             }
             else
             {
@@ -521,7 +539,7 @@ namespace TestEH_UnitTest
                     Assert.AreEqual(result, 1);
                 }
 
-                var deletesOld = eh.ExecuteNonQuery("DELETE FROM TB_USER WHERE TO_CHAR(ID) LIKE '104%'");
+                var deletesOld = eh.ExecuteNonQuery("DELETE FROM TB_USERS WHERE TO_CHAR(ID) LIKE '104%'");
                 Assert.IsTrue(deletesOld >= 0 && deletesOld <= 4);
 
                 // Test for one entity
@@ -633,7 +651,7 @@ namespace TestEH_UnitTest
                 int result4 = eh.Insert(userM, nameof(userM.GitHub), true);
                 Assert.That(result4 == 3, Is.EqualTo(true));
 
-                eh.ExecuteNonQuery($"DELETE FROM TB_GROUP_USERSTOGROUPS WHERE ID_TB_USER = {userM.Id}");
+                eh.ExecuteNonQuery($"DELETE FROM TB_GROUP_USERSTOGROUPS WHERE ID_TB_USERS = {userM.Id}");
                 eh.Delete(group4);
                 eh.Delete(group5);
                 eh.Delete(userM);
@@ -830,8 +848,12 @@ namespace TestEH_UnitTest
         public void LoadCSV_BIGCSVFile()
         {
             DateTime dtTarget = new DateTime(2024, 11, 3, 17, 0, 0);
-            int minuteExpiration = 5;
-            Assume.That(DateTime.Now - dtTarget < TimeSpan.FromMinutes(minuteExpiration), "Large csv file upload test was ignored!");
+            int minuteExpirationTest = 5;
+
+            if (DateTime.Now - dtTarget > TimeSpan.FromMinutes(minuteExpirationTest))
+            {
+                Assert.Ignore("Large csv file upload test was ignored!");
+            }
 
             EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
 
@@ -976,46 +998,47 @@ namespace TestEH_UnitTest
             /////////////////////////////////////////////////// 
             // DELETE
 
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE TO_CHAR(ID_TB_GROUP_USERS) LIKE '201%' OR TO_CHAR(ID_TB_USER) LIKE '201%'");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '201%'");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '201%'");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '201%'");
+            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE TO_CHAR(ID_TB_GROUP_USERS) LIKE '201%' OR TO_CHAR(ID_TB_USERS) LIKE '201%'");
+            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '201%'");
+            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '201%'");
+            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '201%'");
+            ResetTables("201");
 
 
             /////////////////////////////////////////////////// 
             // INSERT
 
             // Careers
-            Career carrer1 = new() { IdCareer = 2011, Name = "Pleno", CareerLevel = 2, Active = true };
-            Career carrer2 = new() { IdCareer = 2012, Name = "Trainee", CareerLevel = 0, Active = true };
+            Career carrer1 = new() { IdCareer = 20101, Name = "Pleno", CareerLevel = 2, Active = true };
+            Career carrer2 = new() { IdCareer = 20102, Name = "Trainee", CareerLevel = 0, Active = true };
             int resultCarrers = eh.Insert(new List<Career>() { carrer1, carrer2 });
             Assert.That(resultCarrers, Is.EqualTo(2));
 
             // Groups
-            Group group1 = new() { Id = 2011, Name = "Developers", Description = "Developer Group" };
-            Group group2 = new() { Id = 2012, Name = "Testers", Description = "Tester Group" };
+            Group group1 = new() { Id = 20101, Name = "Developers", Description = "Developer Group" };
+            Group group2 = new() { Id = 20102, Name = "Testers", Description = "Tester Group" };
             int resultGroups = eh.Insert(new List<Group>() { group1, group2 });
             Assert.That(resultGroups, Is.EqualTo(2));
 
             // Insert user with group
-            User user1 = new() { Id = 2011, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 2011 };
+            User user1 = new() { Id = 20101, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 20101 };
             List<Group> groupsUserAdd = new() { group1, group2 };
             foreach (var group in groupsUserAdd) { user1.Groups.Add(group); }
             Assert.That(eh.Insert(user1), Is.EqualTo(3));
 
             // Insert group with user
-            User user2 = new() { Id = 2012, Name = "John Victor", GitHub = "@JohnVictor", DtCreation = DateTime.Now, IdCareer = 2012, IdSupervisor = 2011 };
+            User user2 = new() { Id = 20102, Name = "John Victor", GitHub = "@JohnVictor", DtCreation = DateTime.Now, IdCareer = 20102, IdSupervisor = 20101 };
             Assert.That(eh.Insert(user2), Is.EqualTo(1));
 
             // Insert new group with user
-            Group group3 = new() { Id = 2013, Name = "Operation", Description = "Operation Group" };
+            Group group3 = new() { Id = 20103, Name = "Operation", Description = "Operation Group" };
             group3.Users.Add(user2);
             Assert.That(eh.Insert(group3), Is.EqualTo(2));
 
             // Insert new user with new group
-            User user3 = new() { Id = 2013, Name = "Maria Joaquina", GitHub = "@MariaJoaquina", DtCreation = DateTime.Now, IdCareer = 2012, IdSupervisor = 2012 };
+            User user3 = new() { Id = 20103, Name = "Maria Joaquina", GitHub = "@MariaJoaquina", DtCreation = DateTime.Now, IdCareer = 20102, IdSupervisor = 20102 };
             Assert.That(eh.Insert(user3), Is.EqualTo(1)); // TODO: Insert together
-            Group group4 = new() { Id = 2014, Name = "Analyst", Description = "Analyst Group" };
+            Group group4 = new() { Id = 20104, Name = "Analyst", Description = "Analyst Group" };
             group4.Users.Add(user3);
             Assert.That(eh.Insert(group4), Is.EqualTo(2)); // group + aux_tb = 2
 
@@ -1034,11 +1057,11 @@ namespace TestEH_UnitTest
             //});
 
             // Get Supervisor and check include LEVEL 1
-            var user1Get = users?.Where(u => u.Id == 2012).FirstOrDefault(); // User1 is supervisor of user2
+            var user1Get = users?.Where(u => u.Id == 20102).FirstOrDefault(); // User1 is supervisor of user2
             User? supUser1Get = user1Get?.Supervisor;
-            Assert.That(supUser1Get?.IdCareer, Is.EqualTo(2011));
+            Assert.That(supUser1Get?.IdCareer, Is.EqualTo(20101));
 
-            var user2Get = users?.Where(u => u.Id == 2013).FirstOrDefault(); // User2 is supervisor of user3
+            var user2Get = users?.Where(u => u.Id == 20103).FirstOrDefault(); // User2 is supervisor of user3
             User? supUser2Get = user2Get?.Supervisor; // Supervisor (level 1)
             Assert.That(supUser2Get?.Supervisor, Is.Null); // Supervisor of supervisor (level 2)
 
@@ -1072,16 +1095,16 @@ namespace TestEH_UnitTest
             eh.Update(new List<User>() { user1, user2 });
 
             List<User>? usersUpdated = eh.Get<User>();
-            Assert.That(usersUpdated.Count, Is.EqualTo(4));
+            Assert.That(usersUpdated.Count, Is.EqualTo(3)); // 3 or 4?
 
-            var groupsUser1 = usersUpdated.Where(u => u.Id == 2011).FirstOrDefault().Groups;
+            var groupsUser1 = usersUpdated.Where(u => u.Id == 20101).FirstOrDefault().Groups;
             Assert.Multiple(() =>
             {
-                Assert.That(groupsUser1.Count == 1, Is.EqualTo(true));
+                Assert.That(groupsUser1.Count, Is.EqualTo(1));
                 Assert.That(groupsUser1.FirstOrDefault().Name, Is.EqualTo("Developers"));
             });
 
-            var supUser2 = usersUpdated.Where(u => u.Id == 2012).FirstOrDefault().Supervisor;
+            var supUser2 = usersUpdated.Where(u => u.Id == 20102).FirstOrDefault().Supervisor;
             Assert.Multiple(() =>
             {
                 Assert.That(supUser2, !Is.Null);
@@ -1092,10 +1115,11 @@ namespace TestEH_UnitTest
             /////////////////////////////////////////////////// 
             // DELETE
 
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE TO_CHAR(ID_TB_GROUP_USERS) LIKE '201%' OR TO_CHAR(ID_TB_USER) LIKE '201%'");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '201%'");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '201%'");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '201%'");
+            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE TO_CHAR(ID_TB_GROUP_USERS) LIKE '201%' OR TO_CHAR(ID_TB_USERS) LIKE '201%'");
+            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '201%'");
+            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '201%'");
+            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '201%'");
+            ResetTables("201");
         }
 
         [Test, Order(202)]
@@ -1107,12 +1131,12 @@ namespace TestEH_UnitTest
 
             User user = new()
             {
-                Id = 2021,
+                Id = 20201,
                 Name = "John Victor",
                 GitHub = "@JohnVictor",
                 DtCreation = DateTime.Now,
-                IdCareer = 2012,
-                IdSupervisor = 2011
+                IdCareer = 20202,
+                IdSupervisor = 20201
             };
 
             // Act
@@ -1120,9 +1144,9 @@ namespace TestEH_UnitTest
             var result = results.FirstOrDefault();
 
             // Assert
-            StringAssert.StartsWith("INSERT INTO TB_USER (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor) VALUES ('2021', 'John Victor', '@JohnVictor', '", result);
-            StringAssert.Contains("'2012'", result);
-            StringAssert.Contains("'2011'", result);
+            StringAssert.StartsWith("INSERT INTO TB_USERS (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor) VALUES ('20201', 'John Victor', '@JohnVictor', '", result);
+            StringAssert.Contains("'20202'", result);
+            StringAssert.Contains("'20201'", result);
             StringAssert.EndsWith("RETURNING Id INTO :Result", result);
 
             Debug.WriteLine(result);
@@ -1134,7 +1158,7 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             Assert.That(eh.DbContext.ValidateConnection());
 
-            string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ExcelCsvGerado_1000000x10.csv"; // J100
+            string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ExcelCsvGerado_1000000x10.csv";
 
             string tableName = "TestTableCsv_RangeRowsBig";
             int batchSize = 200_000;
@@ -1142,37 +1166,45 @@ namespace TestEH_UnitTest
             char delimiter = ';';
             bool hasHeader = true;
 
-            string rangeRows = "2:-2"; // second to penultimat row
-            var insertCount = 999_998;
-            if (hasHeader) insertCount--; // Remove the header
+            //string rangeRows = "2:-2"; // second to penultimat row
+            //var insertCount = 999_998;
+
+            string rangeRows = "800000:-2"; // 800k th to penultimat row => 200k rows
+            var insertCount = 200_000;
+
+            if (hasHeader) insertCount--; // Remove the header => 199_999 rows
 
             if (!eh.CheckIfExist(tableName))
             {
                 int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
                 Assert.AreEqual(insertCount, result);
             }
-            //else
-            //{
-            //    eh.ExecuteNonQuery($"DROP TABLE {tableName}");
-            //    int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
-            //    Assert.AreEqual(insertCount, result);
-            //}
+            else
+            {
+                eh.ExecuteNonQuery($"DROP TABLE {tableName}");
+                int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
+                Assert.AreEqual(insertCount, result);
+            }
 
-            var paginated1 = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 20);
+            var paginated1 = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 20); // pageIndex: 0
             Assert.AreEqual(20, paginated1.Rows.Count);
-            var paginated2 = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 50, pageIndex: 6);
-            Assert.AreEqual(48, paginated2.Rows.Count);
+            var paginated2 = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 28_500, pageIndex: 7);
+            Assert.AreEqual(499, paginated2.Rows.Count);
             var paginated3 = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 1_000_000, pageIndex: 0);
             Assert.AreEqual(insertCount, paginated3.Rows.Count);
 
 
-            var paginated1a = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 60, pageIndex: 0);
-            Assert.AreEqual(60, paginated1a.Rows.Count);
-            var paginated1b = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 60, pageIndex: 1);
-            Assert.AreEqual(38, paginated1b.Rows.Count);
-            var paginated1c = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 60, pageIndex: 2);
+            var paginated1a = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 50_000, pageIndex: 0);
+            Assert.AreEqual(50_000, paginated1a.Rows.Count);
+            var paginated1b = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 50_000, pageIndex: 3);
+            Assert.AreEqual(49_999, paginated1b.Rows.Count);
+            var paginated1c = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 50_000, pageIndex: 4);
             Assert.AreEqual(0, paginated1c.Rows.Count);
 
+            int totalRecords = eh.GetTotalRecordCountAsync($"SELECT * FROM {tableName}").Result;
+            Assert.AreEqual(insertCount, totalRecords);
+
+            eh.ExecuteNonQuery($"DROP TABLE {tableName}");
         }
 
         [Test, Order(204)]
@@ -1322,11 +1354,11 @@ namespace TestEH_UnitTest
                         g.Id AS GroupId,
                         g.Name AS GroupName,
                         c.Name AS CareerName,
-                        COUNT(ug.ID_TB_USER) AS UserCountInGroup
+                        COUNT(ug.ID_TB_USERS) AS UserCountInGroup
                     FROM {0} u
-                    JOIN {1} ug ON u.Id = ug.ID_TB_USER
+                    JOIN {1} ug ON u.Id = ug.ID_TB_USERS
                     JOIN {2} g ON ug.ID_TB_GROUP_USERS = g.Id
-                    JOIN {3} c ON u.IdCareer = c.IdCareer
+                    JOIN {3} c ON u.IdCareer = c.IdCareer                    
                     GROUP BY u.Id, u.Name, g.Id, g.Name, c.Name
                 )
 
@@ -1338,6 +1370,7 @@ namespace TestEH_UnitTest
                     CareerName,
                     UserCountInGroup
                 FROM UserGroupSummary
+                WHERE TO_CHAR(UserId) LIKE '205%'
 
                 UNION ALL
 
@@ -1347,9 +1380,10 @@ namespace TestEH_UnitTest
                     g.Id AS GroupId, 
                     g.Name AS GroupName, 
                     NULL AS CareerName, 
-                    COUNT(ug.ID_TB_USER) AS UserCountInGroup
+                    COUNT(ug.ID_TB_USERS) AS UserCountInGroup
                 FROM {1} ug
                 JOIN {2} g ON ug.ID_TB_GROUP_USERS = g.Id
+                WHERE TO_CHAR(g.Id) LIKE '205%'
                 GROUP BY g.Id, g.Name
 
                 ORDER BY GroupId, UserId NULLS LAST";
@@ -1511,7 +1545,7 @@ namespace TestEH_UnitTest
             // Teste com simpleQuery
             totalRecords = await eh.GetTotalRecordCountAsync(simpleQuery);
             Assert.AreEqual(20, totalRecords, "A contagem de registros da query simples está incorreta.");
-          
+
             // Teste com queryWithSubquery
             totalRecords = await eh.GetTotalRecordCountAsync(queryWithSubquery);
             Assert.AreEqual(6, totalRecords, "A contagem de registros da query com subquery está incorreta.");

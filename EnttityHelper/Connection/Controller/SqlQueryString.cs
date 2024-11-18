@@ -202,15 +202,15 @@ namespace EH.Connection
                 string idName2 = ToolsProp.GetPK((object)entity2Type).Name;  // Ex: IdGroup
 
                 MethodInfo selectMethod = typeof(EnttityHelper).GetMethod("ExecuteSelectDt");
-                var itemsBd = (DataTable)selectMethod.Invoke(enttityHelper, new object[] { $@"SELECT ID_{tableName2} FROM {tableNameInverseProperty} WHERE ID_{tableName1}='{pk1.GetValue(entity)}'" });
+                var itemsBd = (DataTable)selectMethod.Invoke(enttityHelper, new object[] { $@"SELECT ID_{tableName2} FROM {tableNameInverseProperty} WHERE ID_{tableName1}='{pk1.GetValue(entity)}'", null, 0, null, null, true });
 
                 var getMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(entity2Type);
-
                 List<object>? itemsCollectionBd = new(itemsBd.Rows.Count);
+
                 foreach (DataRow row in itemsBd.Rows)
                 {
                     object idItemEntity2 = row[0];
-                    var entity2InCollectionBd = (IEnumerable)getMethod.Invoke(enttityHelper, new object[] { false, $"{pk2.Name} = '{idItemEntity2}'", null }); // Error here
+                    var entity2InCollectionBd = (IEnumerable)getMethod.Invoke(enttityHelper, new object[] { false, $"{pk2.Name} = '{idItemEntity2}'", null, null, 0, null, true });
                     foreach (var entity2 in entity2InCollectionBd) { itemsCollectionBd.Add(entity2); }
                 }
 
@@ -247,7 +247,6 @@ namespace EH.Connection
                         {
                             queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{itemInsert}')");
                         }
-
                     }
                 }
 
@@ -625,7 +624,7 @@ namespace EH.Connection
         /// - The method assumes the <paramref name="baseQuery"/> is well-formed and valid for counting.
         /// </remarks>
         public string CountQuery(string baseQuery, string? filter = null)
-        {            
+        {
             var orderByIndex = baseQuery.ToUpperInvariant().LastIndexOf("ORDER BY");
 
             var mainQuery = orderByIndex >= 0

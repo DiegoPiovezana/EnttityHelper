@@ -877,6 +877,7 @@ WHERE u.Id IN (SELECT ug.ID_TB_USERS FROM TB_GROUP_USERStoGROUPS ug WHERE ug.ID_
                     CareerName,
                     UserCountInGroup
                 FROM UserGroupSummary
+                WHERE TO_CHAR(UserId) LIKE '205%'
 
                 UNION ALL
 
@@ -889,6 +890,7 @@ WHERE u.Id IN (SELECT ug.ID_TB_USERS FROM TB_GROUP_USERStoGROUPS ug WHERE ug.ID_
                     COUNT(ug.ID_TB_USER) AS UserCountInGroup
                 FROM TB_GROUP_USERStoGROUPS ug
                 JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+                WHERE TO_CHAR(g.Id) LIKE '205%'
                 GROUP BY g.Id, g.Name
 
                 -- ORDER BY GroupId, UserId NULLS LAST ORDER BY 1) inner_query WHERE ROWNUM <= 10 ) WHERE rnum > 0
@@ -967,7 +969,7 @@ DROP TABLE TB_ENTITY_TEST;
 DROP TABLE TB_CAREERS;
 DROP TABLE TB_GROUP_USERSTOGROUPS;
 DROP TABLE TB_GROUP_USERS;
-DROP TABLE TB_USER;
+DROP TABLE TB_USERS;
 
 
 

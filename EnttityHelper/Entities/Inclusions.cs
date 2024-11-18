@@ -62,7 +62,7 @@ namespace EH.Entities
                         MethodInfo genericGetMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(elementType);
 
                         // Retrieve the foreign key entities
-                        IEnumerable<object> entityFKList = (IEnumerable<object>)genericGetMethod.Invoke(_enttityHelper, new object[] { false, $"{pk.Name}='{pkValue}'", null });
+                        IEnumerable<object> entityFKList = (IEnumerable<object>)genericGetMethod.Invoke(_enttityHelper, new object[] { false, $"{pk.Name}='{pkValue}'", null, null, 0, null, true });
 
                         // Cast each entity to the actual type
                         IEnumerable<object> castEntityFKList = entityFKList.Cast<object>();
@@ -129,7 +129,7 @@ namespace EH.Entities
                         PropertyInfo idProp1 = objectEntity.GetType().GetProperty(idName1);
                         object idValue1 = idProp1.GetValue(objectEntity);
 
-                        var entitiesToAdd = (DataTable)selectMethod.Invoke(features, new object[] { $"SELECT ID_{columnName2} FROM {nameTable} WHERE ID_{columnName1}='{idValue1}'" });
+                        var entitiesToAdd = (DataTable)selectMethod.Invoke(features, new object[] { $"SELECT ID_{columnName2} FROM {nameTable} WHERE ID_{columnName1}='{idValue1}'" , null, 0, null, null, true });
                         var getMethod = typeof(Features).GetMethod("Get").MakeGenericMethod(entity2Type);
                         Type typeCollection = typeof(List<>).MakeGenericType(entity2Type);
                         var collectionInstance = Activator.CreateInstance(typeCollection);
@@ -137,7 +137,7 @@ namespace EH.Entities
                         for (int i = 0; i < entitiesToAdd.Rows.Count; i++)
                         {
                             object idValue2 = entitiesToAdd.Rows[i][0];
-                            var entity2ToAddList = (IEnumerable)getMethod.Invoke(features, new object[] { false, $"{idName2}='{idValue2}'", nameTable2 });
+                            var entity2ToAddList = (IEnumerable)getMethod.Invoke(features, new object[] { false, $"{idName2}='{idValue2}'", nameTable2, null, 0, null, true });
                             foreach (var entity in entity2ToAddList) { ((IList)collectionInstance).Add(entity); }
                         }
 
