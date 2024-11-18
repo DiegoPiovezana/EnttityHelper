@@ -1,7 +1,6 @@
 ﻿using EH.Connection;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 
 namespace EH.Command
@@ -71,10 +70,10 @@ namespace EH.Command
             if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
             if (dbContext.Type is null) throw new InvalidOperationException("DbContext Type cannot be null.");
             if (!dbContext.Type.Equals(Enums.DbType.Oracle)) return;
-            
-            var modernOracleVersions = new[] { "12", "18", "19", "21" };
-           
-            var versionDb = features.GetDatabaseVersion(dbContext);            
+
+            int modernOracleVersion = 12; // 12g or newer
+
+            var versionDb = features.GetDatabaseVersion(dbContext);
             var versionMatch = System.Text.RegularExpressions.Regex.Match(versionDb, @"\b\d+\b");
 
             if (!versionMatch.Success)
@@ -84,10 +83,7 @@ namespace EH.Command
             }
 
             var majorVersion = versionMatch.Value;
-            
-            dbContext.Type = modernOracleVersions.Contains(majorVersion)
-                ? Enums.DbType.Oracle_Newer
-                : Enums.DbType.Oracle;
+            dbContext.Type = Convert.ToInt32(majorVersion) >= modernOracleVersion ? Enums.DbType.Oracle_Newer : Enums.DbType.Oracle;
         }
 
         internal static string NameTableFromDataTable(string tableName, Dictionary<string, string>? replacesTableName)
