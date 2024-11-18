@@ -595,15 +595,15 @@ namespace EH.Connection
 
             var offset = pageSize * pageIndex;
             var filterClause = !string.IsNullOrEmpty(filter) ? $"WHERE {filter}" : string.Empty;
-            var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : "ORDER BY 1";
-            //var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : string.Empty;
+            //var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : "ORDER BY 1";
+            var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : string.Empty;
 
             //return $"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
 
             return DbType switch
             {
-                Enums.DbType.Oracle => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM (SELECT a.*, ROW_NUMBER() OVER ({orderClause}) AS rnum FROM ({baseQuery} {filterClause}) a) WHERE rnum > {offset} AND rnum <= {offset + pageSize}",
-                //Enums.DbType.Oracle => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM ( SELECT inner_query.*, ROWNUM AS rnum FROM ( {baseQuery} {filterClause} {orderClause} ) inner_query WHERE ROWNUM <= {offset + pageSize} ) WHERE rnum > {offset}",
+                //Enums.DbType.Oracle => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM (SELECT a.*, ROW_NUMBER() OVER ({orderClause}) AS rnum FROM ({baseQuery} {filterClause}) a) WHERE rnum > {offset} AND rnum <= {offset + pageSize}",
+                Enums.DbType.Oracle => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM ( SELECT inner_query.*, ROWNUM AS rnum FROM ( {baseQuery} {filterClause} {orderClause} ) inner_query WHERE ROWNUM <= {offset + pageSize} ) WHERE rnum > {offset}",
                 Enums.DbType.Oracle_Newer => $@"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
                 Enums.DbType.SQLServer or Enums.DbType.PostgreSQL => $"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
                 Enums.DbType.MySQL => $"{baseQuery} {filterClause} {orderClause} LIMIT {pageSize} OFFSET {offset}",
