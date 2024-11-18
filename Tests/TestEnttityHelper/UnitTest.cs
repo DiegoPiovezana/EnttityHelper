@@ -1418,10 +1418,7 @@ namespace TestEH_UnitTest
             finally
             {
                 // Limpeza das tabelas
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))}");
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '205%'");
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '205%'");
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '205%'");
+                ResetTables("205");
             }
         }
 
@@ -1437,10 +1434,7 @@ namespace TestEH_UnitTest
             eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false); // Cretes the TB_GROUP_USERStoGROUPS table
             eh.CreateTableIfNotExist<Career>(createOnlyPrimaryTable: false);
 
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))}");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '206%'");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '206%'");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '206%'");
+            ResetTables("206");
 
             // Inserção de carreira
             Career career1 = new() { IdCareer = 20601, Name = "Junior", CareerLevel = 1, Active = true };
