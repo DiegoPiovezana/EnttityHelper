@@ -64,7 +64,7 @@ namespace EH
 
 
         /// <inheritdoc/>  
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class
+        public long Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class
         {
             try
             {
@@ -77,7 +77,7 @@ namespace EH
         }
 
         /// <inheritdoc/> 
-        public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds = 600)
+        public long InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds = 600)
         {
             try
             {
@@ -90,7 +90,7 @@ namespace EH
         }
 
         /// <inheritdoc/> 
-        public int LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';', bool hasHeader = true, string? rowsToLoad = null)
+        public long LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';', bool hasHeader = true, string? rowsToLoad = null)
         {
             try
             {
@@ -103,7 +103,7 @@ namespace EH
         }
 
         /// <inheritdoc/> 
-        public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
+        public long Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
         {
             try
             {
@@ -181,7 +181,7 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public async Task<int> GetTotalRecordCountAsync(string baseQuery, string? filter = null)
+        public async Task<long> GetTotalRecordCountAsync(string baseQuery, string? filter = null)
         {
             try
             {
@@ -247,7 +247,7 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public int Delete<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class
+        public long Delete<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class
         {
             try
             {
@@ -260,7 +260,7 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public int ExecuteNonQuery(string? query, int expectedChanges = -1)
+        public long ExecuteNonQuery(string? query, int expectedChanges = -1)
         {
             try
             {

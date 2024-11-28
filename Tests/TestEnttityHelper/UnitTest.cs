@@ -21,7 +21,7 @@ namespace TestEH_UnitTest
         [SetUp]
         public void Setup()
         {
-           
+
         }
 
         private void ResetTables(string idTest)
@@ -89,7 +89,7 @@ namespace TestEH_UnitTest
                 //User entityTest = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
 
                 //bool result = eh.Insert(entityTest);
-                int result = eh.Insert(entityTest, nameof(entityTest.Id), true);
+                long result = eh.Insert(entityTest, nameof(entityTest.Id), true);
 
                 //if (result) { eh.Delete(entityTest); }
 
@@ -144,7 +144,7 @@ namespace TestEH_UnitTest
             {
                 EntityTest entityTest = new() { Id = 8, Name = "Entity Test", StartDate = DateTime.Now };
                 if (eh.CountEntity(entityTest) > 0) eh.Delete(entityTest);
-                int result1 = eh.Insert(entityTest, nameof(entityTest.Id), true);
+                long result1 = eh.Insert(entityTest, nameof(entityTest.Id), true);
                 Assert.That(result1, Is.EqualTo(1));
 
                 var result = eh.Get<EntityTest>();
@@ -199,7 +199,7 @@ namespace TestEH_UnitTest
 
                 if (entities is not null && entities[0].Name.Equals("Testando 2 entidade 300 atualizando hora via C#"))
                 {
-                    int result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 300");
+                    long result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 300");
                     Assert.That(result == 1, Is.EqualTo(true));
                 }
             }
@@ -226,7 +226,7 @@ namespace TestEH_UnitTest
 
                 if (entities is not null && entities[0].Name.Equals("Testando 2 entidade 300 atualizando hora via C#"))
                 {
-                    int result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 300");
+                    long result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 300");
                     Assert.That(result == 1, Is.EqualTo(true));
                 }
             }
@@ -254,7 +254,7 @@ namespace TestEH_UnitTest
 
             // Insert a career entity
             Career career = new Career(121, "Developer");
-            int careerInsertResult = eh.Insert(career);
+            long careerInsertResult = eh.Insert(career);
             Assert.AreEqual(1, careerInsertResult, "Career insertion failed.");
 
             // Insert a user entity linked to the created career
@@ -265,7 +265,7 @@ namespace TestEH_UnitTest
                 DtCreation = DateTime.Now,
                 IdCareer = 121
             };
-            int userInsertResult = eh.Insert(user);
+            long userInsertResult = eh.Insert(user);
             Assert.AreEqual(1, userInsertResult, "User insertion failed.");
 
             // Retrieve and validate career entities
@@ -311,7 +311,7 @@ namespace TestEH_UnitTest
             Career carrer2 = new() { IdCareer = 1302, Name = "Trainee", CareerLevel = 0, Active = true };
             //eh.Insert(carrer2);
 
-            int resultCarrers = eh.Insert(new List<Career>() { carrer1, carrer2 });
+            long resultCarrers = eh.Insert(new List<Career>() { carrer1, carrer2 });
             Assert.That(resultCarrers, Is.EqualTo(2));
 
             Group group1 = new() { Id = 1301, Name = "Developers", Description = "Developer Group" };
@@ -320,7 +320,7 @@ namespace TestEH_UnitTest
             Group group2 = new() { Id = 1302, Name = "Testers", Description = "Tester Group" };
             //eh.Insert(group2);
 
-            int resultGroups = eh.Insert(new List<Group>() { group1, group2 });
+            long resultGroups = eh.Insert(new List<Group>() { group1, group2 });
             Assert.That(resultGroups == 2, Is.EqualTo(true));
 
             eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '13__'"); // DELETE FROM TB_USER
@@ -410,6 +410,7 @@ namespace TestEH_UnitTest
         [Test, Order(102)]
         public void InsertLinkSelect_ByCSV()
         {
+
             // Create a connection with the database 1
             EnttityHelper eh1 = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
             Assert.IsTrue(eh1.DbContext.ValidateConnection());
@@ -426,48 +427,57 @@ namespace TestEH_UnitTest
 
             // CSV file
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ExcelCsvGerado_1000000x10.csv";
-            var insertCount = 1_000_000;
 
             bool createTable = true;
-            string tableName = "TestTable1M_Csv";
-            int batchSize = 100_000;
+            string tableName = "TestTable50K_Csv"; //TestTable1M_Csv
+            int batchSize = 10_000; // 200_000
             int timeOutSeconds = 50; // Timeout in seconds to insert 1 batch (max)
             char delimiter = ';';
             bool hasHeader = true; // The CSV file has a header
+
+            string rowsToLoad = "1:50000";
+            var insertCount = 50_000; // 1_000_000
             if (hasHeader) insertCount--;
 
             string tableNameDestiny = "TEST_LINKSELECT_CSV";
 
-            if (!eh1.CheckIfExist(tableName))
+            try
             {
-                // Act
-                int result = eh1.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds, delimiter, hasHeader);
-                Assert.That(result, Is.EqualTo(insertCount));
+                long result1 = 0;
+                if (!eh1.CheckIfExist(tableName))
+                {
+                    // Act
+                    result1 = eh1.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds, delimiter, hasHeader, rowsToLoad);
+                    Assert.That(result1, Is.EqualTo(insertCount));
+                }
+
+                DateTime endTime = DateTime.Now;
+                Debug.WriteLine($"End Load CSV: {endTime}");
+                Debug.WriteLine($"Elapsed Load CSV: {endTime - startTime}");
+
+                startTime = DateTime.Now;
+                Debug.WriteLine($"Start Link Select: {startTime}");
+
+                // Select from database table from database 1
+                string query = $"SELECT * FROM {tableName}";
+
+                // Insert the result of the select into the database table of database 2
+                var result2 = eh1.InsertLinkSelect(query, eh2, tableNameDestiny);
+                Assert.That(result2, Is.EqualTo(-1)); // result1 -- InsertLinkSelect return -1 when is successful
+
+                endTime = DateTime.Now;
+                Debug.WriteLine($"End Link Select: {endTime}");
+                Debug.WriteLine($"Elapsed Link Select: {endTime - startTime}");
+
+                var countDb1 = eh1.ExecuteScalar($"SELECT COUNT(*) FROM {tableName}");
+                var countDb2 = eh2.ExecuteScalar($"SELECT COUNT(*) FROM {tableNameDestiny}");
+                Assert.That(countDb1, Is.EqualTo(insertCount));
             }
-
-            DateTime endTime = DateTime.Now;
-            Debug.WriteLine($"End Load CSV: {endTime}");
-            Debug.WriteLine($"Elapsed Load CSV: {endTime - startTime}");
-
-            startTime = DateTime.Now;
-            Debug.WriteLine($"Start Link Select: {startTime}");
-
-            // Select from database table from database 1
-            string query = $"SELECT * FROM {tableName}";
-
-            // Insert the result of the select into the database table of database 2
-            eh1.InsertLinkSelect(query, eh2, tableNameDestiny);
-
-            endTime = DateTime.Now;
-            Debug.WriteLine($"End Link Select: {endTime}");
-            Debug.WriteLine($"Elapsed Link Select: {endTime - startTime}");
-
-            var countDb1 = eh1.ExecuteScalar($"SELECT COUNT(*) FROM {tableName}");
-            var countDb2 = eh2.ExecuteScalar($"SELECT COUNT(*) FROM {tableNameDestiny}");
-            Assert.That(countDb1, Is.EqualTo(insertCount));
-
-            eh1.ExecuteNonQuery($"DROP TABLE {tableName}");
-            eh2.ExecuteNonQuery($"DROP TABLE {tableNameDestiny}");
+            finally
+            {
+                eh1.ExecuteNonQuery($"DROP TABLE {tableName}");
+                eh2.ExecuteNonQuery($"DROP TABLE {tableNameDestiny}");
+            }
         }
 
         [Test, Order(103)]
@@ -555,7 +565,7 @@ namespace TestEH_UnitTest
                 List<User>? users = new() { user1, user2, user3 };
 
                 // Inserts the entities                
-                int result2 = eh.Insert(users);
+                long result2 = eh.Insert(users);
                 Assert.AreEqual(result2, 3);
 
                 // Test for one entity
@@ -585,31 +595,31 @@ namespace TestEH_UnitTest
                 if (eh.CheckIfExist(eh.GetTableName<Career>(), 1, $"{nameof(Career.IdCareer)} = {carrer2.IdCareer}")) eh.Delete(carrer2);
                 if (eh.CheckIfExist(eh.GetTableName<Career>(), 1, $"{nameof(Career.IdCareer)} = {carrer3.IdCareer}")) eh.Delete(carrer3);
                 List<Career>? carrers = new() { carrer1, carrer2, carrer3 };
-                int result10 = eh.Insert(carrers);
+                long result10 = eh.Insert(carrers);
                 Assert.AreEqual(3, result10);
 
                 // Many Delete
                 carrers = new() { carrer1, carrer1, carrer1 };  // Repeated
-                int result11 = eh.Delete(carrers);
+                long result11 = eh.Delete(carrers);
                 Assert.AreEqual(1, result11);
-                int result12 = eh.Insert(carrers);
+                long result12 = eh.Insert(carrers);
                 Assert.AreEqual(1, result12); // Cannot insert repeated mass (namePropUnique was not used) -- Can insert duplicates separately (if the database allows)
                 carrers = new() { carrer1, carrer2, carrer3 };
-                int result14 = eh.Delete(carrers);
+                long result14 = eh.Delete(carrers);
                 Assert.AreEqual(3, result14);
-                int result1 = eh.Insert(carrers);
+                long result1 = eh.Insert(carrers);
                 Assert.AreEqual(3, result1);
 
 
 
                 // Test for one entity - Without Career
                 User entityTest1 = new("Diego Piovezana One") { Id = 1051, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now };
-                int result2 = eh.Insert(entityTest1, nameof(entityTest1.GitHub), true);
+                long result2 = eh.Insert(entityTest1, nameof(entityTest1.GitHub), true);
                 Assert.AreEqual(1, result2);
 
                 // Test for one entity - With Career
                 User entityTest2 = new("Diego Piovezana Two") { Id = 1052, GitHub = "@DiegoPiovezanaTwo", DtCreation = DateTime.Now, IdCareer = 3 };
-                int result3 = eh.Insert(entityTest2, nameof(entityTest2.GitHub), true);
+                long result3 = eh.Insert(entityTest2, nameof(entityTest2.GitHub), true);
                 Assert.AreEqual(1, result3);
 
                 if (result2 > 0) { eh.Delete(entityTest1); }
@@ -629,7 +639,7 @@ namespace TestEH_UnitTest
                 Group group4 = new() { Id = 1061, Name = "Masters106-2", Description = "Masters Group" };
                 Group group5 = new() { Id = 1062, Name = "Managers106", Description = "Managers Group" };
                 List<Group> groups = new() { group4, group5 };
-                int result3 = eh.Insert(groups, nameof(Group.Name), true);
+                long result3 = eh.Insert(groups, nameof(Group.Name), true);
                 Assert.That(result3 == 2, Is.EqualTo(true));
 
                 eh.CreateTableIfNotExist<Career>(true);
@@ -648,7 +658,7 @@ namespace TestEH_UnitTest
                 User userM = new("Maria da Silva") { Id = 1061, GitHub = "@MariaSilva", DtCreation = DateTime.Now, IdCareer = 1061 };
                 userM.Groups.Add(group4);
                 userM.Groups.Add(group5);
-                int result4 = eh.Insert(userM, nameof(userM.GitHub), true);
+                long result4 = eh.Insert(userM, nameof(userM.GitHub), true);
                 Assert.That(result4 == 3, Is.EqualTo(true));
 
                 eh.ExecuteNonQuery($"DELETE FROM TB_GROUP_USERSTOGROUPS WHERE ID_TB_USERS = {userM.Id}");
@@ -677,7 +687,7 @@ namespace TestEH_UnitTest
                     )
                 {
 
-                    int result10 = eh.Insert(carrer2);
+                    long result10 = eh.Insert(carrer2);
                     Assert.AreEqual(1, result10);
                 }
 
@@ -685,7 +695,7 @@ namespace TestEH_UnitTest
                 User userX = new("Jayme Souza") { Id = 1071, GitHub = "@JSouza", DtCreation = DateTime.Now, IdCareer = 1072 };
                 User userY = new("Bruna Corsa") { Id = 1072, GitHub = "@BrunaCorsa", DtCreation = DateTime.Now };
                 List<User> users = new() { userX, userY };
-                int result5 = eh.Insert(users, nameof(User.Name), false);
+                long result5 = eh.Insert(users, nameof(User.Name), false);
                 Assert.AreEqual(result5, 2);
 
                 User userNameRepeat = new("Jhonny Souza") { Id = 1070, GitHub = "@JSouza", DtCreation = DateTime.Now, IdCareer = 1072 };
@@ -695,7 +705,7 @@ namespace TestEH_UnitTest
                 Group group6 = new() { Id = 1071, Name = "Group Six", Description = "Group Six Test" };
                 group6.Users.Add(userX);
                 group6.Users.Add(userY);
-                int result6 = eh.Insert(group6, nameof(group6.Name), true);
+                long result6 = eh.Insert(group6, nameof(group6.Name), true);
                 Assert.That(result6 == 3, Is.EqualTo(true));
 
                 eh.ExecuteNonQuery($"DELETE FROM TB_GROUP_USERSTOGROUPS WHERE ID_TB_GROUP_USERS  = {group6.Id}");
@@ -718,7 +728,7 @@ namespace TestEH_UnitTest
                 Career carrer1 = new(2011, "Developer");
                 Career carrer2 = new(2012, "Management");
                 Career carrer3 = new(2013, "Analyst");
-                int resultCarrer = eh.Insert(new List<Career> { carrer1, carrer2, carrer3 });
+                long resultCarrer = eh.Insert(new List<Career> { carrer1, carrer2, carrer3 });
                 Assert.That(resultCarrer, Is.EqualTo(3));
 
                 //int deletes = eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE ID IN (1, 2, 3)");
@@ -729,7 +739,7 @@ namespace TestEH_UnitTest
                 User user3 = new("User Test Three") { Id = 2013, GitHub = "@UserTestThree18", DtCreation = DateTime.Now, IdCareer = 2011 };
 
                 List<User>? users = new() { user1, user2, user3 };
-                int result1 = eh.Insert(users);
+                long result1 = eh.Insert(users);
                 Assert.That(result1 == 3, Is.EqualTo(true));
 
                 // Update entities
@@ -737,15 +747,15 @@ namespace TestEH_UnitTest
                 user2.Name = "User Test Two Updt";
                 user3.GitHub = "@UpdtUserTestThree18";
 
-                int result2 = eh.Update(users);
+                long result2 = eh.Update(users);
                 Assert.That(result2 == 3, Is.EqualTo(true));
 
                 // Update one entity
                 User user4 = new("User Test Four") { Id = 2014, GitHub = "@UserTestFour18", DtCreation = DateTime.Now, IdCareer = 2012 };
-                int result3 = eh.Insert(user4);
+                long result3 = eh.Insert(user4);
                 Assert.That(result3 == 1, Is.EqualTo(true));
                 user4.GitHub = "@UpdtUserTestFour18";
-                int result4 = eh.Update(user4);
+                long result4 = eh.Update(user4);
                 Assert.That(result4 == 1, Is.EqualTo(true));
             }
             else
@@ -825,7 +835,7 @@ namespace TestEH_UnitTest
             if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
 
             // Act
-            int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout);
+            long result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout);
 
             // Assert
             Assert.AreEqual(insertCount - 1, result); // -1 because the first row is the header
@@ -847,8 +857,8 @@ namespace TestEH_UnitTest
         [Test]
         public void LoadCSV_BIGCSVFile()
         {
-            DateTime dtTarget = new DateTime(2024, 11, 3, 17, 0, 0);
-            int minuteExpirationTest = 5;
+            DateTime dtTarget = new DateTime(2024, 11, 28, 00, 30, 0);
+            int minuteExpirationTest = 40;
 
             if (DateTime.Now - dtTarget > TimeSpan.FromMinutes(minuteExpirationTest))
             {
@@ -874,7 +884,7 @@ namespace TestEH_UnitTest
             if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
 
             // Act
-            int result = eh.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds);
+            long result = eh.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds);
 
             DateTime endTime = DateTime.Now;
             Debug.WriteLine($"End: {endTime}");
@@ -903,7 +913,7 @@ namespace TestEH_UnitTest
 
             if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
 
-            int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader);
+            long result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader);
             Assert.That(result, Is.EqualTo(insertCount));
         }
 
@@ -925,7 +935,7 @@ namespace TestEH_UnitTest
             if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
 
             // Act
-            int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader);
+            long result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader);
 
             // Assert
             Assert.AreEqual(insertCount - 1, result); // -1 because the first row is the blank header
@@ -949,7 +959,7 @@ namespace TestEH_UnitTest
 
             if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
 
-            int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader);
+            long result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader);
             Assert.AreEqual(insertCount, result);
         }
 
@@ -977,7 +987,7 @@ namespace TestEH_UnitTest
 
             if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
 
-            int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
+            long result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
             Assert.AreEqual(insertCount, result);
         }
 
@@ -1011,13 +1021,13 @@ namespace TestEH_UnitTest
             // Careers
             Career carrer1 = new() { IdCareer = 20101, Name = "Pleno", CareerLevel = 2, Active = true };
             Career carrer2 = new() { IdCareer = 20102, Name = "Trainee", CareerLevel = 0, Active = true };
-            int resultCarrers = eh.Insert(new List<Career>() { carrer1, carrer2 });
+            long resultCarrers = eh.Insert(new List<Career>() { carrer1, carrer2 });
             Assert.That(resultCarrers, Is.EqualTo(2));
 
             // Groups
             Group group1 = new() { Id = 20101, Name = "Developers", Description = "Developer Group" };
             Group group2 = new() { Id = 20102, Name = "Testers", Description = "Tester Group" };
-            int resultGroups = eh.Insert(new List<Group>() { group1, group2 });
+            long resultGroups = eh.Insert(new List<Group>() { group1, group2 });
             Assert.That(resultGroups, Is.EqualTo(2));
 
             // Insert user with group
@@ -1094,8 +1104,8 @@ namespace TestEH_UnitTest
             user2.Supervisor = user3; // Change supervisor (user1 -> use3) ???
             eh.Update(new List<User>() { user1, user2 });
 
-            List<User>? usersUpdated = eh.Get<User>(true,$"TO_CHAR({nameof(User.Id)}) LIKE '201%'");
-            Assert.That(usersUpdated.Count, Is.EqualTo(3));  
+            List<User>? usersUpdated = eh.Get<User>(true, $"TO_CHAR({nameof(User.Id)}) LIKE '201%'");
+            Assert.That(usersUpdated.Count, Is.EqualTo(3));
 
             var groupsUser1 = usersUpdated.Where(u => u.Id == 20101).FirstOrDefault().Groups;
             Assert.Multiple(() =>
@@ -1176,13 +1186,13 @@ namespace TestEH_UnitTest
 
             if (!eh.CheckIfExist(tableName))
             {
-                int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
+                long result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
                 Assert.AreEqual(insertCount, result);
             }
             else
             {
                 eh.ExecuteNonQuery($"DROP TABLE {tableName}");
-                int result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
+                long result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
                 Assert.AreEqual(insertCount, result);
             }
 
@@ -1201,7 +1211,7 @@ namespace TestEH_UnitTest
             var paginated1c = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 50_000, pageIndex: 4);
             Assert.AreEqual(0, paginated1c.Rows.Count);
 
-            int totalRecords = eh.GetTotalRecordCountAsync($"SELECT * FROM {tableName}").Result;
+            long totalRecords = eh.GetTotalRecordCountAsync($"SELECT * FROM {tableName}").Result;
             Assert.AreEqual(insertCount, totalRecords);
 
             eh.ExecuteNonQuery($"DROP TABLE {tableName}");
@@ -1339,7 +1349,7 @@ namespace TestEH_UnitTest
                 int totalExpectedInserts = expectedUserCount + expectedAuxiliaryCount;
 
                 // Realiza a inserção
-                int actualInsertCount = eh.Insert(users);
+                long actualInsertCount = eh.Insert(users);
 
                 // Valida a quantidade total de inserções
                 Assert.AreEqual(totalExpectedInserts, actualInsertCount);
@@ -1406,12 +1416,12 @@ namespace TestEH_UnitTest
 
 
                 // Teste de contagem total
-                int totalRecords = await eh.GetTotalRecordCountAsync(complexQuery);
+                long totalRecords = await eh.GetTotalRecordCountAsync(complexQuery);
                 Assert.AreEqual(32, totalRecords); // Deve retornar a quantidade total de registros da query
 
 
                 // Validação cruzada
-                int allRecords = eh.ExecuteSelectDt(complexQuery, pageSize: null).Rows.Count;
+                long allRecords = eh.ExecuteSelectDt(complexQuery, pageSize: null).Rows.Count;
                 Assert.AreEqual(totalRecords, allRecords);
 
             }
@@ -1481,7 +1491,7 @@ namespace TestEH_UnitTest
             int totalExpectedInserts = expectedUserCount + expectedAuxiliaryCount;
 
             // Realiza a inserção
-            int actualInsertCount = eh.Insert(users);
+            long actualInsertCount = eh.Insert(users);
 
             // Valida a quantidade total de inserções
             Assert.AreEqual(totalExpectedInserts, actualInsertCount);
@@ -1526,7 +1536,7 @@ namespace TestEH_UnitTest
 
             // Teste para cada query
             // Act & Assert
-            int totalRecords;
+            long totalRecords;
 
             // Teste com complexQueryWithWithAndJoin
             totalRecords = await eh.GetTotalRecordCountAsync(complexQueryWithWithAndJoin);

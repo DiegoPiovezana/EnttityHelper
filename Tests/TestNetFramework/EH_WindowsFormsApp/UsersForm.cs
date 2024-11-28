@@ -334,7 +334,7 @@ namespace EH_WindowsFormsApp
                 {
                     switch (eh.Insert(user, nameof(user.Id)))
                     {
-                        case int n when n > 0:
+                        case long n when n > 0:
                             MessageBox.Show($"User '{user?.Id}' saved successfully!", "Success!", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             return true;
                         case -101:

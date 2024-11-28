@@ -49,7 +49,7 @@ namespace EH.Command
         /// or if duplicate entries are detected when <paramref name="namePropUnique"/> is specified.
         /// </exception>
         /// <exception cref="Exception">Thrown for other errors, such as missing insert queries or execution failures.</exception>
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class;
+        public long Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class;
 
         /// <summary>
         /// Executes a SELECT query on one database and inserts the result into another database (or in the same).
@@ -59,7 +59,7 @@ namespace EH.Command
         /// <param name="tableName">The name of the table where the result will be inserted.</param>
         /// <param name="timeOutSeconds">(Optional) Maximum time (in seconds) to wait for the insertion to occur. By default, the maximum time is up to 10 minutes.</param>
         /// <returns>The number of rows inserted into the destination table.</returns>
-        public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds = 600);
+        public long InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds = 600);
 
         /// <summary>
         /// Loads a CSV or TXT file into the database.
@@ -74,7 +74,7 @@ namespace EH.Command
         /// <param name="rowsToLoad">Enter the rows or their range. E.g.: "1:23, 34:-56, 70, 75, -1". For default, all rows will be loaded. ATENTION: Order and duplicates will not be considered!</param>
         /// <returns>The number of records inserted into the database.</returns>
         /// <exception cref="ArgumentException">Thrown when the CSV/TXT file is invalid or cannot be loaded.</exception>
-        int LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';', bool hasHeader = true, string? rowsToLoad = null);
+        long LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';', bool hasHeader = true, string? rowsToLoad = null);
 
         /// <summary>
         /// Allow to update an entity in the database.
@@ -85,7 +85,7 @@ namespace EH.Command
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <param name="ignoreInversePropertyProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
         /// <returns>Number of entities updated in the database.</returns>
-        public int Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class;
+        public long Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class;
 
         /// <summary>
         /// Retrieves one or more entities from the database with optional filtering, pagination, and sorting.
@@ -182,7 +182,7 @@ namespace EH.Command
         /// This method internally constructs a count query using the base query and applies the optional filter.
         /// It handles database-specific exceptions (e.g., Oracle and SQL Server) to return a specific value for missing tables or views.
         /// </remarks>
-        public Task<int> GetTotalRecordCountAsync(string baseQuery, string? filter = null);
+        public Task<long> GetTotalRecordCountAsync(string baseQuery, string? filter = null);
 
         /// <summary>
         /// Allows you to create a table in the database according to the provided objectEntity object.
@@ -229,7 +229,7 @@ namespace EH.Command
         /// <param name="nameId">(Optional) Entity ID column name. By default, PK will be used.</param>
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>Number of exclusions made.</returns>
-        public int Delete<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class;
+        public long Delete<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class;
 
         /// <summary>
         /// Executes the non query (Create, Alter, Drop, Insert, Update or Delete) on the database.
@@ -237,7 +237,7 @@ namespace EH.Command
         /// <param name="query">Query to be executed.</param>
         /// <param name="expectedChanges">(Optional) Expected amount of changes to the database. If the amount of changes is not expected, the change will be rolled back and an exception will be thrown.</param> 
         /// <returns>Number of affected rows.</returns>
-        public int ExecuteNonQuery(string? query, int expectedChanges = -1);
+        public long ExecuteNonQuery(string? query, int expectedChanges = -1);
 
         /// <summary>
         /// Executes a SELECT query and retrieves a list of mapped entities, with optional support for pagination.

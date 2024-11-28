@@ -25,7 +25,7 @@ namespace EH.Command
 
         }
 
-        public int Insert<TEntity>(TEntity entity, string? namePropUnique, bool createTable, string? tableName, bool ignoreInversePropertyProperties, int timeOutSeconds) where TEntity : class
+        public long Insert<TEntity>(TEntity entity, string? namePropUnique, bool createTable, string? tableName, bool ignoreInversePropertyProperties, int timeOutSeconds) where TEntity : class
         {
             if (entity is DataTable dataTable) return InsertDataTable(createTable, ref tableName, timeOutSeconds, dataTable);
             if (entity is IDataReader dataReader) return InsertIDataReader(createTable, tableName, timeOutSeconds, dataReader);
@@ -33,7 +33,7 @@ namespace EH.Command
             return InsertEntities(entity, namePropUnique, createTable, ref tableName, ignoreInversePropertyProperties); // Entity or IEnumerable<Entity>
 
 
-            int InsertDataTable(bool createTable, ref string? tableName, int timeOutSeconds, DataTable dataTable)
+            long InsertDataTable(bool createTable, ref string? tableName, int timeOutSeconds, DataTable dataTable)
             {
                 if (dataTable.Rows.Count == 0) return 0;
 
@@ -47,7 +47,7 @@ namespace EH.Command
                 return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataTable, tableName, timeOutSeconds);
             }
 
-            int InsertIDataReader(bool createTable, string? tableName, int timeOutSeconds, IDataReader dataReader)
+            long InsertIDataReader(bool createTable, string? tableName, int timeOutSeconds, IDataReader dataReader)
             {
                 if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
 
@@ -62,7 +62,7 @@ namespace EH.Command
                 return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataReader, tableName, timeOutSeconds);
             }
 
-            int InsertDataRows(string? tableName, int timeOutSeconds, DataRow[] dataRows)
+            long InsertDataRows(string? tableName, int timeOutSeconds, DataRow[] dataRows)
             {
                 if (dataRows.Length == 0) return 0;
 
@@ -71,7 +71,7 @@ namespace EH.Command
                 return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataRows, tableName, timeOutSeconds);
             }
 
-            int InsertEntities<TEntity>(TEntity entity, string? namePropUnique, bool createTable, ref string? tableName, bool ignoreInversePropertyProperties) where TEntity : class
+            long InsertEntities<TEntity>(TEntity entity, string? namePropUnique, bool createTable, ref string? tableName, bool ignoreInversePropertyProperties) where TEntity : class
             {
                 var insertsQueriesEntities = new Dictionary<object, List<string?>?>();
                 var entities = entity as IEnumerable ?? new[] { entity };
@@ -148,7 +148,7 @@ namespace EH.Command
                     insertsQueriesEntities[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.DbContext.Type, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();
                 }
 
-                int insertions = 0;
+                long insertions = 0;
 
                 foreach (var insertQueriesEntity in insertsQueriesEntities)
                 {
@@ -173,9 +173,9 @@ namespace EH.Command
             }
         }
 
-        public int InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds)
+        public long InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds)
         {
-            int inserts;
+            long inserts;
             do
             {
                 var dataReaderSelect = (IDataReader?)_enttityHelper.DbContext.ExecuteReader<IDataReader>(selectQuery, true, null, 0, null, null, true);
@@ -189,10 +189,10 @@ namespace EH.Command
         }
 
 
-        public int LoadCSV(string csvFilePath, bool createTable, string? tableName, int batchSize, int timeOutSeconds, char delimiter, bool hasHeader, string? rowsToLoad)
+        public long LoadCSV(string csvFilePath, bool createTable, string? tableName, int batchSize, int timeOutSeconds, char delimiter, bool hasHeader, string? rowsToLoad)
         {
             Validations.Validate.IsFileValid(csvFilePath);
-            int totalInserts = 0;
+            long totalInserts = 0;
 
             try
             {
@@ -293,7 +293,7 @@ namespace EH.Command
         }
 
 
-        public int Update<TEntity>(TEntity entity, string? nameId, string? tableName, bool ignoreInversePropertyProperties) where TEntity : class
+        public long Update<TEntity>(TEntity entity, string? nameId, string? tableName, bool ignoreInversePropertyProperties) where TEntity : class
         {
             // Entity or IEnumerable<Entity>
             var updatesQueriesEntities = new Dictionary<object, List<string?>?>();
@@ -311,7 +311,7 @@ namespace EH.Command
                 updatesQueriesEntities[entityItem] = queryUpdate.ToList();
             }
 
-            int updates = 0;
+            long updates = 0;
 
             foreach (var updateQueriesEntity in updatesQueriesEntities)
             {
@@ -465,7 +465,7 @@ namespace EH.Command
             }
         }
 
-        public async Task<int> GetTotalRecordCountAsync(string baseQuery, string? filter = null)
+        public async Task<long> GetTotalRecordCountAsync(string baseQuery, string? filter = null)
         {
             try
             {
@@ -480,7 +480,7 @@ namespace EH.Command
                     command.CommandText = countQuery;
 
                     var result = Task.Run(() => command.ExecuteScalar()).Result;
-                    return Convert.ToInt32(result);
+                    return Convert.ToInt64(result);
                 }
             }
             catch (OracleException ex) when (ex.Number == 942) // ORA-00942: table or view does not exist
@@ -591,7 +591,7 @@ namespace EH.Command
         //    return true;
         //}
 
-        public int Delete<TEntity>(TEntity entity, string? nameId, string? tableName) where TEntity : class
+        public long Delete<TEntity>(TEntity entity, string? nameId, string? tableName) where TEntity : class
         {
             // Entity or IEnumerable<Entity>
             var deletesQueriesEntities = new Dictionary<object, List<string?>?>();
@@ -609,7 +609,7 @@ namespace EH.Command
                 deletesQueriesEntities[entityItem] = new List<string?>() { queryDelete };
             }
 
-            int deletions = 0;
+            long deletions = 0;
             foreach (var deleteQueriesEntity in deletesQueriesEntities)
             {
                 if (deleteQueriesEntity.Value == null) throw new Exception("EH-000: Delete query does not exist!");
@@ -619,12 +619,12 @@ namespace EH.Command
             return deletions;
         }
 
-        public int ExecuteNonQuery(string? query, int expectedChanges)
+        public long ExecuteNonQuery(string? query, int expectedChanges)
         {
             return ExecuteNonQuery(new List<string?>() { query }, expectedChanges).FirstOrDefault();
         }
 
-        public ICollection<int> ExecuteNonQuery(ICollection<string?> queries, int expectedChanges)
+        public ICollection<long> ExecuteNonQuery(ICollection<string?> queries, int expectedChanges)
         {
             return Execute.ExecuteNonQuery(_enttityHelper.DbContext, queries, expectedChanges);
         }

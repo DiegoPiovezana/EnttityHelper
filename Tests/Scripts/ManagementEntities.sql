@@ -939,6 +939,8 @@ SELECT COUNT(1) FROM (
 SELECT * FROM TestTableCsvHeader2;
 SELECT * FROM TestTableCsvHeader1;
 SELECT * FROM TestTable1M_Csv;
+SELECT * FROM TestTable50K_Csv;
+SELECT * FROM TEST_LINKSELECT_CSV;
 SELECT * FROM TestTable_Txt;
 SELECT * FROM TestTable_BigCsv;
 SELECT * FROM TestTableCsv_RangeRows;
@@ -951,14 +953,31 @@ SELECT * FROM TB_GROUP_USERSTOGROUPS;
 SELECT * FROM TB_GROUP_USERS;
 SELECT * FROM TB_USER;
 
+-- Origin
+DISCONNECT
+CONNECT system/oracle@localhost:1521/xe
+SELECT COUNT(*) FROM TestTable50K_Csv; -- 49999
+
+-- Destiny
+DISCONNECT
+CONNECT system/oracle@localhost:49262/xe
+SELECT COUNT(*) FROM TEST_LINKSELECT_CSV; -- 49999
 
 
 --------------------------------------------------------------------------------------------
 -- Cleanning
 
+DISCONNECT
+CONNECT system/oracle@localhost:1521/xe
+
+DISCONNECT
+CONNECT system/oracle@localhost:49262/xe
+
 DROP TABLE TestTableCsvHeader2;
 DROP TABLE TestTableCsvHeader1;
 DROP TABLE TestTable1M_Csv;
+DROP TABLE TestTable50K_Csv;
+DROP TABLE TEST_LINKSELECT_CSV;
 DROP TABLE TestTable_Txt;
 DROP TABLE TestTable_BigCsv;
 DROP TABLE TestTableCsv_RangeRows;

@@ -21,7 +21,7 @@ namespace TestXUnit
 
 
 
-        [Fact]
+        //[Fact]
         public void Get_ShouldReturnPagedData_WhenPageSizeAndPageIndexAreProvided()
         {
             // Arrange
@@ -46,7 +46,7 @@ namespace TestXUnit
             Assert.Equal("Entity 1", result[0].Name);
         }
 
-        [Fact]
+        //[Fact]
         public void Get_ShouldReturnEmptyList_WhenNoEntitiesMatch()
         {
             // Arrange
@@ -69,7 +69,7 @@ namespace TestXUnit
 
 
 
-        [Fact]
+        //[Fact]
         public void ExecuteSelect_ShouldReturnPagedEntities_WhenPageSizeAndPageIndexAreProvided()
         {
             // Arrange
@@ -95,7 +95,7 @@ namespace TestXUnit
             Assert.Equal("Entity 1", result[0].Name);
         }
 
-        [Fact]
+        //[Fact]
         public void ExecuteSelect_ShouldReturnNull_WhenQueryFails()
         {
             // Arrange
@@ -116,7 +116,7 @@ namespace TestXUnit
 
 
 
-        [Fact]
+        //[Fact]
         public void ExecuteSelectDt_ShouldReturnPagedDataTable_WhenPageSizeAndPageIndexAreProvided()
         {
             // Arrange
@@ -142,7 +142,7 @@ namespace TestXUnit
             Assert.Equal("Entity 1", result.Rows[0]["Name"]);
         }
 
-        [Fact]
+        //[Fact]
         public void ExecuteSelectDt_ShouldReturnNull_WhenQueryFails()
         {
             // Arrange

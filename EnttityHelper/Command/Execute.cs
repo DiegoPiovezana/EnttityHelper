@@ -93,7 +93,7 @@ namespace EH.Commands
         /// <exception cref="Exception">
         /// Thrown when a SQL error occurs, including specific handling for the 'ORA-00942' error.
         /// </exception>
-        internal static ICollection<int> ExecuteNonQuery(this Database DbContext, ICollection<string?> queries, int expectedChanges = -1)
+        internal static ICollection<long> ExecuteNonQuery(this Database DbContext, ICollection<string?> queries, int expectedChanges = -1)
         {
             if (DbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
             if (queries is null || queries.Count == 0) { throw new InvalidOperationException("Queries do not exist."); }
@@ -104,7 +104,7 @@ namespace EH.Commands
 
             try
             {
-                ICollection<int> result = new List<int>();
+                ICollection<long> result = new List<long>();
 
                 foreach (var query in queries)
                 {
@@ -116,13 +116,13 @@ namespace EH.Commands
                     using IDbCommand command = DbContext.CreateCommand(query);
                     command.Transaction = transaction;
 
-                    int rowsAffected = command.ExecuteNonQuery();
+                    long rowsAffected = command.ExecuteNonQuery();
                     //Debug.WriteLine(query);                   
 
                     result.Add(rowsAffected);
                 }
 
-                int changes = result.Sum();
+                long changes = result.Sum();
                 if (expectedChanges != -1 && changes != expectedChanges)
                 {
                     throw new InvalidOperationException($"Expected {expectedChanges} changes, but {changes} were made.");
@@ -255,7 +255,7 @@ namespace EH.Commands
         /// <exception cref="ArgumentNullException">Thrown if the database context, input data, or table name is null or empty.</exception>
         /// <exception cref="NotSupportedException">Thrown if the bulk copy operation is not supported for the provided data type or database provider.</exception>
         /// <exception cref="Exception">Thrown if an error occurs during the bulk copy operation, causing the connection to close and the exception to be rethrown.</exception>
-        internal static int PerformBulkCopyOperation(this Database dbContext, object inputDataToCopy, string tableName, int bulkCopyTimeout)
+        internal static long PerformBulkCopyOperation(this Database dbContext, object inputDataToCopy, string tableName, int bulkCopyTimeout)
         {
             // dataToCopy: DataRow[], DataTable, IDataReader
 

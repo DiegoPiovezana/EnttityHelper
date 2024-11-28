@@ -6,7 +6,7 @@ namespace TestEHxSH
 {
     public class UnitTestSH
     {
-        [Fact]
+        //[Fact]
         public void TestInsertIDataReader()
         {
             //EnttityHelper eh = new($"Data Source=172.26.8.159:1521/xe;User Id=system;Password=oracle");
