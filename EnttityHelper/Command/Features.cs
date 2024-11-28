@@ -59,7 +59,9 @@ namespace EH.Command
                     return -942; // Because IDataReader                   
                 }
 
-                return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataReader, tableName, timeOutSeconds);
+                var result = Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataReader, tableName, timeOutSeconds);
+                if (result == -1) result = CountTable(tableName, null);
+                return result;
             }
 
             long InsertDataRows(string? tableName, int timeOutSeconds, DataRow[] dataRows)

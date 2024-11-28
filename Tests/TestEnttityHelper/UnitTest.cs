@@ -463,7 +463,7 @@ namespace TestEH_UnitTest
 
                 // Insert the result of the select into the database table of database 2
                 var result2 = eh1.InsertLinkSelect(query, eh2, tableNameDestiny);
-                Assert.That(result2, Is.EqualTo(-1)); // result1 -- InsertLinkSelect return -1 when is successful
+                Assert.That(result2, Is.EqualTo(result1));
 
                 endTime = DateTime.Now;
                 Debug.WriteLine($"End Link Select: {endTime}");
