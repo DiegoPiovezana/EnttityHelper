@@ -4,7 +4,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -14,7 +13,7 @@ namespace EH.Command
     internal static class Tools
     {
         /// <summary>
-        /// Maps the data from an IDataReader to a list of entities of type T.     
+        /// Maps the data from an IDataReader to a list of entities of type T.
         /// </summary>
         /// <typeparam name="T">The type of entity.</typeparam>
         /// <param name="reader">The IDataReader containing the data to be mapped.</param>
@@ -278,6 +277,35 @@ namespace EH.Command
 
             result = result.Length > limitChars ? result.Substring(0, limitChars) : result;
             return result;
+        }
+
+        public static string[] ParseCsvLine(string line, char delimiter)
+        {
+            if (string.IsNullOrEmpty(line)) return Array.Empty<string>();
+
+            var fields = new List<string>();
+            var currentField = new StringBuilder();
+            bool insideQuotes = false;
+
+            foreach (char c in line)
+            {
+                if (c == '"')
+                {
+                    insideQuotes = !insideQuotes;
+                }
+                else if (c == delimiter && !insideQuotes)
+                {
+                    fields.Add(currentField.ToString());
+                    currentField.Clear();
+                }
+                else
+                {
+                    currentField.Append(c);
+                }
+            }
+
+            fields.Add(currentField.ToString());
+            return fields.ToArray();
         }
 
 

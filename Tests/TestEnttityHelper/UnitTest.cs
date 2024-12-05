@@ -1008,8 +1008,8 @@ namespace TestEH_UnitTest
             //string rangeRows = "1:20,30 ,50,99,-1"; // "1:23, -34:56, 70, 75, -1"
             //var insertCount = 24;
 
-            string rangeRows = "2:-2"; // second to penultimat row
-            var insertCount = 98;
+            string rangeRows = ":"; // all rows
+            var insertCount = 4;
 
             if (hasHeader) insertCount--; // Remove the header
 

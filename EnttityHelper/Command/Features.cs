@@ -216,7 +216,7 @@ namespace EH.Command
                 {
                     // Read the first row
                     // Header must contain at least the delimiters 
-                    headers = reader.ReadLine()?.Split(delimiter) ?? throw new InvalidOperationException("CSV/TXT file is empty or headers are missing.");
+                    headers = Tools.ParseCsvLine(reader.ReadLine(), delimiter) ?? throw new InvalidOperationException("CSV/TXT file is empty or headers are missing.");
                     rowIndex++;
                 }
 
@@ -257,7 +257,7 @@ namespace EH.Command
                 // Read and load rows
                 while (!reader.EndOfStream)
                 {
-                    string[] rows = reader.ReadLine()?.Split(delimiter) ?? throw new InvalidOperationException("Error reading a row from the CSV/TXT file.");
+                    string[] rows = Tools.ParseCsvLine(reader.ReadLine(), delimiter) ?? throw new InvalidOperationException("Error reading a row from the CSV/TXT file.");
                     rowIndex++;
 
                     if (hashRowsSelected.Contains(rowIndex))
