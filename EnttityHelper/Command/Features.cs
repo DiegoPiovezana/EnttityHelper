@@ -192,7 +192,7 @@ namespace EH.Command
         }
 
 
-        public long LoadCSV(string csvFilePath, bool createTable, string? tableName, int batchSize, int timeOutSeconds, char delimiter, bool hasHeader, string? rowsToLoad, Encoding? encodeRead)
+        public long LoadCSV(string csvFilePath, bool createTable, string? tableName, int batchSize, int timeOutSeconds, char delimiter, bool hasHeader, string? rowsToLoad, Encoding? encodingRead)
         {
             Validations.Validate.IsFileValid(csvFilePath);
             long totalInserts = 0;
@@ -203,14 +203,14 @@ namespace EH.Command
                 var rowsSelected = Definitions.DefineRows(rowsToLoad, rowCount);
                 var hashRowsSelected = new HashSet<int>(rowsSelected);
                 int rowIndex = 0;
-                encodeRead ??= Encoding.UTF8;
+                encodingRead ??= Encoding.UTF8;
 
                 DataTable dataTable = new()
                 {
                     TableName = Path.GetFileNameWithoutExtension(csvFilePath)
                 };
 
-                using StreamReader reader = new(csvFilePath, encodeRead);
+                using StreamReader reader = new(csvFilePath, encodingRead);
 
                 string[]? headers = null;
                 int indexFirstRow = hashRowsSelected.Min();

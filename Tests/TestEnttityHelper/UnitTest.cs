@@ -3,6 +3,7 @@ using Oracle.ManagedDataAccess.Client;
 using SH;
 using System.Data;
 using System.Diagnostics;
+using System.Text;
 using TestEH_UnitTest.Entities;
 using TestEH_UnitTest.Entitities;
 using TestEnttityHelper.OthersEntity;
@@ -998,6 +999,7 @@ namespace TestEH_UnitTest
             Assert.That(eh.DbContext.ValidateConnection());
 
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ExcelUTF8.csv"; // J4
+            Encoding encodingRead = Encoding.UTF8;
 
             string tableName = "TestTableCsv_UTF8";
             int batchSize = 10;
@@ -1015,7 +1017,7 @@ namespace TestEH_UnitTest
 
             if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
 
-            long result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
+            long result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows, encodingRead);
             Assert.AreEqual(insertCount, result);
         }
 
