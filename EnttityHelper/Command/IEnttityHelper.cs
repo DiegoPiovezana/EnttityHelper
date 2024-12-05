@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace EH.Command
@@ -72,9 +73,10 @@ namespace EH.Command
         /// <param name="delimiter">The delimiter character used in the CSV/TXT file. Default is ';'</param>
         /// <param name="hasHeader">Indicates whether the CSV/TXT file contains headers. Default is true.</param>
         /// <param name="rowsToLoad">Enter the rows or their range. E.g.: "1:23, 34:-56, 70, 75, -1". For default, all rows will be loaded. ATENTION: Order and duplicates will not be considered!</param>
+        /// <param name="encodeRead">The encoding to use when reading the CSV/TXT file. Default is UTF8.</param>
         /// <returns>The number of records inserted into the database.</returns>
         /// <exception cref="ArgumentException">Thrown when the CSV/TXT file is invalid or cannot be loaded.</exception>
-        long LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';', bool hasHeader = true, string? rowsToLoad = null);
+        long LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';', bool hasHeader = true, string? rowsToLoad = null, Encoding? encodeRead = null);
 
         /// <summary>
         /// Allow to update an entity in the database.

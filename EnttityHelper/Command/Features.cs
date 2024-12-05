@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace EH.Command
@@ -191,7 +192,7 @@ namespace EH.Command
         }
 
 
-        public long LoadCSV(string csvFilePath, bool createTable, string? tableName, int batchSize, int timeOutSeconds, char delimiter, bool hasHeader, string? rowsToLoad)
+        public long LoadCSV(string csvFilePath, bool createTable, string? tableName, int batchSize, int timeOutSeconds, char delimiter, bool hasHeader, string? rowsToLoad, Encoding? encodeRead)
         {
             Validations.Validate.IsFileValid(csvFilePath);
             long totalInserts = 0;
@@ -202,13 +203,14 @@ namespace EH.Command
                 var rowsSelected = Definitions.DefineRows(rowsToLoad, rowCount);
                 var hashRowsSelected = new HashSet<int>(rowsSelected);
                 int rowIndex = 0;
+                encodeRead ??= Encoding.UTF8;
 
                 DataTable dataTable = new()
                 {
                     TableName = Path.GetFileNameWithoutExtension(csvFilePath)
                 };
 
-                using StreamReader reader = new(csvFilePath);
+                using StreamReader reader = new(csvFilePath, encodeRead);
 
                 string[]? headers = null;
                 int indexFirstRow = hashRowsSelected.Min();

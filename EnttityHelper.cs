@@ -3,6 +3,7 @@ using EH.Connection;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace EH
@@ -90,11 +91,11 @@ namespace EH
         }
 
         /// <inheritdoc/> 
-        public long LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';', bool hasHeader = true, string? rowsToLoad = null)
+        public long LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';', bool hasHeader = true, string? rowsToLoad = null, Encoding? encodeRead = null)
         {
             try
             {
-                return _features.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds, delimiter, hasHeader, rowsToLoad);
+                return _features.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds, delimiter, hasHeader, rowsToLoad, encodeRead);
             }
             catch (Exception)
             {

@@ -285,17 +285,31 @@ namespace EH.Command
 
             var fields = new List<string>();
             var currentField = new StringBuilder();
-            bool insideQuotes = false;
+            bool inQuotes = false;
 
-            foreach (char c in line)
+            for (int i = 0; i < line.Length; i++)
             {
-                if (c == '"')
+                char c = line[i];
+
+                if (c == '"' && !inQuotes)
                 {
-                    insideQuotes = !insideQuotes;
+                    inQuotes = true;
                 }
-                else if (c == delimiter && !insideQuotes)
+                else if (c == '"' && inQuotes)
                 {
-                    fields.Add(currentField.ToString());
+                    if (i + 1 < line.Length && line[i + 1] == '"')
+                    {
+                        currentField.Append('"');
+                        i++;
+                    }
+                    else
+                    {
+                        inQuotes = false;
+                    }
+                }
+                else if (c == delimiter && !inQuotes)
+                {
+                    fields.Add(currentField.ToString().Trim());
                     currentField.Clear();
                 }
                 else
@@ -304,9 +318,10 @@ namespace EH.Command
                 }
             }
 
-            fields.Add(currentField.ToString());
+            fields.Add(currentField.ToString().Trim());
             return fields.ToArray();
         }
+
 
 
     }
