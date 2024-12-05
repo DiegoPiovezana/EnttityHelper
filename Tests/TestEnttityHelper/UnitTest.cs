@@ -991,6 +991,34 @@ namespace TestEH_UnitTest
             Assert.AreEqual(insertCount, result);
         }
 
+        [Test]
+        public void LoadCSV_UTF8()
+        {
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            Assert.That(eh.DbContext.ValidateConnection());
+
+            string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ExcelUTF8.csv"; // J4
+
+            string tableName = "TestTableCsv_UTF8";
+            int batchSize = 10;
+            int timeout = 1;
+            char delimiter = ';';
+            bool hasHeader = true;
+
+            //string rangeRows = "1:20,30 ,50,99,-1"; // "1:23, -34:56, 70, 75, -1"
+            //var insertCount = 24;
+
+            string rangeRows = "2:-2"; // second to penultimat row
+            var insertCount = 98;
+
+            if (hasHeader) insertCount--; // Remove the header
+
+            if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
+
+            long result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
+            Assert.AreEqual(insertCount, result);
+        }
+
         [Test, Order(201)]
         public void TestIncludeAll()
         {
