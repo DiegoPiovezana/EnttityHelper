@@ -1,4 +1,4 @@
-﻿namespace TestEH_UnitTest.Entitities
+﻿namespace TestEH_UnitTest.Entities
 {
     // Example of a entity that will be mapped but not exist in the database.
 

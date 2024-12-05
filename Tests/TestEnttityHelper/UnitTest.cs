@@ -5,7 +5,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Text;
 using TestEH_UnitTest.Entities;
-using TestEH_UnitTest.Entitities;
+using TestEH_UnitTest.Entities;
 using TestEnttityHelper.OthersEntity;
 
 namespace TestEH_UnitTest
@@ -713,6 +713,40 @@ namespace TestEH_UnitTest
                 eh.Delete(userX);
                 eh.Delete(userY);
                 eh.Delete(group6);
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
+
+        [Test, Order(108)]
+        public void TestInsert_SpecialEntity()
+        {
+            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            if (eh.DbContext.ValidateConnection())
+            {
+                eh.CreateTableIfNotExist<Group>(true);
+                // ATTENTION: The User table depends on the Group to establish the MxN relationship and create the auxiliary table (even if users without group)
+
+                User userX = new("Jayme Souza") { Id = 1081, GitHub = "@JSouza", DtCreation = DateTime.Now };
+                User userY = new("Bruna Corsa") { Id = 1082, GitHub = "@BrunaCorsa", DtCreation = DateTime.Now };
+                List<User> users = new() { userX, userY };
+                long result1 = eh.Insert(entity: users, namePropUnique: nameof(User.Name), createTable: true);
+                Assert.That(result1, Is.EqualTo(2));
+
+                Ticket ticketUserX = new(userX, "Obs", "Num", "Previous", "After");
+                Assert.That(eh.Insert(ticketUserX, null, true), Is.EqualTo(1));
+
+                Ticket ticketEmpty = new(); // Without user
+                ticketEmpty.DateCreate = DateTime.Now;
+                ticketEmpty.IdUser = null;
+                Assert.That(eh.Insert(ticketEmpty, null, true), Is.EqualTo(1));
+
+                eh.Delete(ticketUserX);
+                eh.Delete(ticketEmpty);
+                eh.Delete(userX);
+                eh.Delete(userY);
             }
             else
             {

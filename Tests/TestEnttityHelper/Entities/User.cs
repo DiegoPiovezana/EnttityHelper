@@ -1,11 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using TestEH_UnitTest.Entitities;
+using TestEH_UnitTest.Entities;
 
 namespace TestEH_UnitTest.Entities
 {
     [Table("TB_USERS")]
-    internal class User
+    public class User
     {
         [Key()] public long Id { get; internal set; }
         [Required][MaxLength(300)] public string Name { get; internal set; }

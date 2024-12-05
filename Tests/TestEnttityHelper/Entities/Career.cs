@@ -1,15 +1,14 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace TestEH_UnitTest.Entitities
+namespace TestEH_UnitTest.Entities
 {
     [Table("TB_CAREERS")]
-    public class Career 
+    public class Career
     {
-        [Key()] public Int64 IdCareer { get; set; }     
-        [Required][MaxLength(200)] public string Name { get; set; }   
-        [Required] public double CareerLevel { get; internal set; } 
+        [Key()] public Int64 IdCareer { get; set; }
+        [Required][MaxLength(200)] public string Name { get; set; }
+        [Required] public double CareerLevel { get; internal set; }
         [Required] public bool Active { get; set; }
 
 
@@ -27,7 +26,7 @@ namespace TestEH_UnitTest.Entitities
         {
             return Name;
         }
-       
+
 
     }
 }
