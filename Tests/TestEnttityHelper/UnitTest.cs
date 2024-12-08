@@ -780,6 +780,89 @@ namespace TestEH_UnitTest
             }
         }
 
+        [Test, Order(109)]
+        public void TestInsert_EntityPropMissing()
+        {
+            EnttityHelper eh = new(stringConnection19c);
+
+            if (eh.DbContext.ValidateConnection())
+            {
+                eh.CreateTableIfNotExist<Group>(true);
+
+                User userX = new("Jayme Souza") { Id = 1091, GitHub = "@JSouza109", DtCreation = DateTime.Now };
+                User userY = new("Bruna Corsa") { Id = 1092, GitHub = "@BrunaCorsa109", DtCreation = DateTime.Now };
+                List<User> users = new() { userX, userY };
+
+                long result1 = eh.Insert(entity: users, namePropUnique: nameof(User.GitHub), createTable: true);
+                Assert.That(result1, Is.EqualTo(2));
+
+                eh.CreateTableIfNotExist<Ticket>(createOnlyPrimaryTable: false);
+
+                try
+                {
+                    eh.ExecuteNonQuery(
+                        $"CREATE SEQUENCE SEQUENCE_TICKET " +
+                        $"START WITH 1 " +
+                        $"INCREMENT BY 1 "
+                    );
+                }
+                catch (Exception) { } // Ignore if the sequence already exists                    
+
+                var resultTrigger = eh.ExecuteNonQuery(
+                    $"CREATE OR REPLACE TRIGGER TRIGGER_TICKET " +
+                    $"BEFORE INSERT ON TB_TICKET " +
+                    $"FOR EACH ROW " +
+                    $"BEGIN " +
+                    $":NEW.IdLog := SEQUENCE_TICKET.NEXTVAL; " +
+                    $"END;");
+
+                // Ticket with user
+                Ticket ticketUserX = new(userX, "Obs", "Num", "Previous", "After");
+                Assert.That(eh.Insert(ticketUserX, namePropUnique: null, createTable: false), Is.EqualTo(1));
+
+                // Ticket without user (IdUser is null, user will be ignored)
+                Ticket ticketEmpty = new();
+                ticketEmpty.DateCreate = DateTime.Now;
+                ticketEmpty.IdUser = null;  // Check if nullable handling works here
+                ticketEmpty.User = userY; // Will be ignored because IdUser is null
+                Assert.That(eh.Insert(ticketEmpty, null, true), Is.EqualTo(1));
+
+                // Test: Insert with empty string for required fields
+                Ticket ticketWithEmptyStrings = new(userX, "", "", "", "");
+                Assert.That(() => eh.Insert(ticketWithEmptyStrings, namePropUnique: null, createTable: false),
+                            Throws.TypeOf<InvalidOperationException>().With.Message.Contains("Required"));
+
+                // Test: Insert with null in non-nullable string fields (should throw exception)
+                Ticket ticketWithNullStrings = new(userX, null, null, null, null);
+                Assert.That(() => eh.Insert(ticketWithNullStrings, namePropUnique: null, createTable: false),
+                            Throws.TypeOf<ArgumentNullException>().With.Message.Contains("cannot be null"));
+
+                // Test: Insert with invalid IdUser type (nullable long)
+                Ticket ticketWithInvalidIdUser = new(userX, "Valid Obs", "Valid Num", "Valid Previous", "Valid After");
+                ticketWithInvalidIdUser.IdUser = 999999;  // Assuming a user with this Id does not exist
+                Assert.That(() => eh.Insert(ticketWithInvalidIdUser, namePropUnique: null, createTable: false),
+                            Throws.TypeOf<OracleException>().With.Message.Contains("reference"));
+
+                // Test: Insert with DateTime as null (should handle null DateTime gracefully if not required)
+                Ticket ticketWithNullDate = new(userX, "Obs", "Num", "Previous", "After");
+                ticketWithNullDate.DateCreate = default(DateTime);  // Check if empty DateTime works or throws
+                Assert.That(eh.Insert(ticketWithNullDate, namePropUnique: null, createTable: false), Is.EqualTo(1));
+
+                // Test: Insert with special characters in fields
+                Ticket ticketWithSpecialChars = new(userX, "Obs @#$%", "Num123", "Previous Special", "After Special");
+                Assert.That(eh.Insert(ticketWithSpecialChars, namePropUnique: null, createTable: false), Is.EqualTo(1));
+
+                eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Ticket>()}");
+                eh.Delete(userX);
+                eh.Delete(userY);
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
+
+
         [Test, Order(201)]
         public void TestManyUpdates()
         {

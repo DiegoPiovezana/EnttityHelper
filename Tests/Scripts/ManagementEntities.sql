@@ -970,7 +970,7 @@ END;
 
 
 -- Selecionando todos os registros da tabela TB_TICKET para verificação
-SELECT * FROM TB_TICKET;
+SELECT * FROM TB_TICKET ORDER BY DATECREATE DESC;
 
 SELECT * FROM TB_USERS;
 
