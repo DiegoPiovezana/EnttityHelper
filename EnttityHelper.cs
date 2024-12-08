@@ -59,7 +59,7 @@ namespace EH
         {
             DbContext = db;
             _features = new(this);
-            Definitions.DefineTypeVersionDb(db,_features);
+            Definitions.DefineTypeVersionDb(db, _features);
             Definitions.DefineTypesDefaultColumnsDb(DbContext, this);
         }
 
@@ -195,7 +195,7 @@ namespace EH
         }
 
 
-        /// <inheritdoc/>    
+        /// <inheritdoc/>
         public bool CreateTable<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps = null, string? tableName = null)
         {
             try
@@ -388,7 +388,7 @@ namespace EH
             {
                 throw;
             }
-        }       
+        }
 
         /// <inheritdoc/>
         public string? GetPKName<TEntity>(TEntity entity) where TEntity : class

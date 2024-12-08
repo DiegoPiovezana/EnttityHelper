@@ -73,7 +73,7 @@ namespace EH.Command
         /// <param name="delimiter">The delimiter character used in the CSV/TXT file. Default is ';'</param>
         /// <param name="hasHeader">Indicates whether the CSV/TXT file contains headers. Default is true.</param>
         /// <param name="rowsToLoad">Enter the rows or their range. E.g.: "1:23, 34:-56, 70, 75, -1". For default, all rows will be loaded. ATENTION: Order and duplicates will not be considered!</param>
-        /// <param name="encodingRead">The encoding to use when reading the CSV/TXT file. Default is UTF8.</param>
+        /// <param name="encodingRead">The encoding to use when reading the CSV/TXT file. Default is UTF8. Example: Encoding.GetEncoding("ISO-8859-1")</param>
         /// <returns>The number of records inserted into the database.</returns>
         /// <exception cref="ArgumentException">Thrown when the CSV/TXT file is invalid or cannot be loaded.</exception>
         long LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';', bool hasHeader = true, string? rowsToLoad = null, Encoding? encodingRead = null);
@@ -190,12 +190,12 @@ namespace EH.Command
         /// Allows you to create a table in the database according to the provided objectEntity object.
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to create the table.</typeparam>
-        /// <param name="createOnlyPrimaryTable">(Optional) If true, tables used for M:N relationships, for example, will not be created. By default they are created too. Attention: Entity 2 table must already exist!</param>
-        /// <param name="ignoreProps">A collection of property names to ignore when creating the table.</param>
+        /// <param name="createOnlyPrimaryTable">If true, tables used for M:N relationships, for example, will not be created. Attention: Entity 2 table must already exist!</param>
+        /// <param name="ignoreProps">(Optional) A collection of property names to ignore when creating the table.</param>
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>True, if table was created and false, if not created.</returns>
         /// <exception cref="InvalidOperationException">Occurs if the table should have been created but was not.</exception>      
-        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable = false, ICollection<string>? ignoreProps = null, string? tableName = null);
+        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps = null, string? tableName = null);
 
         /// <summary>
         /// Creates a table for the specified entity if it does not already exist in the database.
@@ -205,7 +205,7 @@ namespace EH.Command
         /// <param name="ignoreProps">A collection of property names to ignore when creating the table.</param>
         /// <param name="tableName">The name of the table. If not provided, the name will be inferred from the entity type.</param>
         /// <returns>True if the table was created or already exists, otherwise false.</returns>
-        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable = false, ICollection<string>? ignoreProps = null, string? tableName = null);
+        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps = null, string? tableName = null);
 
         /// <summary>
         /// Creates a table in the database based on the structure specified in a DataTable object.

@@ -5,7 +5,6 @@ using System.Data;
 using System.Diagnostics;
 using System.Text;
 using TestEH_UnitTest.Entities;
-using TestEH_UnitTest.Entities;
 using TestEnttityHelper.OthersEntity;
 
 namespace TestEH_UnitTest
@@ -733,22 +732,45 @@ namespace TestEH_UnitTest
                 eh.CreateTableIfNotExist<Group>(true);
                 // ATTENTION: The User table depends on the Group to establish the MxN relationship and create the auxiliary table (even if users without group)
 
-                User userX = new("Jayme Souza") { Id = 1081, GitHub = "@JSouza", DtCreation = DateTime.Now };
-                User userY = new("Bruna Corsa") { Id = 1082, GitHub = "@BrunaCorsa", DtCreation = DateTime.Now };
+                User userX = new("Jayme Souza") { Id = 1081, GitHub = "@JSouza108", DtCreation = DateTime.Now };
+                User userY = new("Bruna Corsa") { Id = 1082, GitHub = "@BrunaCorsa108", DtCreation = DateTime.Now };
                 List<User> users = new() { userX, userY };
-                long result1 = eh.Insert(entity: users, namePropUnique: nameof(User.Name), createTable: true);
+                long result1 = eh.Insert(entity: users, namePropUnique: nameof(User.GitHub), createTable: true);
                 Assert.That(result1, Is.EqualTo(2));
 
-                Ticket ticketUserX = new(userX, "Obs", "Num", "Previous", "After");
-                Assert.That(eh.Insert(ticketUserX, null, true), Is.EqualTo(1));
+                eh.CreateTableIfNotExist<Ticket>(createOnlyPrimaryTable: false);
 
-                Ticket ticketEmpty = new(); // Without user
+                try
+                {
+                    eh.ExecuteNonQuery(
+                    $"CREATE SEQUENCE SEQUENCE_TICKET " +
+                    $"START WITH 1 " +
+                    $"INCREMENT BY 1 "
+                    );
+                }
+                catch (Exception) { } // Ignore if the sequence already exists                    
+
+                var resultTrigger = eh.ExecuteNonQuery(
+                    $"CREATE OR REPLACE TRIGGER TRIGGER_TICKET " +
+                    $"BEFORE INSERT ON TB_TICKET " +
+                    $"FOR EACH ROW " +
+                    $"BEGIN " +
+                    $":NEW.IdLog := SEQUENCE_TICKET.NEXTVAL; " +
+                    $"END;"
+                    );
+
+                // Ticket with user
+                Ticket ticketUserX = new(userX, "Obs", "Num", "Previous", "After");
+                Assert.That(eh.Insert(ticketUserX, namePropUnique: null, createTable: false), Is.EqualTo(1));
+
+                // Ticket without user
+                Ticket ticketEmpty = new();
                 ticketEmpty.DateCreate = DateTime.Now;
-                //ticketEmpty.IdUser = null;
+                ticketEmpty.IdUser = null;
+                ticketEmpty.User = userY; // Will be ignored because IdUser is null
                 Assert.That(eh.Insert(ticketEmpty, null, true), Is.EqualTo(1));
 
-                eh.Delete(ticketUserX);
-                eh.Delete(ticketEmpty);
+                eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Ticket>()}");
                 eh.Delete(userX);
                 eh.Delete(userY);
             }
