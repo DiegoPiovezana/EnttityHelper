@@ -66,6 +66,7 @@ namespace EH.Connection
 
             switch (dbType)
             {
+                case Enums.DbType.Oracle_Newer:
                 case Enums.DbType.Oracle:
                     queries.Add($@"INSERT INTO {tableName1} ({columns}) VALUES ('{values}') RETURNING {pk.Name} INTO :Result");
                     break;
@@ -76,7 +77,7 @@ namespace EH.Connection
                     queries.Add($@"INSERT INTO {tableName1} ({columns}) VALUES ('{values}') RETURNING {pk.Name}");
                     break;
                 default:
-                    throw new NotSupportedException("Database type is not supported!");
+                    throw new NotSupportedException($"Database type '{dbType}' not yet supported.");
             }
 
             if (!ignoreInversePropertyProperties) InsertInverseProperty(entity, replacesTableName, queries, properties);
@@ -603,9 +604,9 @@ namespace EH.Connection
 
             return Database.Type switch
             {
+                Enums.DbType.Oracle_Newer => $@"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
                 Enums.DbType.Oracle => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM (SELECT a.*, ROW_NUMBER() OVER ({orderClause}) AS rnum FROM ({baseQuery} {filterClause}) a) WHERE rnum > {offset} AND rnum <= {offset + pageSize}",
                 //Enums.DbType.Oracle => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM ( SELECT inner_query.*, ROWNUM AS rnum FROM ( {baseQuery} {filterClause} {orderClause} ) inner_query WHERE ROWNUM <= {offset + pageSize} ) WHERE rnum > {offset}",
-                Enums.DbType.Oracle_Newer => $@"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
                 Enums.DbType.SQLServer or Enums.DbType.PostgreSQL => $"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
                 Enums.DbType.MySQL => $"{baseQuery} {filterClause} {orderClause} LIMIT {pageSize} OFFSET {offset}",
                 _ => $"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",

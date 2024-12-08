@@ -14,6 +14,9 @@ namespace TestEH_UnitTest
     {
         //private readonly EnttityHelper _enttityHelper;
 
+        private readonly string stringConnection11g = "Data Source=localhost:1521/xe;User Id=system;Password=oracle";
+        private readonly string stringConnection19c = "Data Source=localhost:49262/orclcdb;User Id=system;Password=oracle";
+
         public EntityHelperTests()
         {
             //_enttityHelper = new EnttityHelper("Data Source=localhost:1521/xe;User Id=system;Password=oracle");
@@ -27,7 +30,7 @@ namespace TestEH_UnitTest
 
         private void ResetTables(string idTest)
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE TO_CHAR(ID_TB_GROUP_USERS) LIKE '{idTest}__' OR TO_CHAR(ID_TB_USERS) LIKE '{idTest}__'");  // DELETE FROM TB_GROUP_USERStoGROUPS
             eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '{idTest}__'");
             eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '{idTest}__'");
@@ -43,7 +46,7 @@ namespace TestEH_UnitTest
         [Test, Order(2)]
         public void TestConnection()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             bool test = eh.DbContext.ValidateConnection();
             Assert.That(test, Is.EqualTo(true));
         }
@@ -51,7 +54,7 @@ namespace TestEH_UnitTest
         [Test, Order(3)]
         public void TestCreateTableIfNotExist()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             if (eh.DbContext.ValidateConnection())
             {
                 bool result = eh.CreateTableIfNotExist<EntityTest>(false);
@@ -66,7 +69,7 @@ namespace TestEH_UnitTest
         [Test, Order(4)]
         public void TestCreateTable()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             if (eh.DbContext.ValidateConnection())
             {
                 // Oracle.ManagedDataAccess.Client.OracleException : ORA-00955: name is already used by an existing object
@@ -81,7 +84,7 @@ namespace TestEH_UnitTest
         [Test, Order(5)]
         public void TestInsertEntity()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             if (eh.DbContext.ValidateConnection())
             {
                 //bool result = eh.Insert(new { Id = 1, Name = "Test" }, null);
@@ -105,7 +108,7 @@ namespace TestEH_UnitTest
         [Test, Order(6)]
         public void TestUpdateEntity()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 90, Name = "Testing entity 90 updating start time via C#", StartDate = DateTime.Now };
@@ -122,7 +125,7 @@ namespace TestEH_UnitTest
         [Test, Order(7)]
         public void TestSearchEntity()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 90 };
@@ -139,7 +142,7 @@ namespace TestEH_UnitTest
         [Test, Order(8)]
         public void TestGetEntity_SuccessfulRetrieval()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
 
             if (eh.DbContext.ValidateConnection())
             {
@@ -172,7 +175,7 @@ namespace TestEH_UnitTest
         [Test, Order(9)]
         public void TestNonQuery()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             if (eh.DbContext.ValidateConnection())
             {
                 bool result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 90") == 1;
@@ -187,7 +190,7 @@ namespace TestEH_UnitTest
         [Test, Order(10)]
         public void TestFullEntity()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 300, Name = "Testando 1 entidade 100 via C#", StartDate = DateTime.Now };
@@ -214,7 +217,7 @@ namespace TestEH_UnitTest
         [Test, Order(11)]
         public void TestOneToOne()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 300, Name = "Testando 1 entidade 100 via C#", StartDate = DateTime.Now };
@@ -283,7 +286,7 @@ namespace TestEH_UnitTest
         [Test, Order(13)]
         public void TestManyToMany()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             Assert.That(eh.DbContext.ValidateConnection(), Is.EqualTo(true));
 
             /////////////////////////////////////////////////// 
@@ -383,7 +386,7 @@ namespace TestEH_UnitTest
         [Test, Order(101)]
         public void TestInsertDataTable()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             if (eh.DbContext.ValidateConnection())
             {
                 // Empty columns will automatically have the Object type. In the database, the Object type will be NVARCHAR2(100)
@@ -413,11 +416,11 @@ namespace TestEH_UnitTest
         {
 
             // Create a connection with the database 1
-            EnttityHelper eh1 = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh1 = new(stringConnection11g);
             Assert.IsTrue(eh1.DbContext.ValidateConnection());
 
             // Create a new connection to database 2
-            EnttityHelper eh2 = new($"Data Source=localhost:49262/xe;User Id=system;Password=oracle");
+            EnttityHelper eh2 = new(stringConnection19c);
             if (!eh2.DbContext.ValidateConnection())
             {
                 Assert.Ignore("Database 2 connection validation failed. Test skipped.");
@@ -485,7 +488,7 @@ namespace TestEH_UnitTest
         public void TestFullEntityREADME()
         {
             // Create a connection with the database using the connection string
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
 
             if (eh.DbContext.ValidateConnection())
             {
@@ -534,7 +537,7 @@ namespace TestEH_UnitTest
         [Test, Order(104)]
         public void TestManyInsertionsSimple()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             if (eh.DbContext.ValidateConnection())
             {
                 eh.CreateTableIfNotExist<Group>(true); // Necessary to then create the MxN relationship table
@@ -582,7 +585,7 @@ namespace TestEH_UnitTest
         [Test, Order(105)]
         public void TestInsertEntityWithoutEntity_AndManyDelete()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             if (eh.DbContext.ValidateConnection())
             {
                 eh.CreateTableIfNotExist<Group>(true); // Necessary to then create the MxN relationship table
@@ -633,7 +636,7 @@ namespace TestEH_UnitTest
         [Test, Order(106)]
         public void TestManyInsertionsMxN()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             if (eh.DbContext.ValidateConnection())
             {
                 // INSERT THE MANY ENTITIES (MXN)
@@ -676,7 +679,7 @@ namespace TestEH_UnitTest
         [Test, Order(107)]
         public void TestManyInsertionsNxM()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             if (eh.DbContext.ValidateConnection())
             {
                 Career carrer2 = new() { IdCareer = 1072, Name = "Pleno", CareerLevel = 2, Active = true };
@@ -723,7 +726,8 @@ namespace TestEH_UnitTest
         [Test, Order(108)]
         public void TestInsert_SpecialEntity()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            //EnttityHelper eh = new(stringConnection11g);
+            EnttityHelper eh = new(stringConnection19c);
             if (eh.DbContext.ValidateConnection())
             {
                 eh.CreateTableIfNotExist<Group>(true);
@@ -740,7 +744,7 @@ namespace TestEH_UnitTest
 
                 Ticket ticketEmpty = new(); // Without user
                 ticketEmpty.DateCreate = DateTime.Now;
-                ticketEmpty.IdUser = null;
+                //ticketEmpty.IdUser = null;
                 Assert.That(eh.Insert(ticketEmpty, null, true), Is.EqualTo(1));
 
                 eh.Delete(ticketUserX);
@@ -757,7 +761,7 @@ namespace TestEH_UnitTest
         [Test, Order(201)]
         public void TestManyUpdates()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             if (eh.DbContext.ValidateConnection())
             {
                 Career carrer1 = new(2011, "Developer");
@@ -808,7 +812,7 @@ namespace TestEH_UnitTest
         public void NormalizeColumnOrTableName_Should_ThrowArgumentException_ForInvalidInputs(string name, string expectedMessage)
         {
             // Act & Assert
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             var ex = Assert.Throws<ArgumentException>(() => eh.NormalizeColumnOrTableName(name, false));
             Assert.AreEqual(expectedMessage, ex.Message);
         }
@@ -823,7 +827,7 @@ namespace TestEH_UnitTest
         public void NormalizeColumnOrTableName_Should_AdjustName_When_InvalidCharactersOrReservedKeyword(string name, string expected)
         {
             // Act
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             string result = eh.NormalizeColumnOrTableName(name, true);
 
             // Assert
@@ -838,7 +842,7 @@ namespace TestEH_UnitTest
         public void NormalizeColumnOrTableName_Should_ReturnCorrectlyAdjustedName_When_ValidInputs(string name, string expected)
         {
             // Act
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             string result = eh.NormalizeColumnOrTableName(name, true);
 
             // Assert
@@ -848,7 +852,7 @@ namespace TestEH_UnitTest
         [Test]
         public void LoadCSV_ShouldInsertData_WhenValidCSVFile()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             Assert.That(eh.DbContext.ValidateConnection());
 
             // Arrange
@@ -884,7 +888,7 @@ namespace TestEH_UnitTest
             string tableName = "TestTable";
 
             // Act & Assert
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             var ex = Assert.Throws<FileNotFoundException>(() => eh.LoadCSV(csvFilePath, true, tableName));
             Assert.That(ex.Message, Does.Contain("File not found"));
         }
@@ -900,7 +904,7 @@ namespace TestEH_UnitTest
                 Assert.Ignore("Large csv file upload test was ignored!");
             }
 
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
 
             Assert.That(eh.DbContext.ValidateConnection());
 
@@ -933,7 +937,7 @@ namespace TestEH_UnitTest
         [Test]
         public void LoadTXT_ShouldInsertData()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             Assert.That(eh.DbContext.ValidateConnection());
 
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoIrregular.txt";
@@ -955,7 +959,7 @@ namespace TestEH_UnitTest
         [Test]
         public void LoadCSV_WithoutHeader1()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             Assert.That(eh.DbContext.ValidateConnection());
 
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoVazio.csv";
@@ -979,7 +983,7 @@ namespace TestEH_UnitTest
         [Test]
         public void LoadCSV_WithoutHeader2()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             Assert.That(eh.DbContext.ValidateConnection());
 
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoInexistente.csv";
@@ -1001,7 +1005,7 @@ namespace TestEH_UnitTest
         [Test]
         public void LoadCSV_RangeRows()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             Assert.That(eh.DbContext.ValidateConnection());
 
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoIrregular.csv"; // J100
@@ -1029,7 +1033,7 @@ namespace TestEH_UnitTest
         [Test]
         public void LoadCSV_UTF8()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             Assert.That(eh.DbContext.ValidateConnection());
 
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ExcelUTF8.csv"; // J4
@@ -1058,7 +1062,7 @@ namespace TestEH_UnitTest
         [Test, Order(201)]
         public void TestIncludeAll()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             Assert.That(eh.DbContext.ValidateConnection(), Is.EqualTo(true));
 
             /////////////////////////////////////////////////// 
@@ -1200,7 +1204,7 @@ namespace TestEH_UnitTest
         public void Insert_GetQuery()
         {
             // Arrange
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             Assert.That(eh.DbContext.ValidateConnection());
 
             User user = new()
@@ -1229,7 +1233,7 @@ namespace TestEH_UnitTest
         [Test, Order(203)]
         public void LoadCSV_And_GetPaginated()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             Assert.That(eh.DbContext.ValidateConnection());
 
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ExcelCsvGerado_1000000x10.csv";
@@ -1284,7 +1288,7 @@ namespace TestEH_UnitTest
         [Test, Order(204)]
         public void GetUserPaginated()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             Assert.That(eh.DbContext.ValidateConnection());
 
             try
@@ -1356,7 +1360,7 @@ namespace TestEH_UnitTest
         [Test, Order(205)]
         public async Task ComplexQueryWithPaginationAndRecordCount()
         {
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             Assert.That(eh.DbContext.ValidateConnection());
 
             try
@@ -1501,7 +1505,7 @@ namespace TestEH_UnitTest
         public async Task GetTotalRecordCountAsync_ShouldHandleDifferentQueryTypes()
         {
             // Arrange
-            EnttityHelper eh = new($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            EnttityHelper eh = new(stringConnection11g);
             Assert.That(eh.DbContext.ValidateConnection());
 
             eh.CreateTableIfNotExist<Group>(createOnlyPrimaryTable: true); // Doesnt create the TB_GROUP_USERStoGROUPS table

@@ -12,66 +12,71 @@ namespace EH.Command
             if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
             if (dbContext.Type is null) throw new InvalidOperationException("DbContext Type cannot be null.");
 
-            if (dbContext.Type.Equals(Enums.DbType.Oracle))
+            switch (dbContext.Type)
             {
-                enttityHelper.TypesDefault = new Dictionary<string, string> {
-                { "String", "NVARCHAR2(1000)" },
-                { "Boolean", "NUMBER(1)" },
-                { "DateTime", "TIMESTAMP" },
-                { "Decimal", "NUMBER" },
-                { "Double", "NUMBER" },
-                { "Int16", "NUMBER" },
-                { "Int32", "NUMBER" },
-                { "Int64", "NUMBER" },
-                { "Single", "NUMBER" },
-                { "TimeSpan", "DATE" }
-                };
-            }
-            else if (dbContext.Type.Equals(Enums.DbType.SQLServer))
-            {
-                enttityHelper.TypesDefault = new Dictionary<string, string>
-                {
-                { "String", "NVARCHAR(1000)" },
-                { "Boolean", "BIT" },
-                { "DateTime", "DATETIME" },
-                { "Decimal", "DECIMAL" },
-                { "Double", "FLOAT" },
-                { "Int16", "SMALLINT" },
-                { "Int32", "INT" },
-                { "Int64", "BIGINT" },
-                { "Single", "REAL" },
-                { "TimeSpan", "TIME" }
-                };
-            }
-            else if (dbContext.Type.Equals(Enums.DbType.SQLite))
-            {
-                enttityHelper.TypesDefault = new Dictionary<string, string>
-                {
-                { "String", "TEXT" },
-                { "Boolean", "INTEGER" },
-                { "DateTime", "TEXT" },
-                { "Decimal", "REAL" },
-                { "Double", "REAL" },
-                { "Int16", "INTEGER" },
-                { "Int32", "INTEGER" },
-                { "Int64", "INTEGER" },
-                { "Single", "REAL" },
-                { "TimeSpan", "TEXT" }
-                };
-            }
-            else
-            {
-                throw new InvalidOperationException("Database type not supported.");
+                case Enums.DbType.Oracle_Newer:
+                case Enums.DbType.Oracle:
+                    enttityHelper.TypesDefault = new Dictionary<string, string> {
+                    { "String", "NVARCHAR2(1000)" },
+                    { "Boolean", "NUMBER(1)" },
+                    { "DateTime", "TIMESTAMP" },
+                    { "Decimal", "NUMBER" },
+                    { "Double", "NUMBER" },
+                    { "Int16", "NUMBER" },
+                    { "Int32", "NUMBER" },
+                    { "Int64", "NUMBER" },
+                    { "Single", "NUMBER" },
+                    { "TimeSpan", "DATE" }
+                    };
+                    break;
+                case Enums.DbType.SQLServer:
+                    enttityHelper.TypesDefault = new Dictionary<string, string>
+                    {
+                    { "String", "NVARCHAR(1000)" },
+                    { "Boolean", "BIT" },
+                    { "DateTime", "DATETIME" },
+                    { "Decimal", "DECIMAL" },
+                    { "Double", "FLOAT" },
+                    { "Int16", "SMALLINT" },
+                    { "Int32", "INT" },
+                    { "Int64", "BIGINT" },
+                    { "Single", "REAL" },
+                    { "TimeSpan", "TIME" }
+                    };
+                    break;
+                case Enums.DbType.SQLite:
+                    enttityHelper.TypesDefault = new Dictionary<string, string>
+                    {
+                    { "String", "TEXT" },
+                    { "Boolean", "INTEGER" },
+                    { "DateTime", "TEXT" },
+                    { "Decimal", "REAL" },
+                    { "Double", "REAL" },
+                    { "Int16", "INTEGER" },
+                    { "Int32", "INTEGER" },
+                    { "Int64", "INTEGER" },
+                    { "Single", "REAL" },
+                    { "TimeSpan", "TEXT" }
+                    };
+                    break;
+                //case Enums.DbType.PostgreSQL:
+                //    break;
+                //case Enums.DbType.MySQL:
+                //    break;
+                case null:
+                    throw new InvalidOperationException($"Database type is invalid.");
+                default:
+                    throw new InvalidOperationException($"Database type '{dbContext.Type}' not yet supported.");
             }
         }
 
-        internal static void DefineTypeDb(Database? dbContext, Features features)
+        internal static void DefineTypeVersionDb(Database? dbContext, Features features)
         {
             if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
             if (dbContext.Type is null) throw new InvalidOperationException("DbContext Type cannot be null.");
-            if (!dbContext.Type.Equals(Enums.DbType.Oracle)) return;
+            if (!dbContext.Type.Equals(Enums.DbType.Oracle)) return; // The need to define the database type version is only for Oracle
 
-            int modernOracleVersion = 12; // 12g or newer
+            const int modernOracleVersion = 12; // 12c or newer
 
             var versionDb = features.GetDatabaseVersion(dbContext);
             var versionMatch = System.Text.RegularExpressions.Regex.Match(versionDb, @"\b\d+\b");

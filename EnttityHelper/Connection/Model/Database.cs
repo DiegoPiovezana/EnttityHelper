@@ -30,8 +30,6 @@ namespace EH.Connection
             {
                 ToolsDbConnect.MapDatabase(stringConnection, this);
                 CreateConnection();
-
-
             }
             catch (Exception)
             {
@@ -48,9 +46,10 @@ namespace EH.Connection
         {
             IDbConnection = Type switch
             {
+                Enums.DbType.Oracle_Newer => new OracleConnection($"Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"),
                 Enums.DbType.Oracle => new OracleConnection($"Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"),
                 Enums.DbType.SQLServer => new SqlConnection($"Data Source={Ip};Initial Catalog={Service};User ID={User};Password={Pass}"),
-                _ => throw new Exception("Invalid database type!"),
+                _ => throw new Exception($"Database type '{Type}' not yet supported."),
             };
             return IDbConnection;
         }
@@ -96,9 +95,10 @@ namespace EH.Connection
 
             return Type switch
             {
-                Enums.DbType.SQLServer => new SqlCommand(commandText, (SqlConnection)IDbConnection),
+                Enums.DbType.Oracle_Newer => new OracleCommand(commandText, (OracleConnection)IDbConnection),
                 Enums.DbType.Oracle => new OracleCommand(commandText, (OracleConnection)IDbConnection),
-                _ => throw new Exception("Invalid database type!"),
+                Enums.DbType.SQLServer => new SqlCommand(commandText, (SqlConnection)IDbConnection),
+                _ => throw new Exception($"Database type '{Type}' not yet supported."),
             };
         }
 
@@ -115,11 +115,11 @@ namespace EH.Connection
 
             return Type switch
             {
-                Enums.DbType.SQLServer => new SqlCommand
+                Enums.DbType.Oracle_Newer => new OracleCommand
                 {
                     CommandType = CommandType.StoredProcedure,
                     CommandText = procName,
-                    Connection = (SqlConnection)connection
+                    Connection = (OracleConnection)connection
                 },
                 Enums.DbType.Oracle => new OracleCommand
                 {
@@ -127,24 +127,27 @@ namespace EH.Connection
                     CommandText = procName,
                     Connection = (OracleConnection)connection
                 },
-                _ => throw new Exception("Invalid database type!"),
+                Enums.DbType.SQLServer => new SqlCommand
+                {
+                    CommandType = CommandType.StoredProcedure,
+                    CommandText = procName,
+                    Connection = (SqlConnection)connection
+                },
+                _ => throw new Exception($"Database type '{Type}' not yet supported."),
             };
         }
 
         /// <summary>
         /// Create a parameter object.
         /// </summary>
-        /// <param name="parameterName"></param>
-        /// <param name="parameterValue"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
         public override IDataParameter CreateParameter(string parameterName, object parameterValue)
         {
             return Type switch
             {
-                Enums.DbType.SQLServer => new SqlParameter(parameterName, parameterValue),
+                Enums.DbType.Oracle_Newer => new OracleParameter(parameterName, parameterValue),
                 Enums.DbType.Oracle => new OracleParameter(parameterName, parameterValue),
-                _ => throw new Exception("Invalid database type!"),
+                Enums.DbType.SQLServer => new SqlParameter(parameterName, parameterValue),
+                _ => throw new Exception($"Database type '{Type}' not yet supported."),
             };
         }
 
@@ -160,9 +163,10 @@ namespace EH.Connection
         {
             return Type switch
             {
-                Enums.DbType.SQLServer => new SqlBulkCopy((SqlConnection)IDbConnection),
+                Enums.DbType.Oracle_Newer => new OracleBulkCopy((OracleConnection)IDbConnection),
                 Enums.DbType.Oracle => new OracleBulkCopy((OracleConnection)IDbConnection),
-                _ => throw new ArgumentException("Invalid database type!", nameof(Type)),
+                Enums.DbType.SQLServer => new SqlBulkCopy((SqlConnection)IDbConnection),
+                _ => throw new ArgumentException($"Database type '{Type}' not yet supported.", nameof(Type)),
             };
         }
 
@@ -191,7 +195,7 @@ namespace EH.Connection
 
         /// <summary>
         /// Opens the database connection.
-        /// </summary>   
+        /// </summary>
         public override bool OpenConnection()
         {
             try
@@ -208,7 +212,7 @@ namespace EH.Connection
 
         /// <summary>
         /// Terminates the connection.
-        /// </summary>     
+        /// </summary>
         public override bool CloseConnection()
         {
             try

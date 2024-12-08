@@ -46,7 +46,7 @@ namespace EH
         {
             DbContext = new Database(connectionString);
             _features = new(this);
-            Definitions.DefineTypeDb(DbContext, _features);
+            Definitions.DefineTypeVersionDb(DbContext, _features);
             Definitions.DefineTypesDefaultColumnsDb(DbContext, this);
             GetQuery = new(this);
         }
@@ -59,7 +59,7 @@ namespace EH
         {
             DbContext = db;
             _features = new(this);
-            Definitions.DefineTypeDb(db,_features);
+            Definitions.DefineTypeVersionDb(db,_features);
             Definitions.DefineTypesDefaultColumnsDb(DbContext, this);
         }
 
