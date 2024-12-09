@@ -49,7 +49,7 @@ namespace EH.Connection
         /// <summary>
         /// Gets the database version.
         /// </summary>
-        public Version? Version { get; internal set; }
+        public Version Version { get; internal set; } = new Version();
 
         /// <summary>
         /// Gets or sets the database name.

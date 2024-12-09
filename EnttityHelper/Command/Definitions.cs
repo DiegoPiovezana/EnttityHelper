@@ -90,15 +90,33 @@ namespace EH.Command
         //    dbContext.Type = Convert.ToInt32(majorVersion) >= modernOracleVersion ? Enums.DbType.Oracle_Newer : Enums.DbType.Oracle;
         //}
 
-        internal static string DefineVersionDb(Database? dbContext, Features features)
+        internal static void DefineVersionDb(Database? dbContext, Features features)
         {
-            if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
-            if (dbContext.Type is null) throw new InvalidOperationException("DbContext Type cannot be null.");
-            var versionDb = features.GetDatabaseVersion(dbContext);
-            var versionMatch = System.Text.RegularExpressions.Regex.Match(versionDb, @"\b\d+\b");
+            try
+            {
+                if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
+                if (dbContext.Type is null) throw new InvalidOperationException("DbContext Type cannot be null.");
 
-            dbContext.Version = new Version(versionDb);
-            return versionMatch.Success ? versionDb : "Unknown";
+                var versionDb = features.GetDatabaseVersion(dbContext); // Ex.: "Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production"
+                var versionMatch = System.Text.RegularExpressions.Regex.Match(versionDb, @"\b(\d+(\.\d+){0,3})\b"); // @"\b(\d+\.\d+\.\d+\.\d+)\b"
+                if (versionMatch.Success)
+                {
+                    var versionString = versionMatch.Groups[1].Value; // "19.0.0.0"
+                    var parts = versionString.Split('.').ToList();
+                    while (parts.Count < 4) parts.Add("0");
+                    versionString = string.Join(".", parts);
+
+                    dbContext.Version = new Version(versionString);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Failed to parse the database version.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Error] Unexpected error while defining database version: {ex.Message}");
+            }
         }
 
         internal static string NameTableFromDataTable(string tableName, Dictionary<string, string>? replacesTableName)
