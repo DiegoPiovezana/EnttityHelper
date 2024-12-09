@@ -20,7 +20,7 @@ namespace TestEH_UnitTest.Entities
         public Ticket(User? user, string obs, string num, string previous, string after)
         {
             DateCreate = DateTime.Now;
-            IdUser = user.Id;
+            IdUser = user?.Id;
             User = user;
             Number = num;
             Obs = obs; Previous = previous;

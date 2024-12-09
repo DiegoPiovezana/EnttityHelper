@@ -930,6 +930,95 @@ SELECT COUNT(1) FROM (
 
 
 
+-- Query de paginacao original completa
+WITH UserGroupSummary AS (
+    SELECT 
+        u.Id AS UserId,
+        u.Name AS UserName,
+        g.Id AS GroupId,
+        g.Name AS GroupName,
+        c.Name AS CareerName,
+        COUNT(ug.ID_TB_USERS) AS UserCountInGroup
+    FROM TB_USERS u
+    JOIN TB_GROUP_USERStoGROUPS ug ON u.Id = ug.ID_TB_USERS
+    JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+    JOIN TB_CAREERS c ON u.IdCareer = c.IdCareer                    
+    GROUP BY u.Id, u.Name, g.Id, g.Name, c.Name
+)
+
+SELECT 
+    UserId,
+    UserName,
+    GroupId,
+    GroupName,
+    CareerName,
+    UserCountInGroup
+FROM UserGroupSummary
+WHERE TO_CHAR(UserId) LIKE '205%'
+
+UNION ALL
+
+SELECT 
+    NULL AS UserId, 
+    NULL AS UserName, 
+    g.Id AS GroupId, 
+    g.Name AS GroupName, 
+    NULL AS CareerName, 
+    COUNT(ug.ID_TB_USERS) AS UserCountInGroup
+FROM TB_GROUP_USERStoGROUPS ug
+JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+WHERE TO_CHAR(g.Id) LIKE '205%'
+GROUP BY g.Id, g.Name
+
+ORDER BY GroupId, UserId NULLS LAST
+
+
+-- Query paginada para oracle >= 12
+WITH UserGroupSummary AS (
+    SELECT 
+        u.Id AS UserId,
+        u.Name AS UserName,
+        g.Id AS GroupId,
+        g.Name AS GroupName,
+        c.Name AS CareerName,
+        COUNT(ug.ID_TB_USERS) AS UserCountInGroup
+    FROM TB_USERS u
+    JOIN TB_GROUP_USERStoGROUPS ug ON u.Id = ug.ID_TB_USERS
+    JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+    JOIN TB_CAREERS c ON u.IdCareer = c.IdCareer                    
+    GROUP BY u.Id, u.Name, g.Id, g.Name, c.Name
+)
+
+SELECT 
+    UserId,
+    UserName,
+    GroupId,
+    GroupName,
+    CareerName,
+    UserCountInGroup
+FROM UserGroupSummary
+WHERE TO_CHAR(UserId) LIKE '205%'
+
+UNION ALL
+
+SELECT 
+    NULL AS UserId, 
+    NULL AS UserName, 
+    g.Id AS GroupId, 
+    g.Name AS GroupName, 
+    NULL AS CareerName, 
+    COUNT(ug.ID_TB_USERS) AS UserCountInGroup
+FROM TB_GROUP_USERStoGROUPS ug
+JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+WHERE TO_CHAR(g.Id) LIKE '205%'
+GROUP BY g.Id, g.Name
+
+ORDER BY GroupId, UserId NULLS LAST ORDER BY 1 OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY
+
+
+
+
+
 ------------
 -- special entity
 

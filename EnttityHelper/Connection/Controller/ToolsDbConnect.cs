@@ -40,18 +40,18 @@ namespace EH.Connection
                 }
                 else if (dataSource is not null) // Oracle
                 {
+                    database.Type = Enums.DbType.Oracle; // Version will be determined later
                     database.Ip = dataSource.Split(':')[0];
                     database.Port = Convert.ToInt32(connectionString.Split(':')[1].Split('/')[0]);
                     database.Service = dataSource.Split(':')[1].Split('/')[1];
-                    database.Type = Enums.DbType.Oracle; // Version will be determined later
                     return true;
                 }
 
-                return false;
+                throw new Exception("Invalid connection string or unsupported database type!");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return false;
+                throw new Exception("Invalid connection string!", ex);
             }
         }
 
