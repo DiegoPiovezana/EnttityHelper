@@ -16,8 +16,8 @@ namespace TestEH_UnitTest
         private const string stringConnection11g = "Data Source=localhost:1521/xe;User Id=system;Password=oracle";
         private const string stringConnection19c = "Data Source=localhost:49262/orclcdb;User Id=system;Password=oracle";
 
-        private readonly string stringConnectionBd1 = stringConnection19c;
-        private readonly string stringConnectionBd2 = stringConnection11g;
+        private readonly string stringConnectionBd2 = stringConnection19c;
+        private readonly string stringConnectionBd1 = stringConnection11g;
 
         public EntityHelperTests()
         {
@@ -37,7 +37,7 @@ namespace TestEH_UnitTest
             eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '{idTest}__'");
             eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '{idTest}__'");
             eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '{idTest}__'");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Ticket>()} WHERE TO_CHAR({nameof(Ticket.IdLog)}) LIKE '{idTest}__'");
+            if (eh.CheckIfExist(eh.GetTableName<Ticket>())) eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Ticket>()} WHERE TO_CHAR({nameof(Ticket.IdLog)}) LIKE '{idTest}__'");
         }
 
         [Test, Order(1)]
