@@ -408,8 +408,8 @@ namespace EH.Command
         /// Retrieve the version of the connected database.
         /// </summary>
         /// <param name="database">
-        /// An optional <see cref="Database"/> object containing the database connection. 
-        /// If <paramref name="database"/> is null, the default connection <see cref="Database.IDbConnection"/> is used.
+        /// An optional <see cref="Connection.Database"/> object containing the database connection. 
+        /// If <paramref name="database"/> is null, the default connection <see cref="Connection.Database.IDbConnection"/> is used.
         /// </param>
         /// <returns>
         /// A string representing the database version, or "Unknown Version" if the version cannot be determined.
@@ -432,7 +432,7 @@ namespace EH.Command
         /// Console.WriteLine($"Database Version: {version}");
         /// </code>
         /// </example>
-        public string? GetDatabaseVersion(Connection.Database? database);
+        public string GetDatabaseVersion(Connection.Database? database);
 
     }
 }

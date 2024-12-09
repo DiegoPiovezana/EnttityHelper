@@ -852,6 +852,11 @@ namespace TestEH_UnitTest
                 Ticket ticketWithSpecialChars = new(userX, "Obs @#$%", "Num123", "Previous Special", "After Special");
                 Assert.That(eh.Insert(ticketWithSpecialChars, namePropUnique: null, createTable: false), Is.EqualTo(1));
 
+                // Test: Checking insertion with IdUser as null for a new Ticket without relationship
+                Ticket ticketWithNullUser = new(null, "Observation", "Num", "Previous", "After");
+                ticketWithNullUser.IdUser = null;
+                Assert.That(eh.Insert(ticketWithNullUser, namePropUnique: null, createTable: false), Is.EqualTo(1));
+
                 eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Ticket>()}");
                 eh.Delete(userX);
                 eh.Delete(userY);

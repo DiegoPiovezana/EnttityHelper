@@ -730,7 +730,7 @@ namespace EH.Command
             return Tools.NormalizeColumnOrTableName(name, replaceInvalidChars);
         }
 
-        public string? GetDatabaseVersion(Database? database)
+        public string GetDatabaseVersion(Database? database)
         {
             string queryDbVersion = new SqlQueryString(database).GetDatabaseVersion();
             return ExecuteScalar(queryDbVersion)?.ToString() ?? "Unknown Version";

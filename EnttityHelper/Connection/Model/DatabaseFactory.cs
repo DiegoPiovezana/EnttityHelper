@@ -42,9 +42,14 @@ namespace EH.Connection
         public string? Pass { get; set; }
 
         /// <summary>
-        /// Gets or sets the type of database (e.g., Oracle or SqlServer).
+        /// Gets the type of database (e.g., Oracle or SqlServer).
         /// </summary>
-        public Enums.DbType? Type { get; set; }
+        public Enums.DbType? Type { get; internal set; }
+
+        /// <summary>
+        /// Gets the database version.
+        /// </summary>
+        public Version? Version { get; internal set; }
 
         /// <summary>
         /// Gets or sets the database name.

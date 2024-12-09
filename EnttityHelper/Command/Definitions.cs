@@ -14,7 +14,6 @@ namespace EH.Command
 
             switch (dbContext.Type)
             {
-                case Enums.DbType.Oracle_Newer:
                 case Enums.DbType.Oracle:
                     enttityHelper.TypesDefault = new Dictionary<string, string> {
                     { "String", "NVARCHAR2(1000)" },
@@ -70,25 +69,36 @@ namespace EH.Command
             }
         }
 
-        internal static void DefineTypeVersionDb(Database? dbContext, Features features)
+        //internal static void DefineTypeVersionDb(Database? dbContext, Features features)
+        //{
+        //    if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
+        //    if (dbContext.Type is null) throw new InvalidOperationException("DbContext Type cannot be null.");
+        //    if (!dbContext.Type.Equals(Enums.DbType.Oracle)) return; // The need to define the database type version is only for Oracle
+
+        //    const int modernOracleVersion = 12; // 12c or newer
+
+        //    var versionDb = features.GetDatabaseVersion(dbContext);
+        //    var versionMatch = System.Text.RegularExpressions.Regex.Match(versionDb, @"\b\d+\b");
+
+        //    if (!versionMatch.Success)
+        //    {
+        //        dbContext.Type = Enums.DbType.Oracle;
+        //        return;
+        //    }
+
+        //    var majorVersion = versionMatch.Value;
+        //    dbContext.Type = Convert.ToInt32(majorVersion) >= modernOracleVersion ? Enums.DbType.Oracle_Newer : Enums.DbType.Oracle;
+        //}
+
+        internal static string DefineVersionDb(Database? dbContext, Features features)
         {
             if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
             if (dbContext.Type is null) throw new InvalidOperationException("DbContext Type cannot be null.");
-            if (!dbContext.Type.Equals(Enums.DbType.Oracle)) return; // The need to define the database type version is only for Oracle
-
-            const int modernOracleVersion = 12; // 12c or newer
-
             var versionDb = features.GetDatabaseVersion(dbContext);
             var versionMatch = System.Text.RegularExpressions.Regex.Match(versionDb, @"\b\d+\b");
 
-            if (!versionMatch.Success)
-            {
-                dbContext.Type = Enums.DbType.Oracle;
-                return;
-            }
-
-            var majorVersion = versionMatch.Value;
-            dbContext.Type = Convert.ToInt32(majorVersion) >= modernOracleVersion ? Enums.DbType.Oracle_Newer : Enums.DbType.Oracle;
+            dbContext.Version = new Version(versionDb);
+            return versionMatch.Success ? versionDb : "Unknown";
         }
 
         internal static string NameTableFromDataTable(string tableName, Dictionary<string, string>? replacesTableName)

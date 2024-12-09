@@ -11,14 +11,9 @@
         public enum DbType
         {
             /// <summary>
-            /// Oracle (Older versions prior to 12c)
+            /// Oracle
             /// </summary>
             Oracle,
-
-            /// <summary>
-            /// Oracle 12c or newer versions
-            /// </summary>
-            Oracle_Newer,
 
             /// <summary>
             /// SQL Server
