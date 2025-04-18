@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -7,43 +8,41 @@ namespace DiegoPiov.UserManagement
     [Table("TB_USERS")]
     public class User
     {
-        [Key()] public string Id { get; internal set; }
+        [Key] public long IdUser { get; internal set; }
+        [Required] public string Name { get; internal set; }
         [Required][MaxLength(100)] public string Email { get; internal set; }
-        [Required][MaxLength(50)] public string Login { get; internal set; }
-        public string Name { get; internal set; }
-        public bool Active { get; internal set; }
-        public DateTime DtCreation { get; internal set; }
+        [MaxLength(50)] public string Registration { get; internal set; }
+        [Required] public bool Active { get; internal set; }
+        [Required] public DateTime DtCreate { get; internal set; }
         public DateTime? DtLastLogin { get; internal set; }
-        public DateTime? DtActivation { get; internal set; }
-        public DateTime? DtDeactivation { get; internal set; }
-        public DateTime? DtAlteration { get; internal set; }
+        public DateTime? DtModified { get; internal set; }
         public DateTime? DtRevision { get; internal set; }
-        [Required][MaxLength(1)] public string InternalUser { get; internal set; }
-        [ForeignKey(nameof(Supervisor))] public string? IdSupervisor { get; internal set; }
-        public virtual User? Supervisor { get; internal set; }
+        [Required][MaxLength(1)] public string InternalUser { get; internal set; } // Y or N
+        [InverseProperty("OriginUsers")] public virtual ICollection<Origin> Origins { get; internal set; }
         [ForeignKey(nameof(Career))] public long IdCareer { get; internal set; }
         public virtual Career Career { get; internal set; }
-        //[ForeignKey(nameof(Group))] public Int64? IdGroup { get; internal set; }
-        //public virtual Group Group { get; internal set; }
+        [ForeignKey(nameof(Group))] public long? IdGroup { get; internal set; } = null;
+        public virtual Group Group { get; internal set; }
+        [InverseProperty(nameof(Supervision.Supervised))] public virtual ICollection<Supervision> SupervisionGroups { get; set; } = new List<Supervision>();
+        [Required][ForeignKey(nameof(CreationTicket))] public Int64? IdCreationTicket { get; internal set; }
+        public virtual Ticket CreationTicket { get; internal set; }
 
-        [InverseProperty(nameof(Group.Users))] public virtual Group Groups { get; internal set; }
-
-
-        public override string ToString()
+        public override string ToString() // EID
         {
-            return Name;
+            return !string.IsNullOrEmpty(Email) ? Email.Split('@')[0] : "ABSENT";
         }
 
-        public int CompareTo(User other)
-        {
-            if (other == null) return 1;
-            return Name.CompareTo(other.Name);
-            //return string.Compare(Name, other.Name, StringComparison.OrdinalIgnoreCase);
-        }
 
-        public object Clone()
+        public override bool Equals(object obj)
         {
-            return MemberwiseClone();
+            if (obj is User user)
+            {
+                return IdUser.Equals(user.IdUser);
+            }
+            else
+            {
+                return base.Equals(obj);
+            }
         }
 
     }
