@@ -31,9 +31,9 @@ namespace EH.Command
                 {
                     T obj = Activator.CreateInstance<T>();
 
-                    foreach (PropertyInfo propInfo in typeof(T).GetProperties())
+                    foreach (PropertyInfo propInfo in typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
                     {
-                        if (propInfo == null || propInfo.GetGetMethod().IsVirtual || propInfo.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
+                        if (propInfo?.GetGetMethod().IsVirtual != false || propInfo.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
 
                         string nameColumn = propInfo.GetCustomAttribute<ColumnAttribute>()?.Name ?? propInfo.Name;
 
@@ -54,15 +54,52 @@ namespace EH.Command
                             object value = reader[nameColumn];
                             Type propType = propInfo.PropertyType;
 
-                            if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                            object? convertedValue;
+
+                            // Converte Enums and Nullable
+                            if (propType.IsEnum)
                             {
-                                if (value != null) { propInfo.SetValue(obj, Convert.ChangeType(value, Nullable.GetUnderlyingType(propType))); }
+                                if (value is string strValue)
+                                {
+                                    convertedValue = Enum.Parse(propType, strValue); // string -> enum
+                                }
+                                else
+                                {
+                                    Type enumBaseType = Enum.GetUnderlyingType(propType);
+                                    object baseValue = Convert.ChangeType(value, enumBaseType);
+                                    convertedValue = Enum.ToObject(propType, baseValue); // numeric -> enum
+                                }
+                            }
+                            else if (Nullable.GetUnderlyingType(propType) is Type underlyingType && underlyingType.IsEnum)
+                            {
+                                convertedValue = Enum.ToObject(underlyingType, value);
                             }
                             else
                             {
-                                propInfo.SetValue(obj, Convert.ChangeType(value, propType));
+                                convertedValue = Convert.ChangeType(value, Nullable.GetUnderlyingType(propType) ?? propType);
+                            }
+
+                            var setMethod = propInfo.GetSetMethod(true); // allow private setter
+
+                            if (setMethod != null)
+                            {
+                                setMethod.Invoke(obj, new[] { convertedValue });
+                            }
+                            else
+                            {
+                                // Try with backing field 
+                                var backingField = propInfo.DeclaringType?.GetField($"<{propInfo.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+                                if (backingField != null)
+                                {
+                                    backingField.SetValue(obj, convertedValue);
+                                }
+                                else
+                                {
+                                    throw new Exception($"Property '{propInfo.Name}' has no accessible setter or backing field.");
+                                }
                             }
                         }
+
                     }
 
                     list.Add(obj);

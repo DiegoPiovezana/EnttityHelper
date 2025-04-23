@@ -180,14 +180,42 @@ namespace EH.Command
                     //    convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id, typePk);
                     //}
 
+                    //if (setPrimaryKeyAfterInsert)
+                    //{
+                    //    if (!pk.CanWrite || pk.SetMethod == null || !pk.SetMethod.IsPublic)
+                    //        throw new Exception($"EH-000: Property '{pk.Name}' does not have a public setter.");
+
+                    //    pk.SetValue(insertQueriesEntity.Key, convertedId);
+                    //}
+
                     if (setPrimaryKeyAfterInsert)
                     {
-                        if (!pk.CanWrite || pk.SetMethod == null || !pk.SetMethod.IsPublic)
-                            throw new Exception($"EH-000: Property '{pk.Name}' does not have a public setter.");
-
-                        pk.SetValue(insertQueriesEntity.Key, convertedId);
+                        if (pk.CanWrite || pk.SetMethod != null)
+                        {
+                            try
+                            {
+                                pk.SetValue(entity, convertedId);
+                            }
+                            catch (Exception ex)
+                            {
+                                throw new Exception($"EH-000: Failed to set primary key '{pk.Name}' via SetValue.", ex);
+                            }
+                        }
+                        else
+                        {
+                            // Try to set via backing field
+                            var backingField = entity.GetType().GetField($"<{pk.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+                            if (backingField != null)
+                            {
+                                backingField.SetValue(entity, convertedId);
+                            }
+                            else
+                            {
+                                throw new Exception($"EH-000: Property '{pk.Name}' is readonly and no backing field was found.");
+                            }
+                        }
                     }
-                    
+
                     insertions++;
 
                     // Useful for MxN
