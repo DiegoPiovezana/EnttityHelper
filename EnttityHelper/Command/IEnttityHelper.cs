@@ -15,6 +15,9 @@ namespace EH.Command
         /// <param name="entity">
         /// The data to be inserted, which can be an entity, a collection of entities, a DataTable, IDataReader, or an array of DataRow.
         /// </param>
+        /// <param name="setPrimaryKeyAfterInsert">
+        /// If set to <c>true</c>, the primary key of the inserted entity will be set after successful insertion.
+        /// </param>
         /// <param name="namePropUnique">
         /// (Optional) The name of a property used to ensure unique entries in the database. 
         /// If specified, the method checks for duplicates based on this property before inserting.
@@ -50,7 +53,7 @@ namespace EH.Command
         /// or if duplicate entries are detected when <paramref name="namePropUnique"/> is specified.
         /// </exception>
         /// <exception cref="Exception">Thrown for other errors, such as missing insert queries or execution failures.</exception>
-        public long Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class;
+        public long Insert<TEntity>(TEntity entity, bool setPrimaryKeyAfterInsert, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class;
 
         /// <summary>
         /// Executes a SELECT query on one database and inserts the result into another database (or in the same).
@@ -122,6 +125,16 @@ namespace EH.Command
         /// <param name="filter">(Optional) Possible filter.</param>
         /// <returns>True, if table exists and (optionally) it is filled</returns>
         public bool CheckIfExist(string tableName, int minRecords = 0, string? filter = null);
+
+        /// <summary>
+        /// Checks if the specified entity exists in the database.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity to check.</typeparam>
+        /// <param name="entity">The entity to check.</param>
+        /// <param name="tableName">(Optional) The name of the table to query. If null, the method will attempt to identify the table name based on the entity type.</param>
+        /// <param name="nameId">(Optional) The name of the primary key or identifier property for filtering. If null, the method will attempt to identify the primary key automatically.</param>
+        /// <returns>True if the entity exists in the database, false otherwise.</returns>
+        public bool CheckIfExist<TEntity>(TEntity entity, string? tableName = null, string? nameId = null) where TEntity : class;
 
         /// <summary>
         /// Checks if the specified table exists and returns the count of records for the given entity/entities in the table.

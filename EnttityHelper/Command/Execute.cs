@@ -222,7 +222,8 @@ namespace EH.Commands
                     //Debug.WriteLine(query);
 
                     //Debug.WriteLine($"Result: {resultParam.Value}");
-                    results.Add(parameter.Value ?? result);
+                    //results.Add(parameter.Value ?? result);
+                    results.Add(result ?? parameter.Value);
                 }
 
                 transaction.Commit();

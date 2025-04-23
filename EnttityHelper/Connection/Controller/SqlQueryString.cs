@@ -18,21 +18,42 @@ namespace EH.Connection
     /// </summary>
     public class SqlQueryString
     {
+        /// <summary>
+        /// The <see cref="EnttityHelper"/> instance used to perform replacements on the table name and to perform additional queries to check whether or not a specific item is already in the table and then create the query.
+        /// </summary>
         public EnttityHelper? EnttityHelper { get; set; }
+
+        /// <summary>
+        /// The <see cref="Database"/> instance used to execute the commands.
+        /// </summary>
         public Database Database { get; set; }
 
 
         //Enums.DbType? DbType { get; set; }
         //public SqlQueryString() { }
 
-        public SqlQueryString(EnttityHelper? enttityHelper)
+        /// <summary>
+        /// Creates a new instance of the <see cref="SqlQueryString"/> class.
+        /// </summary>
+        /// <param name="enttityHelper">The <see cref="EnttityHelper"/> instance.</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public SqlQueryString(EnttityHelper enttityHelper)
         {
+            if (enttityHelper is null) { throw new ArgumentNullException(nameof(enttityHelper)); }
             EnttityHelper = enttityHelper;
-            Database = enttityHelper?.DbContext;
+
+            if (enttityHelper.DbContext is null) { throw new ArgumentNullException(nameof(enttityHelper.DbContext)); }
+            Database = enttityHelper.DbContext;
         }
 
-        public SqlQueryString(Database? database)
+        /// <summary>
+        /// Creates a new instance of the <see cref="SqlQueryString"/> class.
+        /// </summary>
+        /// <param name="database">The <see cref="Database"/> instance.</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public SqlQueryString(Database database)
         {
+            if (database is null) { throw new ArgumentNullException(nameof(database)); }
             Database = database;
         }
 
@@ -59,6 +80,8 @@ namespace EH.Connection
             string columns = string.Join(", ", filteredProperties.Keys);
             string values = string.Join("', '", filteredProperties.Values);
 
+            if (EnttityHelper is null) { throw new ArgumentNullException(nameof(EnttityHelper)); }
+
             dbType ??= EnttityHelper.DbContext.Type;
             replacesTableName ??= EnttityHelper.ReplacesTableName;
             tableName1 ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
@@ -70,7 +93,7 @@ namespace EH.Connection
                     queries.Add($@"INSERT INTO {tableName1} ({columns}) VALUES ('{values}') RETURNING {pk.Name} INTO :Result");
                     break;
                 case Enums.DbType.SQLServer:
-                    queries.Add($@"INSERT INTO {tableName1} OUTPUT INSERTED.{pk.Name} ({columns}) VALUES ('{values}')");
+                    queries.Add($@"INSERT INTO {tableName1} ({columns}) OUTPUT INSERTED.{pk.Name} VALUES ('{values}')");
                     break;
                 case Enums.DbType.SQLite:
                     queries.Add($@"INSERT INTO {tableName1} ({columns}) VALUES ('{values}') RETURNING {pk.Name}");
@@ -325,6 +348,38 @@ namespace EH.Connection
         }
 
         /// <summary>
+        /// Generates a SQL query to check if an entity exists in the database based on its primary key property.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of entity.</typeparam>
+        /// <param name="entity">The entity object.</param>
+        /// <param name="idPropName">(Optional) The name of the ID property.</param>
+        /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>
+        /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param>
+        /// <returns>A SQL query string.</returns>
+        public string? CheckIfExist<TEntity>(TEntity entity, string? idPropName = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null) where TEntity : class
+        {
+            idPropName ??= ToolsProp.GetPK(entity)?.Name;
+
+            if (idPropName is null)
+            {
+                Debug.WriteLine("No primary key found!");
+                return null;
+            }
+
+            tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
+            var idPropValue = entity.GetType().GetProperty(idPropName).GetValue(entity, null);
+
+            string whereClause = $"{idPropName} = '{idPropValue}'";
+
+            return Database.Type switch
+            {
+                Enums.DbType.Oracle => $"SELECT 1 FROM {tableName} WHERE {whereClause} AND ROWNUM = 1",
+                Enums.DbType.SQLServer => $"SELECT TOP 1 1 FROM {tableName} WHERE {whereClause}",
+                _ => $"SELECT 1 FROM {tableName} WHERE {whereClause} LIMIT 1",
+            };
+        }
+
+        /// <summary>
         /// Generates an SQL query to count the occurrences of a specified entity in the database,
         /// using its primary key property as a filter.
         /// </summary>
@@ -342,7 +397,7 @@ namespace EH.Connection
         /// <returns>
         /// An SQL string for counting occurrences of the specified entity in the table. Returns null if the primary key is not found.
         /// </returns>
-        public string? Count<TEntity>(TEntity entity, string? idPropName = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null) where TEntity : class
+        public string? CountEntity<TEntity>(TEntity entity, string? idPropName = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null) where TEntity : class
         {
             idPropName ??= ToolsProp.GetPK(entity)?.Name;
 
@@ -354,9 +409,11 @@ namespace EH.Connection
 
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
 
+            var idPropValue = entity.GetType().GetProperty(idPropName).GetValue(entity, null);
+
             // TODO: typeof(TEntity) vs entity.GetType()
 
-            return $@"SELECT COUNT(*) FROM {tableName} WHERE ({idPropName} = '{entity.GetType().GetProperty(idPropName).GetValue(entity, null)}')";
+            return $@"SELECT COUNT(*) FROM {tableName} WHERE ({idPropName} = '{idPropValue}')";
         }
 
         /// <summary>

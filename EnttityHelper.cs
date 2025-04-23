@@ -22,7 +22,7 @@ namespace EH
         /// Common reserved type for database data. Example: "Boolean" => "NUMBER(1)".
         /// <para>Note: the size of a string (informed in parentheses), for example, can be changed via the property attribute.</para>
         /// </summary>
-        public Dictionary<string, string>? TypesDefault { get; set; }
+        public Dictionary<string, string> TypesDefault { get; set; }
 
         /// <summary>
         /// (Optional) Terms (or full names) that can be replaced in table names.
@@ -32,7 +32,7 @@ namespace EH
         /// <summary>
         /// Allows you to obtain the main commands to be executed on the database.
         /// </summary>
-        public SqlQueryString GetQuery { get; private set; }
+        public SqlQueryString GetQuery { get; }
 
 
         private readonly Features _features;
@@ -41,35 +41,36 @@ namespace EH
         /// <summary>
         /// Allows you to manipulate entities from a connection string.
         /// </summary>
-        /// <param name="connectionString"></param>
+        /// <param name="connectionString">The connection string.</param>
         public EnttityHelper(string connectionString)
         {
             DbContext = new Database(connectionString);
             _features = new(this);
             Definitions.DefineVersionDb(DbContext, _features);
-            Definitions.DefineTypesDefaultColumnsDb(DbContext, this);
+            TypesDefault = Definitions.DefineTypesDefaultColumnsDb(DbContext);
             GetQuery = new(this);
         }
 
         /// <summary>
         /// Allows you to manipulate entities from a previously created database.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">The database.</param>
         public EnttityHelper(Database db)
         {
             DbContext = db;
             _features = new(this);
             Definitions.DefineVersionDb(db, _features);
-            Definitions.DefineTypesDefaultColumnsDb(DbContext, this);
+            TypesDefault = Definitions.DefineTypesDefaultColumnsDb(DbContext);
+            GetQuery = new(this);
         }
 
 
-        /// <inheritdoc/>  
-        public long Insert<TEntity>(TEntity entity, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class
+        /// <inheritdoc/>
+        public long Insert<TEntity>(TEntity entity, bool setPrimaryKeyAfterInsert, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class
         {
             try
             {
-                return _features.Insert(entity, namePropUnique, createTable, tableName, ignoreInversePropertyProperties, timeOutSeconds);
+                return _features.Insert(entity, setPrimaryKeyAfterInsert, namePropUnique, createTable, tableName, ignoreInversePropertyProperties, timeOutSeconds);
             }
             catch (Exception)
             {
@@ -77,7 +78,7 @@ namespace EH
             }
         }
 
-        /// <inheritdoc/> 
+        /// <inheritdoc/>
         public long InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds = 600)
         {
             try
@@ -90,7 +91,7 @@ namespace EH
             }
         }
 
-        /// <inheritdoc/> 
+        /// <inheritdoc/>
         public long LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';', bool hasHeader = true, string? rowsToLoad = null, Encoding? encodingRead = null)
         {
             try
@@ -103,7 +104,7 @@ namespace EH
             }
         }
 
-        /// <inheritdoc/> 
+        /// <inheritdoc/>
         public long Update<TEntity>(TEntity entity, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
         {
             try
@@ -116,7 +117,7 @@ namespace EH
             }
         }
 
-        /// <inheritdoc/> 
+        /// <inheritdoc/>
         public List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null, int? pageSize = null, int pageIndex = 0, string? sortColumn = null, bool sortAscending = true) where TEntity : class
         {
             try
@@ -129,7 +130,7 @@ namespace EH
             }
         }
 
-        /// <inheritdoc/> 
+        /// <inheritdoc/>
         public TEntity? Search<TEntity>(TEntity entity, bool includeAll = true, string? idPropName = null, string? tableName = null) where TEntity : class
         {
             try
@@ -148,6 +149,19 @@ namespace EH
             try
             {
                 return _features.CheckIfExist(tableName, minRecords, filter);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <inheritdoc/>
+        public bool CheckIfExist<TEntity>(TEntity entity, string? nameId = null, string? tableName = null) where TEntity : class
+        {
+            try
+            {
+                return _features.CheckIfExist(entity, nameId, tableName);
             }
             catch (Exception)
             {
