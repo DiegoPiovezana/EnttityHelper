@@ -26,12 +26,12 @@ namespace EH.Command
 
         }
 
-        public long Insert<TEntity>(TEntity entity, string? namePropUnique, bool createTable, string? tableName, bool ignoreInversePropertyProperties, int timeOutSeconds) where TEntity : class
+        public long Insert<TEntity>(TEntity entity, bool setPrimaryKeyAfterInsert, string? namePropUnique, bool createTable, string? tableName, bool ignoreInversePropertyProperties, int timeOutSeconds) where TEntity : class
         {
             if (entity is DataTable dataTable) return InsertDataTable(createTable, ref tableName, timeOutSeconds, dataTable);
             if (entity is IDataReader dataReader) return InsertIDataReader(createTable, tableName, timeOutSeconds, dataReader);
             if (entity is DataRow[] dataRows) return InsertDataRows(tableName, timeOutSeconds, dataRows);
-            return InsertEntities(entity, namePropUnique, createTable, ref tableName, ignoreInversePropertyProperties); // Entity or IEnumerable<Entity>
+            return InsertEntities(entity, setPrimaryKeyAfterInsert, namePropUnique, createTable, ref tableName, ignoreInversePropertyProperties); // Entity or IEnumerable<Entity>
 
 
             long InsertDataTable(bool createTable, ref string? tableName, int timeOutSeconds, DataTable dataTable)
@@ -74,7 +74,7 @@ namespace EH.Command
                 return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataRows, tableName, timeOutSeconds);
             }
 
-            long InsertEntities<TEntity>(TEntity entity, string? namePropUnique, bool createTable, ref string? tableName, bool ignoreInversePropertyProperties) where TEntity : class
+            long InsertEntities<TEntity>(TEntity entity, bool setPrimaryKeyAfterInsert, string? namePropUnique, bool createTable, ref string? tableName, bool ignoreInversePropertyProperties) where TEntity : class
             {
                 var insertsQueriesEntities = new Dictionary<object, List<string?>?>();
                 var entities = entity as IEnumerable ?? new[] { entity };
@@ -157,11 +157,37 @@ namespace EH.Command
                 {
                     if (insertQueriesEntity.Value == null) throw new Exception("EH-000: Insert query does not exist!");
 
-                    var pk = ToolsProp.GetPK(insertQueriesEntity.Key);
+                    var pk = ToolsProp.GetPK(insertQueriesEntity.Key) ?? throw new Exception("EH-000: Entity does not have a primary key!");
                     var id = ExecuteScalar(insertQueriesEntity.Value.First()); // Inserts the main entity
+                    if (id == null || id == DBNull.Value) throw new Exception("EH-000: Insert query does not return an ID!");
+
                     var typePk = pk.PropertyType;
                     var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id.ToString(), typePk);
-                    pk.SetValue(insertQueriesEntity.Key, convertedId);
+
+                    //object convertedId;
+
+                    //if (typePk == typeof(Guid) || typePk == typeof(Guid?))
+                    //{
+                    //    if (id is Guid guidValue)
+                    //        convertedId = guidValue;
+                    //    else if (Guid.TryParse(id?.ToString(), out var parsedGuid))
+                    //        convertedId = parsedGuid;
+                    //    else
+                    //        throw new FormatException($"Invalid GUID format: '{id}'");
+                    //}
+                    //else
+                    //{
+                    //    convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id, typePk);
+                    //}
+
+                    if (setPrimaryKeyAfterInsert)
+                    {
+                        if (!pk.CanWrite || pk.SetMethod == null || !pk.SetMethod.IsPublic)
+                            throw new Exception($"EH-000: Property '{pk.Name}' does not have a public setter.");
+
+                        pk.SetValue(insertQueriesEntity.Key, convertedId);
+                    }
+                    
                     insertions++;
 
                     // Useful for MxN
@@ -183,7 +209,7 @@ namespace EH.Command
             {
                 var dataReaderSelect = (IDataReader?)_enttityHelper.DbContext.ExecuteReader<IDataReader>(selectQuery, true, null, 0, null, null, true);
                 if (dataReaderSelect is null) return 0;
-                inserts = db2.Insert(dataReaderSelect, null, true, tableName, true, timeOutSeconds);
+                inserts = db2.Insert(dataReaderSelect, false, null, true, tableName, true, timeOutSeconds);
                 dataReaderSelect.Close();
             } while (inserts == -942);
 
@@ -377,6 +403,36 @@ namespace EH.Command
             }
         }
 
+        public bool CheckIfExist<TEntity>(TEntity entity, string? tableName = null, string? nameId = null) where TEntity : class
+        {
+            try
+            {
+                var itemType = typeof(TEntity).IsGenericType && typeof(IEnumerable).IsAssignableFrom(typeof(TEntity))
+                    ? typeof(TEntity).GetGenericArguments()[0]
+                    : typeof(TEntity);
+
+                tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
+                nameId ??= ToolsProp.GetPK(entity).Name;
+
+                var query = _enttityHelper.GetQuery.CheckIfExist(entity, nameId);
+
+                var result = _enttityHelper.DbContext.ExecuteScalar(new List<string?> { query }).FirstOrDefault();
+                return result != null && result != DBNull.Value;
+            }
+            catch (Exception ex)
+            {
+                // Log or rethrow
+                return false;
+            }
+            finally
+            {
+                if (_enttityHelper.DbContext?.IDbConnection is not null && _enttityHelper.DbContext.IDbConnection.State == ConnectionState.Open)
+                    _enttityHelper.DbContext.IDbConnection.Close();
+            }
+        }
+
+
+
         public long CountEntity<TEntity>(TEntity entity, string? tableName, string? nameId) where TEntity : class
         {
             try
@@ -394,7 +450,7 @@ namespace EH.Command
 
                 foreach (var entityItem in entities)
                 {
-                    var queryCheck = _enttityHelper.GetQuery.Count(entityItem, nameId, _enttityHelper.ReplacesTableName, tableName);
+                    var queryCheck = _enttityHelper.GetQuery.CountEntity(entityItem, nameId, _enttityHelper.ReplacesTableName, tableName);
                     countQueriesEntities[entityItem] = new List<string?>() { queryCheck };
                 }
 
