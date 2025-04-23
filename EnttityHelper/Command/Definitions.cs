@@ -7,15 +7,14 @@ namespace EH.Command
 {
     internal static class Definitions
     {
-        internal static void DefineTypesDefaultColumnsDb(Database? dbContext, EnttityHelper enttityHelper)
+        internal static Dictionary<string, string> DefineTypesDefaultColumnsDb(Database? dbContext)
         {
             if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
             if (dbContext.Type is null) throw new InvalidOperationException("DbContext Type cannot be null.");
 
-            switch (dbContext.Type)
+            return dbContext.Type switch
             {
-                case Enums.DbType.Oracle:
-                    enttityHelper.TypesDefault = new Dictionary<string, string> {
+                Enums.DbType.Oracle => new Dictionary<string, string> {
                     { "String", "NVARCHAR2(1000)" },
                     { "Boolean", "NUMBER(1)" },
                     { "DateTime", "TIMESTAMP" },
@@ -25,11 +24,10 @@ namespace EH.Command
                     { "Int32", "NUMBER" },
                     { "Int64", "NUMBER" },
                     { "Single", "NUMBER" },
-                    { "TimeSpan", "DATE" }
-                    };
-                    break;
-                case Enums.DbType.SQLServer:
-                    enttityHelper.TypesDefault = new Dictionary<string, string>
+                    { "TimeSpan", "DATE" },
+                    { "Guid", "RAW(16)" }
+                    },
+                Enums.DbType.SQLServer => new Dictionary<string, string>
                     {
                     { "String", "NVARCHAR(1000)" },
                     { "Boolean", "BIT" },
@@ -40,11 +38,10 @@ namespace EH.Command
                     { "Int32", "INT" },
                     { "Int64", "BIGINT" },
                     { "Single", "REAL" },
-                    { "TimeSpan", "TIME" }
-                    };
-                    break;
-                case Enums.DbType.SQLite:
-                    enttityHelper.TypesDefault = new Dictionary<string, string>
+                    { "TimeSpan", "TIME" },
+                    { "Guid", "UNIQUEIDENTIFIER" }
+                    },
+                Enums.DbType.SQLite => new Dictionary<string, string>
                     {
                     { "String", "TEXT" },
                     { "Boolean", "INTEGER" },
@@ -55,18 +52,16 @@ namespace EH.Command
                     { "Int32", "INTEGER" },
                     { "Int64", "INTEGER" },
                     { "Single", "REAL" },
-                    { "TimeSpan", "TEXT" }
-                    };
-                    break;
+                    { "TimeSpan", "TEXT" },
+                    { "Guid", "TEXT" }
+                    },
                 //case Enums.DbType.PostgreSQL:
                 //    break;
                 //case Enums.DbType.MySQL:
                 //    break;
-                case null:
-                    throw new InvalidOperationException($"Database type is invalid.");
-                default:
-                    throw new InvalidOperationException($"Database type '{dbContext.Type}' not yet supported.");
-            }
+                null => throw new InvalidOperationException($"Database type is invalid."),
+                _ => throw new InvalidOperationException($"Database type '{dbContext.Type}' not yet supported."),
+            };
         }
 
         //internal static void DefineTypeVersionDb(Database? dbContext, Features features)
