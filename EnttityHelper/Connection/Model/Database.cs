@@ -46,10 +46,19 @@ namespace EH.Connection
         {
             IDbConnection = Type switch
             {
-                Enums.DbType.Oracle => new OracleConnection($"Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"),
-                Enums.DbType.SQLServer => new SqlConnection($"Data Source={Ip};Initial Catalog={Service};User ID={User};Password={Pass}"),
+                Enums.DbType.Oracle => new OracleConnection(
+                    $"Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"
+                ),
+
+                Enums.DbType.SQLServer => new SqlConnection(
+                    IsWindowsAuthentication
+                        ? $"Data Source={(string.IsNullOrEmpty(Instance) ? Ip : $"{Ip}\\{Instance}")};Initial Catalog={Service};Integrated Security=True"
+                        : $"Data Source={(string.IsNullOrEmpty(Instance) ? Ip : $"{Ip}\\{Instance}")};Initial Catalog={Service};User ID={User};Password={Pass}"
+                ),
+
                 _ => throw new Exception($"Database type '{Type}' not yet supported."),
             };
+
             return IDbConnection;
         }
 
@@ -93,7 +102,7 @@ namespace EH.Connection
             if (IDbConnection is null) throw new Exception("Connection is null!");
 
             return Type switch
-            {                
+            {
                 Enums.DbType.Oracle => new OracleCommand(commandText, (OracleConnection)IDbConnection),
                 Enums.DbType.SQLServer => new SqlCommand(commandText, (SqlConnection)IDbConnection),
                 _ => throw new Exception($"Database type '{Type}' not yet supported."),
@@ -135,7 +144,7 @@ namespace EH.Connection
         public override IDataParameter CreateParameter(string parameterName, object parameterValue)
         {
             return Type switch
-            {                
+            {
                 Enums.DbType.Oracle => new OracleParameter(parameterName, parameterValue),
                 Enums.DbType.SQLServer => new SqlParameter(parameterName, parameterValue),
                 _ => throw new Exception($"Database type '{Type}' not yet supported."),
@@ -153,7 +162,7 @@ namespace EH.Connection
         public override object CreateBulkCopy()
         {
             return Type switch
-            {                
+            {
                 Enums.DbType.Oracle => new OracleBulkCopy((OracleConnection)IDbConnection),
                 Enums.DbType.SQLServer => new SqlBulkCopy((SqlConnection)IDbConnection),
                 _ => throw new ArgumentException($"Database type '{Type}' not yet supported.", nameof(Type)),

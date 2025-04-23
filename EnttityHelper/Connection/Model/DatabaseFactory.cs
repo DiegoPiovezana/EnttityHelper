@@ -1,8 +1,5 @@
-﻿using Oracle.ManagedDataAccess.Client;
-using System;
+﻿using System;
 using System.Data;
-using System.Data.SqlClient;
-using static EH.Connection.Enums;
 
 namespace EH.Connection
 {
@@ -32,6 +29,11 @@ namespace EH.Connection
         public string? Service { get; set; }
 
         /// <summary>
+        ///  Gets or sets the instance name.
+        /// </summary>
+        public string? Instance { get; set; }
+
+        /// <summary>
         /// Gets or sets the username for authentication.
         /// </summary>
         public string? User { get; set; }
@@ -40,6 +42,11 @@ namespace EH.Connection
         /// Gets or sets the password for authentication.
         /// </summary>
         public string? Pass { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to use Windows authentication.
+        /// </summary>
+        public bool IsWindowsAuthentication { get; set; } = false;
 
         /// <summary>
         /// Gets the type of database (e.g., Oracle or SqlServer).
