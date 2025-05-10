@@ -45,7 +45,7 @@ namespace EH.Command
                         {
                             Debug.WriteLine($"Column '{nameColumn}' not found in table!");
 
-                            if (matchColumn) { throw new IndexOutOfRangeException($"Column '{nameColumn}' of '{propInfo.DeclaringType.Name}' not found in table in database!"); }
+                            if (matchColumn) { throw new IndexOutOfRangeException($"Column '{nameColumn}' of '{propInfo.DeclaringType?.Name}' not found in table in database!"); }
                             else { continue; }
                         }
 
