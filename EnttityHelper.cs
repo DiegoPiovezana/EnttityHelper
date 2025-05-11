@@ -379,7 +379,7 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public string? GetTableName<TEntity>()
+        public string GetTableName<TEntity>()
         {
             try
             {

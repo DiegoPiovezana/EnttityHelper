@@ -792,7 +792,7 @@ namespace EH.Command
             return true;
         }
 
-        public string? GetTableName<TEntity>() => ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
+        public string GetTableName<TEntity>() => ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
 
         public string? GetTableNameManyToMany(Type entity1, string namePropCollection)
         {
