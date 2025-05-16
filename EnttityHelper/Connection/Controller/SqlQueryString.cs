@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -14,12 +15,12 @@ using System.Text.RegularExpressions;
 namespace EH.Connection
 {
     /// <summary>
-    /// Allows you to obtain the main commands to be executed on the database.
+    /// Allows you to get the main commands to be executed on the database.
     /// </summary>
     public class SqlQueryString
     {
         /// <summary>
-        /// The <see cref="EnttityHelper"/> instance used to perform replacements on the table name and to perform additional queries to check whether or not a specific item is already in the table and then create the query.
+        /// The <see cref="EnttityHelper"/> instance used to perform replacements on the table name and to perform additional queries to check whether a specific item is already in the table and then create the query.
         /// </summary>
         public EnttityHelper? EnttityHelper { get; set; }
 
@@ -39,11 +40,8 @@ namespace EH.Connection
         /// <exception cref="ArgumentNullException"></exception>
         public SqlQueryString(EnttityHelper enttityHelper)
         {
-            if (enttityHelper is null) { throw new ArgumentNullException(nameof(enttityHelper)); }
-            EnttityHelper = enttityHelper;
-
-            if (enttityHelper.DbContext is null) { throw new ArgumentNullException(nameof(enttityHelper.DbContext)); }
-            Database = enttityHelper.DbContext;
+            EnttityHelper = enttityHelper ?? throw new ArgumentNullException(nameof(enttityHelper));
+            Database = enttityHelper.DbContext ?? throw new ArgumentNullException(nameof(enttityHelper.DbContext));
         }
 
         /// <summary>
@@ -53,8 +51,7 @@ namespace EH.Connection
         /// <exception cref="ArgumentNullException"></exception>
         public SqlQueryString(Database database)
         {
-            if (database is null) { throw new ArgumentNullException(nameof(database)); }
-            Database = database;
+            Database = database ?? throw new ArgumentNullException(nameof(database));
         }
 
 
@@ -68,7 +65,7 @@ namespace EH.Connection
         /// <param name="tableName1">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <param name="ignoreInversePropertyProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
         /// <returns>String command.</returns>
-        public ICollection<string?> Insert<TEntity>(TEntity entity, Enums.DbType? dbType = null, Dictionary<string, string>? replacesTableName = null, string? tableName1 = null, bool ignoreInversePropertyProperties = false) where TEntity : class
+        public ICollection<QueryCommand?> Insert<TEntity>(TEntity entity, Enums.DbProvider? dbType = null, Dictionary<string, string>? replacesTableName = null, string? tableName1 = null, bool ignoreInversePropertyProperties = false) where TEntity : class
         {
             //if (dbType == null) throw new ArgumentNullException("The type of database is invalid!");
 
@@ -80,22 +77,22 @@ namespace EH.Connection
             string columns = string.Join(", ", filteredProperties.Keys);
             string values = string.Join("', '", filteredProperties.Values);
 
-            if (EnttityHelper is null) { throw new ArgumentNullException(nameof(EnttityHelper)); }
+            // if (EnttityHelper is null) { throw new ArgumentNullException(nameof(EnttityHelper)); }
 
-            dbType ??= EnttityHelper.DbContext.Type;
-            replacesTableName ??= EnttityHelper.ReplacesTableName;
+            dbType ??= Database.Type;
+            replacesTableName ??= EnttityHelper?.ReplacesTableName;
             tableName1 ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
             var pk = ToolsProp.GetPK(entity);
 
             switch (dbType)
             {
-                case Enums.DbType.Oracle:
+                case Enums.DbProvider.Oracle:
                     queries.Add($@"INSERT INTO {tableName1} ({columns}) VALUES ('{values}') RETURNING {pk.Name} INTO :Result");
                     break;
-                case Enums.DbType.SQLServer:
+                case Enums.DbProvider.SqlServer:
                     queries.Add($@"INSERT INTO {tableName1} ({columns}) OUTPUT INSERTED.{pk.Name} VALUES ('{values}')");
                     break;
-                case Enums.DbType.SQLite:
+                case Enums.DbProvider.SqLite:
                     queries.Add($@"INSERT INTO {tableName1} ({columns}) VALUES ('{values}') RETURNING {pk.Name}");
                     break;
                 default:
@@ -120,7 +117,7 @@ namespace EH.Connection
                 string tableName1 = ToolsProp.GetTableName(entity.GetType(), replacesTableName);
                 string tableName2 = ToolsProp.GetTableName(entity2Type, replacesTableName);
 
-                string idName1 = ToolsProp.GetPK((object)entity).Name; // Ex: User
+                // string idName1 = ToolsProp.GetPK((object)entity).Name; // Ex: User
                 string idName2 = ToolsProp.GetPK((object)entity2Type).Name;  // Ex: Group
 
                 var itemsCollection = (IEnumerable<object>)invProp.Value.Value;
@@ -151,51 +148,53 @@ namespace EH.Connection
         /// <summary>
         /// Gets the update command.
         /// </summary>
-        /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
+        /// <typeparam name="TEntity">Type of entity to be updated.</typeparam>
         /// <param name="entity">Entity to be updated in the database.</param>
         /// <param name="enttityHelper">(Optional) Used to perform replacements on the table name and to perform additional queries to check whether or not a specific item is already in the table and then create the query.</param>
         /// <param name="nameId">(Optional) Name of the column in which the entity will be identified to be updated.</param>
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <param name="ignoreInversePropertyProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
         /// <returns>String command.</returns>
-        public ICollection<string?> Update<TEntity>(TEntity entity, EnttityHelper? enttityHelper = null, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
+        public ICollection<QueryCommand?> Update<TEntity>(TEntity entity, EnttityHelper? enttityHelper = null, string? nameId = null, string? tableName = null, bool ignoreInversePropertyProperties = false) where TEntity : class
         {
             if (enttityHelper is null) { throw new ArgumentNullException(nameof(enttityHelper)); }
 
-            List<string?> queries = new();
+            List<QueryCommand?> queries = new();
 
-            StringBuilder queryBuilder = new();
             tableName ??= ToolsProp.GetTableName<TEntity>(enttityHelper.ReplacesTableName);
-
-            queryBuilder.Append($@"UPDATE {tableName} SET ");
-
-            nameId ??= ToolsProp.GetPK(entity)?.Name;
-
-            if (nameId is null)
-            {
-                throw new InvalidOperationException("No primary key found!");
-            }
+            nameId ??= ToolsProp.GetPK(entity)?.Name ?? throw new InvalidOperationException("No primary key found!");
 
             var properties = ToolsProp.GetProperties(entity, true, false);
-
+            
+            StringBuilder queryBuilder = new();
+            queryBuilder.Append($@"UPDATE {tableName} SET ");
+            
+            var cmd = new QueryCommand();
+            
             foreach (KeyValuePair<string, Property> pair in properties)
             {
-                if (pair.Key != nameId)
-                {
-                    queryBuilder.Append($@"{pair.Key} = '{pair.Value.ValueSql}', ");
-                }
+                cmd.Parameters.Add(pair);
+                
+                if (pair.Key == nameId) continue;
+              
+                // queryBuilder.Append($@"{pair.Key} = '{pair.Value.ValueText}', ");
+                queryBuilder.Append($"{pair.Key} = @{pair.Key}, ");
             }
 
             queryBuilder.Length -= 2; // Remove the last comma and space
-            queryBuilder.Append($@" WHERE {nameId} = '{properties[nameId]}'");
+            // queryBuilder.Append($@" WHERE {nameId} = '{properties[nameId]}'");
+            queryBuilder.Append($@" WHERE {nameId} = @{nameId}");
             //return queryBuilder.ToString();
-            queries.Add(queryBuilder.ToString());
+            // queries.Add(queryBuilder.ToString());
+
+            cmd.Sql = queryBuilder.ToString();
+            queries.Add(cmd);
 
             if (!ignoreInversePropertyProperties) queries.AddRange(UpdateInverseProperty(entity, enttityHelper));
             return queries;
         }
 
-        private static ICollection<string?> UpdateInverseProperty<TEntity>(TEntity entity, EnttityHelper enttityHelper) where TEntity : class
+        private static ICollection<QueryCommand?> UpdateInverseProperty<TEntity>(TEntity entity, EnttityHelper enttityHelper) where TEntity : class
         {
             List<string?> queries = new();
 
@@ -297,7 +296,7 @@ namespace EH.Connection
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>A SELECT SQL query string.</returns>
-        public string? Get<TEntity>(string? filter = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
+        public QueryCommand? Get<TEntity>(string? filter = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
         {
             filter = string.IsNullOrEmpty(filter?.Trim()) ? "1 = 1" : filter;
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
@@ -313,7 +312,7 @@ namespace EH.Connection
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param> 
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>A select SQL query string.</returns>
-        public string? Search<TEntity>(TEntity entity, string? idPropName = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null) where TEntity : class
+        public QueryCommand? Search<TEntity>(TEntity entity, string? idPropName = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null) where TEntity : class
         {
             idPropName ??= ToolsProp.GetPK(entity)?.Name;
             if (idPropName is null) { return null; }
@@ -330,7 +329,7 @@ namespace EH.Connection
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>A delete SQL query string.</returns>
-        public string? Delete<TEntity>(TEntity entity, string? idPropName = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null) where TEntity : class
+        public QueryCommand? Delete<TEntity>(TEntity entity, string? idPropName = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null) where TEntity : class
         {
             idPropName ??= ToolsProp.GetPK(entity)?.Name;
 
@@ -356,7 +355,7 @@ namespace EH.Connection
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param>
         /// <returns>A SQL query string.</returns>
-        public string? CheckIfExist<TEntity>(TEntity entity, string? idPropName = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null) where TEntity : class
+        public QueryCommand? CheckIfExist<TEntity>(TEntity entity, string? idPropName = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null) where TEntity : class
         {
             idPropName ??= ToolsProp.GetPK(entity)?.Name;
 
@@ -373,8 +372,8 @@ namespace EH.Connection
 
             return Database.Type switch
             {
-                Enums.DbType.Oracle => $"SELECT 1 FROM {tableName} WHERE {whereClause} AND ROWNUM = 1",
-                Enums.DbType.SQLServer => $"SELECT TOP 1 1 FROM {tableName} WHERE {whereClause}",
+                Enums.DbProvider.Oracle => $"SELECT 1 FROM {tableName} WHERE {whereClause} AND ROWNUM = 1",
+                Enums.DbProvider.SqlServer => $"SELECT TOP 1 1 FROM {tableName} WHERE {whereClause}",
                 _ => $"SELECT 1 FROM {tableName} WHERE {whereClause} LIMIT 1",
             };
         }
@@ -397,7 +396,7 @@ namespace EH.Connection
         /// <returns>
         /// An SQL string for counting occurrences of the specified entity in the table. Returns null if the primary key is not found.
         /// </returns>
-        public string? CountEntity<TEntity>(TEntity entity, string? idPropName = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null) where TEntity : class
+        public QueryCommand? CountEntity<TEntity>(TEntity entity, string? idPropName = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null) where TEntity : class
         {
             idPropName ??= ToolsProp.GetPK(entity)?.Name;
 
@@ -426,12 +425,12 @@ namespace EH.Connection
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>  
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>Table creation query. If it is necessary to create an auxiliary table, for an M:N relationship for example, more than one query will be returned.</returns>
-        public Dictionary<string, string?> CreateTable<TEntity>(Dictionary<string, string>? typesSql, bool onlyPrimaryTable, ICollection<string>? ignoreProps = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
+        public Dictionary<string, QueryCommand?> CreateTable<TEntity>(Dictionary<string, string>? typesSql, bool onlyPrimaryTable, ICollection<string>? ignoreProps = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
         {
             if (typesSql is null) { throw new ArgumentNullException(nameof(typesSql)); }
             ignoreProps ??= new List<string>();
 
-            Dictionary<string, string?> queryCreatesTable = new();
+            Dictionary<string, QueryCommand?> queryCreatesTable = new();
             StringBuilder queryBuilderPrincipal = new();
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
 
@@ -526,9 +525,9 @@ namespace EH.Connection
             return queryCreatesTable;
         }
 
-        internal static Dictionary<string, string?> CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, string? pkEntity1, Dictionary<string, string>? replacesTableName)
+        internal static Dictionary<string, QueryCommand?> CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, string? pkEntity1, Dictionary<string, string>? replacesTableName)
         {
-            Dictionary<string, string?> createsTable = new();
+            Dictionary<string, QueryCommand?> createsTable = new();
 
             string tableEntity1 = ToolsProp.GetTableName(entity1Type, replacesTableName);
 
@@ -570,7 +569,7 @@ namespace EH.Connection
         /// <returns>The SQL query string for creating the table.</returns>
         /// <exception cref="ArgumentNullException">Thrown if the dataTable parameter is null.</exception>
         /// <exception cref="InvalidOperationException">Thrown if an error occurs while generating the SQL query.</exception>
-        public string? CreateTableFromDataTable(DataTable dataTable, Dictionary<string, string>? typesSql, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
+        public QueryCommand? CreateTableFromDataTable(DataTable dataTable, Dictionary<string, string>? typesSql, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
         {
             if (typesSql is null) { throw new ArgumentNullException(nameof(typesSql)); }
 
@@ -612,7 +611,7 @@ namespace EH.Connection
         /// <param name="parentKeyColumn">The name of the column in the parent table that is the primary key being referenced.</param>
         /// <param name="foreignKeyName">The name for the foreign key constraint.</param>
         /// <returns>A SQL query to add the foreign key constraint.</returns>
-        public string AddForeignKeyConstraint(string tableName, string childKeyColumn, string parentTableName, string parentKeyColumn, string foreignKeyName)
+        public QueryCommand AddForeignKeyConstraint(string tableName, string childKeyColumn, string parentTableName, string parentKeyColumn, string foreignKeyName)
         {
             return $@"
                 ALTER TABLE {tableName}
@@ -640,7 +639,7 @@ namespace EH.Connection
         /// - Ensure the <paramref name="baseQuery"/> does not already include conflicting filters or sorting logic unless intended.
         /// </remarks>
 
-        public string PaginatedQuery(string baseQuery, int pageSize, int pageIndex, string? filter, string? sortColumn, bool sortAscending)
+        public QueryCommand PaginatedQuery(string baseQuery, int pageSize, int pageIndex, string? filter, string? sortColumn, bool sortAscending)
         {
             if (Database?.Type is null)
                 throw new ArgumentNullException("The database type is required to generate this query!");
@@ -659,15 +658,15 @@ namespace EH.Connection
 
             return Database.Type switch
             {
-                Enums.DbType.Oracle => Database.Version.Major switch
+                Enums.DbProvider.Oracle => Database.Version.Major switch
                 {
                     >= 12 => $@"{baseQuery} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
                     <= 11 => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM (SELECT a.*, ROW_NUMBER() OVER ({orderClause ?? "ORDER BY 1"}) AS rnum FROM ({baseQuery} {filterClause}) a) WHERE rnum > {offset} AND rnum <= {offset + pageSize}"
                     //<= 11 => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM ( SELECT inner_query.*, ROWNUM AS rnum FROM ( {baseQuery} {filterClause} {orderClause} ) inner_query WHERE ROWNUM <= {offset + pageSize} ) WHERE rnum > {offset}",
                 },
-                Enums.DbType.SQLServer or Enums.DbType.PostgreSQL =>
+                Enums.DbProvider.SqlServer or Enums.DbProvider.PostgreSql =>
                     $@"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
-                Enums.DbType.MySQL =>
+                Enums.DbProvider.MySql =>
                     $@"{baseQuery} {filterClause} {orderClause} LIMIT {pageSize} OFFSET {offset}",
                 _ => $@"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
             };
@@ -686,7 +685,7 @@ namespace EH.Connection
         /// - Ensure the <paramref name="baseQuery"/> does not conflict with the added filter logic.
         /// - The method assumes the <paramref name="baseQuery"/> is well-formed and valid for counting.
         /// </remarks>
-        public string CountQuery(string baseQuery, string? filter = null)
+        public QueryCommand CountQuery(string baseQuery, string? filter = null)
         {
             var orderByIndex = baseQuery.ToUpperInvariant().LastIndexOf("ORDER BY");
 
@@ -732,7 +731,7 @@ namespace EH.Connection
         /// // Execute the query using the database connection.
         /// </code>
         /// </example>
-        public string GetDatabaseVersion(Database? database = null)
+        public QueryCommand GetDatabaseVersion(Database? database = null)
         {
             try
             {
