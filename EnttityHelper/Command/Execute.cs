@@ -77,6 +77,52 @@ namespace EH.Commands
 
             return null;
         }
+        
+        internal static object? ExecuteReader<TEntity>(this Database DbContext, QueryCommand? query, bool getDataReader, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
+        {
+            if (DbContext?.IDbConnection is null)
+                throw new InvalidOperationException("Connection does not exist.");
+            if (query is null)
+                throw new InvalidOperationException("Query does not exist.");
+
+            if (pageSize is not null)
+            {
+                query = new SqlQueryString(DbContext).PaginatedQuery(query, pageSize.Value, pageIndex, filterPage, sortColumnPage, sortAscendingPage);
+            }
+
+            IDbConnection connection = DbContext.CreateOpenConnection();
+            using IDbCommand command = DbContext.CreateCommand(query.Sql);
+    
+            if (query.Parameters?.Count > 0)
+            {
+                foreach (var param in query.Parameters)
+                {
+                    var dbParam = command.CreateParameter();
+                    dbParam.ParameterName = param.Key;
+                    dbParam.Value = param.Value?.Value ?? DBNull.Value;
+                    dbParam.Direction = ParameterDirection.Input;
+                    command.Parameters.Add(dbParam);
+                }
+            }
+
+            IDataReader? reader = command.ExecuteReader();
+
+            if (getDataReader)
+            {
+                return reader;
+            }
+
+            if (reader != null)
+            {
+                List<TEntity> entities = Tools.ToListEntity<TEntity>(reader);
+                reader.Close();
+                connection.Close();
+                Debug.WriteLine($"{entities?.Count ?? 0} entities mapped!");
+                return entities;
+            }
+
+            return null;
+        }
 
         /// <summary>
         /// Executes a collection of SQL non-query commands (e.g., INSERT, UPDATE, DELETE).
@@ -174,6 +220,101 @@ namespace EH.Commands
                 return tables;
             }
         }
+        
+        internal static ICollection<long> ExecuteNonQuery(this Database DbContext, ICollection<QueryCommand?> queries, int expectedChanges = -1)
+        {
+            if (DbContext?.IDbConnection is null)
+                throw new InvalidOperationException("Connection does not exist.");
+            if (queries is null || queries.Count == 0)
+                throw new InvalidOperationException("Queries do not exist.");
+
+            IDbConnection connection = DbContext.CreateOpenConnection();
+            IDbTransaction? transaction = DbContext.CreateTransaction() ?? throw new InvalidOperationException("Transaction is null.");
+            string tableName = string.Empty;
+
+            try
+            {
+                ICollection<long> result = new List<long>();
+
+                foreach (var queryCommand in queries)
+                {
+                    if (queryCommand is null || string.IsNullOrWhiteSpace(queryCommand.Sql))
+                        throw new ArgumentNullException(nameof(queryCommand), "Query cannot be null or empty.");
+
+                    var tables = GetTbDependence(queryCommand.Sql);
+                    tableName = string.Join(" and ", tables);
+
+                    using IDbCommand command = DbContext.CreateCommand(queryCommand.Sql);
+                    command.Transaction = transaction;
+
+                    // Adiciona os parâmetros definidos na query
+                    foreach (var param in queryCommand.Parameters)
+                    {
+                        var dbParam = command.CreateParameter();
+                        dbParam.ParameterName = param.Key;
+                        dbParam.Value = param.Value?.Value ?? DBNull.Value;
+                        dbParam.Direction = ParameterDirection.Input;
+                        command.Parameters.Add(dbParam);
+                    }
+
+                    long rowsAffected = command.ExecuteNonQuery();
+                    result.Add(rowsAffected);
+                }
+
+                long changes = result.Sum();
+                if (expectedChanges != -1 && changes != expectedChanges)
+                {
+                    throw new InvalidOperationException($"Expected {expectedChanges} changes, but {changes} were made.");
+                }
+
+                transaction.Commit(); // Possible only for DML
+                return result;
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback(); // Not applicable to DDL
+
+                if (ex.Message.Contains("ORA-00942") && !string.IsNullOrEmpty(tableName))
+                {
+                    throw new Exception($"E-942-EH: Table or view '{tableName}' must exist!", ex);
+                }
+
+                throw;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open)
+                    connection.Close();
+            }
+
+            static List<string> GetTbDependence(string query)
+            {
+                var tables = new List<string>();
+
+                // 'FROM' e 'JOIN'
+                var fromMatches = Regex.Matches(query, @"\b(?:FROM|JOIN)\s+([^\s,]+)", RegexOptions.IgnoreCase);
+                foreach (Match match in fromMatches)
+                {
+                    if (match.Success)
+                    {
+                        tables.Add(match.Groups[1].Value);
+                    }
+                }
+
+                // 'FOREIGN KEY REFERENCES'
+                var foreignKeyMatches = Regex.Matches(query, @"\bFOREIGN\s+KEY\s+\([^\)]+\)\s+REFERENCES\s+([^\s\(]+)", RegexOptions.IgnoreCase);
+                foreach (Match match in foreignKeyMatches)
+                {
+                    if (match.Success)
+                    {
+                        tables.Add(match.Groups[1].Value);
+                    }
+                }
+
+                return tables;
+            }
+        }
+
 
         /// <summary>
         /// Executes a collection of SQL queries within a transaction using the provided database context,
@@ -242,6 +383,66 @@ namespace EH.Commands
                     DbContext.IDbConnection.Close();
             }
         }
+        
+        internal static ICollection<object?> ExecuteScalar(this Database DbContext, ICollection<QueryCommand?> queries)
+        {
+            if (DbContext?.IDbConnection is null)
+                throw new InvalidOperationException("Connection does not exist.");
+            if (queries is null)
+                throw new ArgumentNullException(nameof(queries), "Queries do not exist.");
+
+            IDbConnection connection = DbContext.CreateOpenConnection();
+            IDbTransaction? transaction = DbContext.CreateTransaction() ?? throw new InvalidOperationException("Transaction is null.");
+
+            try
+            {
+                ICollection<object?> results = new List<object?>();
+
+                foreach (var queryCommand in queries)
+                {
+                    if (queryCommand is null || string.IsNullOrWhiteSpace(queryCommand.Sql))
+                        throw new ArgumentNullException(nameof(queryCommand), "Query cannot be null or empty.");
+
+                    using IDbCommand command = DbContext.CreateCommand(queryCommand.Sql);
+                    command.Transaction = transaction;
+                    
+                    foreach (var param in queryCommand.Parameters)
+                    {
+                        var dbParam = command.CreateParameter();
+                        dbParam.ParameterName = param.Key;
+                        dbParam.Value = param.Value?.Value ?? DBNull.Value;
+                        dbParam.Direction = ParameterDirection.Input;
+                        command.Parameters.Add(dbParam);
+                    }
+                    
+                    var outputParam = command.CreateParameter();
+                    outputParam.ParameterName = "Result";
+                    outputParam.DbType = DbType.String;
+                    outputParam.Size = 4000;
+                    outputParam.Direction = ParameterDirection.Output;
+                    command.Parameters.Add(outputParam);
+
+                    var result = command.ExecuteScalar();
+                    results.Add(result ?? outputParam.Value);
+                }
+
+                transaction.Commit();
+                connection.Close();
+
+                return results;
+            }
+            catch (Exception)
+            {
+                transaction.Rollback();
+                throw;
+            }
+            finally
+            {
+                if (DbContext.IDbConnection is not null && DbContext.IDbConnection.State == ConnectionState.Open)
+                    DbContext.IDbConnection.Close();
+            }
+        }
+
 
         /// <summary>
         /// Executes a bulk copy operation to transfer data from the provided input source to a specified table in the database.
