@@ -69,41 +69,60 @@ namespace EH.Connection
         {
             //if (dbType == null) throw new ArgumentNullException("The type of database is invalid!");
 
-            List<string?> queries = new();
+            List<QueryCommand?> queries = new();
 
             Dictionary<string, Property>? properties = ToolsProp.GetProperties(entity, false, false);
 
-            Dictionary<string, Property>? filteredProperties = properties.Where(p => p.Value.IsVirtual == false).ToDictionary(p => p.Key, p => p.Value);
+            Dictionary<string, Property>? filteredProperties = properties
+                .Where(p => p.Value.IsVirtual == false)
+                .ToDictionary(p => p.Key, p => p.Value);
+            
+            if (filteredProperties is null || filteredProperties.Count == 0)
+                throw new InvalidOperationException("No valid properties found for insert.");
+            
+            // string columns = string.Join(", ", filteredProperties.Keys);
+            // string values = string.Join("', '", filteredProperties.Values);
+
             string columns = string.Join(", ", filteredProperties.Keys);
-            string values = string.Join("', '", filteredProperties.Values);
+            string parametersSql = string.Join(", ", filteredProperties.Keys.Select(k => "@" + k));
 
             // if (EnttityHelper is null) { throw new ArgumentNullException(nameof(EnttityHelper)); }
 
-            dbType ??= Database.Type;
+            dbType ??= Database.Provider;
             replacesTableName ??= EnttityHelper?.ReplacesTableName;
             tableName1 ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
             var pk = ToolsProp.GetPK(entity);
 
-            switch (dbType)
+            var queryCommand = dbType switch
             {
-                case Enums.DbProvider.Oracle:
-                    queries.Add($@"INSERT INTO {tableName1} ({columns}) VALUES ('{values}') RETURNING {pk.Name} INTO :Result");
-                    break;
-                case Enums.DbProvider.SqlServer:
-                    queries.Add($@"INSERT INTO {tableName1} ({columns}) OUTPUT INSERTED.{pk.Name} VALUES ('{values}')");
-                    break;
-                case Enums.DbProvider.SqLite:
-                    queries.Add($@"INSERT INTO {tableName1} ({columns}) VALUES ('{values}') RETURNING {pk.Name}");
-                    break;
-                default:
-                    throw new NotSupportedException($"Database type '{dbType}' not yet supported.");
-            }
+                Enums.DbProvider.Oracle => new QueryCommand(
+                    sql: $"INSERT INTO {tableName1} ({columns}) VALUES ({parametersSql}) RETURNING {pk.Name} INTO :Result",
+                    parameters: filteredProperties,
+                    dbProvider: dbType.Value
+                ),
+                Enums.DbProvider.SqlServer => new QueryCommand
+                (
+                    sql: $"INSERT INTO {tableName1} ({columns}) OUTPUT INSERTED.{pk.Name} VALUES ({parametersSql})",
+                    parameters: filteredProperties,
+                    dbProvider: dbType.Value
+                ),
+                Enums.DbProvider.SqLite => new QueryCommand
+                (
+                    sql: $"INSERT INTO {tableName1} ({columns}) VALUES ({parametersSql}) RETURNING {pk.Name}",
+                    parameters: filteredProperties,
+                    dbProvider: dbType.Value
+                ),
+                _ => throw new NotSupportedException($"Database type '{dbType}' not yet supported.")
+            };
+            
+            queries.Add(queryCommand);
+            
 
             if (!ignoreInversePropertyProperties) InsertInverseProperty(entity, replacesTableName, queries, properties);
             return queries;
         }
 
-        private static void InsertInverseProperty<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, List<string?> queries, Dictionary<string, Property> properties)
+        private void InsertInverseProperty<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, List<QueryCommand?> queries, Dictionary<string, Property> properties)
         {
             Dictionary<string, Property>? inverseProperties = properties.Where(p => p.Value.InverseProperty != null).ToDictionary(p => p.Key, p => p.Value);
             foreach (var invProp in inverseProperties)
@@ -117,7 +136,7 @@ namespace EH.Connection
                 string tableName1 = ToolsProp.GetTableName(entity.GetType(), replacesTableName);
                 string tableName2 = ToolsProp.GetTableName(entity2Type, replacesTableName);
 
-                // string idName1 = ToolsProp.GetPK((object)entity).Name; // Ex: User
+                string idName1 = ToolsProp.GetPK((object)entity).Name; // Ex: User
                 string idName2 = ToolsProp.GetPK((object)entity2Type).Name;  // Ex: Group
 
                 var itemsCollection = (IEnumerable<object>)invProp.Value.Value;
@@ -125,9 +144,10 @@ namespace EH.Connection
 
                 string idTb1 = tableName1.Substring(0, Math.Min(tableName1.Length, 27));
                 string idTb2 = tableName2.Substring(0, Math.Min(tableName2.Length, 27));
-                //PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
+                
+                PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
                 //object idValue1 = prop1.GetValue(entity);
-                string idValue1 = "&ID1";
+                // string idValue1 = "&ID1";
 
                 foreach (var item in itemsCollection)
                 {
@@ -138,7 +158,21 @@ namespace EH.Connection
                         if (prop2 != null)
                         {
                             object idValue2 = prop2.GetValue(item);
-                            queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
+                            // queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
+                            string sql = $@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES (@ID_{idTb1}, @ID_{idTb2})";
+                            
+                            Dictionary<string, Property> parameters = new()
+                            {
+                                { "ID_" + idTb1, new Property(prop1, entity)},
+                                { "ID_" + idTb2, new Property(prop2, item)}
+                            };
+
+                            queries.Add(new QueryCommand
+                            (
+                                sql: sql,
+                                parameters: parameters,
+                                dbProvider: Database.Provider
+                            ));
                         }
                     }
                 }
@@ -164,16 +198,16 @@ namespace EH.Connection
             tableName ??= ToolsProp.GetTableName<TEntity>(enttityHelper.ReplacesTableName);
             nameId ??= ToolsProp.GetPK(entity)?.Name ?? throw new InvalidOperationException("No primary key found!");
 
-            var properties = ToolsProp.GetProperties(entity, true, false);
+            Dictionary<string, Property> properties = ToolsProp.GetProperties(entity, true, false);
             
             StringBuilder queryBuilder = new();
             queryBuilder.Append($@"UPDATE {tableName} SET ");
             
-            var cmd = new QueryCommand();
+            //Dictionary<string, Property> parameters = new();
             
-            foreach (KeyValuePair<string, Property> pair in properties)
+            foreach (var pair in properties)
             {
-                cmd.Parameters.Add(pair);
+                //parameters.Add(pair);
                 
                 if (pair.Key == nameId) continue;
               
@@ -186,8 +220,8 @@ namespace EH.Connection
             queryBuilder.Append($@" WHERE {nameId} = @{nameId}");
             //return queryBuilder.ToString();
             // queries.Add(queryBuilder.ToString());
-
-            cmd.Sql = queryBuilder.ToString();
+         
+            var cmd = new QueryCommand(queryBuilder.ToString(), properties, Database.Provider);
             queries.Add(cmd);
 
             if (!ignoreInversePropertyProperties) queries.AddRange(UpdateInverseProperty(entity, enttityHelper));
@@ -196,7 +230,7 @@ namespace EH.Connection
 
         private static ICollection<QueryCommand?> UpdateInverseProperty<TEntity>(TEntity entity, EnttityHelper enttityHelper) where TEntity : class
         {
-            List<string?> queries = new();
+            List<QueryCommand?> queries = new();
 
             var inverseProperties = ToolsProp.GetInverseProperties(entity);
 
@@ -240,46 +274,73 @@ namespace EH.Connection
                 //IEnumerable<object>? itemsCollectionNew = invProp.GetValue(entity) as IEnumerable<object>;
                 //IEnumerable<object>? itemsCollectionOld = itemsCollectionBd;
 
-                List<string>? itemsCollectionNew = new();
-                List<string>? itemsCollectionOld = new();
+                // List<string>? itemsCollectionNew = new();
+                // List<string>? itemsCollectionOld = new();
+                
+                List<Property>? itemsCollectionNew = new();
+                List<Property>? itemsCollectionOld = new();
 
                 foreach (var itemNew in invProp.GetValue(entity) as IEnumerable<object>)
                 {
                     if (itemNew is null) continue;
                     PropertyInfo prop2 = itemNew.GetType().GetProperty(idName2);
-                    if (prop2 != null) { itemsCollectionNew.Add(prop2.GetValue(itemNew).ToString()); }
+                    // if (prop2 != null) { itemsCollectionNew.Add(prop2.GetValue(itemNew).ToString()); }
+                    if (prop2 != null) { itemsCollectionNew.Add(new Property(prop2, itemNew)); }
                 }
 
                 foreach (var itemOld in itemsCollectionBd)
                 {
                     if (itemOld is null) continue;
                     PropertyInfo prop2 = itemOld.GetType().GetProperty(idName2);
-                    if (prop2 != null) { itemsCollectionOld.Add(prop2.GetValue(itemOld).ToString()); }
+                    // if (prop2 != null) { itemsCollectionOld.Add(prop2.GetValue(itemOld).ToString()); }
+                    if (prop2 != null) { itemsCollectionOld.Add(new Property(prop2, itemOld)); }
                 }
 
                 PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
                 string idTb1 = tableName1.Substring(0, Math.Min(tableName1.Length, 27));
                 string idTb2 = tableName2.Substring(0, Math.Min(tableName2.Length, 27));
-                object idValue1 = prop1.GetValue(entity);
+                // object idValue1 = prop1.GetValue(entity);
+                
+                var itemProp1 = new Property(prop1, entity);
 
                 if (itemsCollectionNew != null && itemsCollectionNew.Any())
                 {
-                    foreach (object itemInsert in itemsCollectionNew)
+                    foreach (Property itemInsert in itemsCollectionNew)
                     {
                         if (!itemsCollectionOld.Contains(itemInsert))
                         {
-                            queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{itemInsert}')");
+                            // queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{itemInsert}')");
+
+                            string sql = $@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('@{idTb1}', '@{idTb2}')";
+
+                            Dictionary<string, Property> parameters = new()
+                            {
+                                {"@ID_" + idTb1, itemProp1},
+                                {"@ID_" + idTb2, itemInsert}
+                            };
+
+                            QueryCommand queryCommand = new(sql, parameters, enttityHelper.DbContext.Provider);
+                            queries.Add(queryCommand);
                         }
                     }
                 }
 
                 if (itemsCollectionOld != null && itemsCollectionOld.Any())
                 {
-                    foreach (object itemDelete in itemsCollectionOld)
+                    foreach (Property itemDelete in itemsCollectionOld)
                     {
                         if (!itemsCollectionNew.Contains(itemDelete))
                         {
-                            queries.Add($@"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = '{idValue1}' AND ID_{idTb2} = '{itemDelete}'");
+                            // queries.Add($@"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = '{idValue1}' AND ID_{idTb2} = '{itemDelete}'");
+                            string sql =$"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = @ID_{idTb1} AND ID_{idTb2} = @ID_{idTb2}";
+                            
+                            Dictionary<string, Property> parameters = new()
+                            {
+                                {"@ID_" + idTb1, itemProp1},
+                                {"@ID_" + idTb2, itemDelete}
+                            };
+                            
+                            QueryCommand queryCommand = new(sql, parameters, enttityHelper.DbContext.Provider);
                         }
                     }
                 }
@@ -300,7 +361,8 @@ namespace EH.Connection
         {
             filter = string.IsNullOrEmpty(filter?.Trim()) ? "1 = 1" : filter;
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
-            return $@"SELECT * FROM {tableName} WHERE ({filter})";
+            // return $@"SELECT * FROM {tableName} WHERE ({filter})";
+            return new QueryCommand($@"SELECT * FROM {tableName} WHERE ({filter})", null, Database.Provider);
         }
 
         /// <summary>
@@ -317,7 +379,14 @@ namespace EH.Connection
             idPropName ??= ToolsProp.GetPK(entity)?.Name;
             if (idPropName is null) { return null; }
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
-            return $@"SELECT * FROM {tableName} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')";
+            // return $@"SELECT * FROM {tableName} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')";
+            
+           Dictionary<string, Property> parameters = new()
+            {
+                {idPropName, new Property(typeof(TEntity).GetProperty(idPropName), entity)}
+            };
+            
+            return new QueryCommand($@"SELECT * FROM {tableName} WHERE ({idPropName} = '@{idPropName}')", parameters, Database.Provider);
         }
 
         /// <summary>
@@ -343,7 +412,15 @@ namespace EH.Connection
 
             // TODO: typeof(TEntity) vs entity.GetType()
 
-            return $@"DELETE FROM {tableName} WHERE ({idPropName} = '{entity.GetType().GetProperty(idPropName).GetValue(entity, null)}')";
+            // return $@"DELETE FROM {tableName} WHERE ({idPropName} = '{entity.GetType().GetProperty(idPropName).GetValue(entity, null)}')";
+            
+           Dictionary<string, Property> parameters = new()
+            {
+                { idPropName, new Property(entity.GetType().GetProperty(idPropName), entity) }
+            };
+            
+            
+            return new QueryCommand($@"DELETE FROM {tableName} WHERE ({idPropName} = '@{idPropName}')", parameters, Database.Provider);
         }
 
         /// <summary>
@@ -370,12 +447,14 @@ namespace EH.Connection
 
             string whereClause = $"{idPropName} = '{idPropValue}'";
 
-            return Database.Type switch
+            string sql = Database.Provider switch
             {
                 Enums.DbProvider.Oracle => $"SELECT 1 FROM {tableName} WHERE {whereClause} AND ROWNUM = 1",
-                Enums.DbProvider.SqlServer => $"SELECT TOP 1 1 FROM {tableName} WHERE {whereClause}",
+                Enums.DbProvider.SqlServer => $"SELECT TOP 1 FROM {tableName} WHERE {whereClause}",
                 _ => $"SELECT 1 FROM {tableName} WHERE {whereClause} LIMIT 1",
             };
+            
+           return new(sql, null, Database.Provider);
         }
 
         /// <summary>
@@ -408,11 +487,18 @@ namespace EH.Connection
 
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
 
-            var idPropValue = entity.GetType().GetProperty(idPropName).GetValue(entity, null);
+            // var idPropValue = entity.GetType().GetProperty(idPropName).GetValue(entity, null);
 
             // TODO: typeof(TEntity) vs entity.GetType()
 
-            return $@"SELECT COUNT(*) FROM {tableName} WHERE ({idPropName} = '{idPropValue}')";
+            // return $@"SELECT COUNT(*) FROM {tableName} WHERE ({idPropName} = '{idPropValue}')";
+            
+            Dictionary<string, Property> parameters = new()
+            {
+                {idPropName, new Property(entity.GetType().GetProperty(idPropName), entity)}
+            };
+            
+            return new QueryCommand($@"SELECT COUNT(*) FROM {tableName} WHERE ({idPropName} = '@{idPropName}')", parameters, Database.Provider);
         }
 
         /// <summary>
@@ -502,30 +588,34 @@ namespace EH.Connection
                         .GroupBy(pair => pair.Key)
                         .ToDictionary(group => group.Key, group => group.Last().Value);
 
-                    var entity2Collection = queryCreatesTable.FirstOrDefault(pair => pair.Value == "???");
-                    if (entity2Collection.Key is not null && entity2Collection.Key != tableName)
-                    {
-                        //Type collection2Type = propEntity2.PropertyInfo.PropertyType;
-                        //Type entity2Type = collection2Type.GetGenericArguments()[0];
-
-                        //// Use reflection to call CreateTable<T> with the dynamic type entity2Type
-                        //var methodCreateTable = typeof(EnttityHelper).GetMethod("CreateTable").MakeGenericMethod(entity2Type);
-
-                        //// Call the method using reflection, passing the required parameters
-                        //var queryCreateTableEntity2 = (Dictionary<string, string?>?)methodCreateTable.Invoke(this, new object[] { typesSql, true, ignoreProps, replacesTableName, entity2Collection.Key });
-                        //queryCreatesTable[entity2Collection.Key] = queryCreateTableEntity2[entity2Collection.Key];
-                    }
+                    // var entity2Collection = queryCreatesTable.FirstOrDefault(pair => pair.Value == "???");
+                    // if (entity2Collection.Key is not null && entity2Collection.Key != tableName)
+                    // {
+                    //     //Type collection2Type = propEntity2.PropertyInfo.PropertyType;
+                    //     //Type entity2Type = collection2Type.GetGenericArguments()[0];
+                    //
+                    //     //// Use reflection to call CreateTable<T> with the dynamic type entity2Type
+                    //     //var methodCreateTable = typeof(EnttityHelper).GetMethod("CreateTable").MakeGenericMethod(entity2Type);
+                    //
+                    //     //// Call the method using reflection, passing the required parameters
+                    //     //var queryCreateTableEntity2 = (Dictionary<string, string?>?)methodCreateTable.Invoke(this, new object[] { typesSql, true, ignoreProps, replacesTableName, entity2Collection.Key });
+                    //     //queryCreatesTable[entity2Collection.Key] = queryCreateTableEntity2[entity2Collection.Key];
+                    // }
                 }
             }
 
             queryBuilderPrincipal.Length -= 2; // Remove the last comma and space
             queryBuilderPrincipal.Append(")");
             //createsTable.Add(queryBuilderPrincipal.ToString());
-            queryCreatesTable[tableName] = queryBuilderPrincipal.ToString();
+            
+            QueryCommand queryCommand = new QueryCommand(queryBuilderPrincipal.ToString(), null, Database.Provider);
+            
+            // queryCreatesTable[tableName] = queryBuilderPrincipal.ToString();
+            queryCreatesTable[tableName] = queryCommand;
             return queryCreatesTable;
         }
 
-        internal static Dictionary<string, QueryCommand?> CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, string? pkEntity1, Dictionary<string, string>? replacesTableName)
+        internal Dictionary<string, QueryCommand?> CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, string? pkEntity1, Dictionary<string, string>? replacesTableName)
         {
             Dictionary<string, QueryCommand?> createsTable = new();
 
@@ -554,7 +644,10 @@ namespace EH.Connection
                 $@"FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2}({pkEntity2}) " +
                 $")";
 
-            createsTable[tableNameManyToMany] = queryCollection;
+            QueryCommand queryCommand = new QueryCommand(queryCollection, null, Database.Provider);
+
+            // createsTable[tableNameManyToMany] = queryCollection;
+            createsTable[tableNameManyToMany] = queryCommand;
             //createsTable[tableEntity2] = "???";
             return createsTable;
         }
@@ -599,7 +692,9 @@ namespace EH.Connection
 
             queryBuilder.Length -= 2; // Remove the last comma and space
             queryBuilder.Append(")");
-            return queryBuilder.ToString();
+            // return queryBuilder.ToString();
+            
+            return new QueryCommand(queryBuilder.ToString(), null, Database.Provider);
         }
 
         /// <summary>
@@ -613,11 +708,13 @@ namespace EH.Connection
         /// <returns>A SQL query to add the foreign key constraint.</returns>
         public QueryCommand AddForeignKeyConstraint(string tableName, string childKeyColumn, string parentTableName, string parentKeyColumn, string foreignKeyName)
         {
-            return $@"
+            string sql = $@"
                 ALTER TABLE {tableName}
                 ADD CONSTRAINT {foreignKeyName}
                 FOREIGN KEY ({childKeyColumn})
                 REFERENCES {parentTableName}({parentKeyColumn});";
+            
+            return new QueryCommand(sql, null, Database.Provider);
         }
 
         /// <summary>
@@ -641,7 +738,7 @@ namespace EH.Connection
 
         public QueryCommand PaginatedQuery(string baseQuery, int pageSize, int pageIndex, string? filter, string? sortColumn, bool sortAscending)
         {
-            if (Database?.Type is null)
+            if (Database?.Provider is null)
                 throw new ArgumentNullException("The database type is required to generate this query!");
             if (string.IsNullOrEmpty(baseQuery))
                 throw new ArgumentNullException(nameof(baseQuery));
@@ -656,7 +753,7 @@ namespace EH.Connection
             //var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : string.Empty;
             var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : null;
 
-            return Database.Type switch
+            string sql = Database.Provider switch
             {
                 Enums.DbProvider.Oracle => Database.Version.Major switch
                 {
@@ -670,6 +767,8 @@ namespace EH.Connection
                     $@"{baseQuery} {filterClause} {orderClause} LIMIT {pageSize} OFFSET {offset}",
                 _ => $@"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
             };
+
+            return new QueryCommand(sql, null, Database.Provider);
         }
 
         /// <summary>
@@ -697,7 +796,8 @@ namespace EH.Connection
                 ? $"WHERE {filter}"
                 : string.Empty;
 
-            return $"SELECT COUNT(1) FROM ({mainQuery}) CountQuery {filterClause}";
+            // return $"SELECT COUNT(1) FROM ({mainQuery}) CountQuery {filterClause}";
+            return new QueryCommand($"SELECT COUNT(1) FROM ({mainQuery}) CountQuery {filterClause}", null, Database.Provider);
         }
 
         /// <summary>
@@ -748,7 +848,8 @@ namespace EH.Connection
                     _ => throw new NotSupportedException($"Unsupported database type: {databaseType}")
                 };
 
-                return queryVersion;
+                // return queryVersion;
+                return new QueryCommand(queryVersion, null, (database ?? Database).Provider);
             }
             catch (Exception ex)
             {

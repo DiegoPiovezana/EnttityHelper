@@ -29,7 +29,7 @@ namespace EH.Connection
         /// of <see cref="EH.Properties.Property"/>. The parameters provide values to the placeholders
         /// in the query, ensuring proper execution and security against SQL injection.
         /// </remarks>
-        public List<KeyValuePair<string, Property>> Parameters { get; } = new();
+        public IDictionary<string, Property> Parameters { get; } = new Dictionary<string, Property>();
 
         /// <summary>
         /// Gets or sets the database provider to be used for the query execution.
@@ -40,9 +40,17 @@ namespace EH.Connection
         /// This property plays a critical role in ensuring that the query and parameters are compatible
         /// with the corresponding database engine.
         /// </remarks>
-        public Enums.DbProvider DbProvider { get; set; }
-        
-        
+        public Enums.DbProvider? DbProvider { get; set; }
+
+
+        public QueryCommand(string sql, IDictionary<string, Property>? parameters, Enums.DbProvider? dbProvider)
+        {
+            Sql = sql;
+            Parameters = parameters ?? new Dictionary<string, Property>();
+            DbProvider = dbProvider;
+        }
+
+
         /// <summary>
         /// 
         /// </summary>
@@ -51,7 +59,5 @@ namespace EH.Connection
         {
             return Sql;
         }
-        
-
     }
 }
