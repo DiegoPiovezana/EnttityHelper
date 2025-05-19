@@ -228,6 +228,20 @@ namespace EH.Properties
             return tableNameResult.Substring(0, Math.Min(tableNameResult.Length, 30));
         }
 
+        internal static DbType MapToDbType(Type type)
+        {
+            type = Nullable.GetUnderlyingType(type) ?? type;
+
+            if (type == typeof(string)) return DbType.String;
+            if (type == typeof(int)) return DbType.Int32;
+            if (type == typeof(Guid)) return DbType.Guid;
+            if (type == typeof(DateTime)) return DbType.DateTime;
+            if (type == typeof(bool)) return DbType.Boolean;
+            if (type.IsEnum) return DbType.Int32;
+
+            throw new NotSupportedException($"Type not supported: {type.FullName}");
+        }
+
 
     }
 }
