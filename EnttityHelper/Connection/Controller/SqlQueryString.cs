@@ -736,7 +736,7 @@ namespace EH.Connection
         /// - Ensure the <paramref name="baseQuery"/> does not already include conflicting filters or sorting logic unless intended.
         /// </remarks>
 
-        public QueryCommand PaginatedQuery(string baseQuery, int pageSize, int pageIndex, string? filter, string? sortColumn, bool sortAscending)
+        public string PaginatedQuery(string baseQuery, int pageSize, int pageIndex, string? filter, string? sortColumn, bool sortAscending)
         {
             if (Database?.Provider is null)
                 throw new ArgumentNullException("The database type is required to generate this query!");
@@ -768,7 +768,44 @@ namespace EH.Connection
                 _ => $@"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
             };
 
-            return new QueryCommand(sql, null, Database.Provider);
+            return sql;
+        }
+        
+        public QueryCommand PaginatedQuery(QueryCommand baseQuery, int pageSize, int pageIndex, string? filter, string? sortColumn, bool sortAscending)
+        {
+            if (Database?.Provider is null)
+                throw new ArgumentNullException("The database type is required to generate this query!");
+            if (string.IsNullOrWhiteSpace(baseQuery.Sql))
+                throw new ArgumentNullException(nameof(baseQuery.Sql));
+            if (pageSize <= 0)
+                throw new ArgumentException("Page size must be greater than zero!", nameof(pageSize));
+            if (pageIndex < 0)
+                throw new ArgumentException("Page index cannot be negative!", nameof(pageIndex));
+
+            var offset = pageSize * pageIndex;
+            var filterClause = !string.IsNullOrWhiteSpace(filter) ? $"WHERE {filter}" : string.Empty;
+            var orderClause = !string.IsNullOrWhiteSpace(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : null;
+
+            string sql = Database.Provider switch
+            {
+                Enums.DbProvider.Oracle => Database.Version.Major switch
+                {
+                    >= 12 => $@"{baseQuery.Sql} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                    <= 11 => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM (
+                                    SELECT a.*, ROW_NUMBER() OVER ({orderClause ?? "ORDER BY 1"}) AS rnum
+                                    FROM ({baseQuery.Sql} {filterClause}) a
+                                )
+                                WHERE rnum > {offset} AND rnum <= {offset + pageSize}"
+                },
+                Enums.DbProvider.SqlServer or Enums.DbProvider.PostgreSql =>
+                    $@"{baseQuery.Sql} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                Enums.DbProvider.MySql =>
+                    $@"{baseQuery.Sql} {filterClause} {orderClause} LIMIT {pageSize} OFFSET {offset}",
+                _ =>
+                    $@"{baseQuery.Sql} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+            };
+
+            return new QueryCommand(sql, baseQuery.Parameters, baseQuery.DbProvider);
         }
 
         /// <summary>
