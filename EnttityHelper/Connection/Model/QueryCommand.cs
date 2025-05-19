@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Linq;
 using EH.Properties;
 
 namespace EH.Connection
@@ -45,19 +46,30 @@ namespace EH.Connection
 
         public QueryCommand(string sql, IDictionary<string, Property>? parameters, Enums.DbProvider? dbProvider)
         {
+            if (string.IsNullOrWhiteSpace(sql))
+                throw new ArgumentException("SQL query cannot be null or empty.", nameof(sql));
+            
             Sql = sql;
             Parameters = parameters ?? new Dictionary<string, Property>();
             DbProvider = dbProvider;
         }
-
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        override public string ToString()
+        
+        
+        public void AddParameter(string name, Property property)
         {
-            return Sql;
+            if (!Parameters.ContainsKey(name))
+                Parameters.Add(name, property);
+            else
+                throw new ArgumentException($"Parameter '{name}' already exists.");
         }
+
+
+
+        public override string ToString()
+        {
+            var parametersStr = string.Join(", ", Parameters.Select(p => $"{p.Key}={p.Value?.Value}"));
+            return $"{Sql} [{parametersStr}]";
+        }
+
     }
 }
