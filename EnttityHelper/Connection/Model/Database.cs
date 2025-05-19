@@ -44,19 +44,19 @@ namespace EH.Connection
         /// <exception cref="Exception"></exception>
         public override IDbConnection CreateConnection()
         {
-            IDbConnection = Type switch
+            IDbConnection = Provider switch
             {
-                Enums.DbType.Oracle => new OracleConnection(
+                Enums.DbProvider.Oracle => new OracleConnection(
                     $"Data Source={Ip}:{Port}/{Service};User Id={User};Password={Pass}"
                 ),
 
-                Enums.DbType.SQLServer => new SqlConnection(
+                Enums.DbProvider.SqlServer => new SqlConnection(
                     IsWindowsAuthentication
                         ? $"Data Source={(string.IsNullOrEmpty(Instance) ? Ip : $"{Ip}\\{Instance}")};Initial Catalog={Service};Integrated Security=True"
                         : $"Data Source={(string.IsNullOrEmpty(Instance) ? Ip : $"{Ip}\\{Instance}")};Initial Catalog={Service};User ID={User};Password={Pass}"
                 ),
 
-                _ => throw new Exception($"Database type '{Type}' not yet supported."),
+                _ => throw new Exception($"Database type '{Provider}' not yet supported."),
             };
 
             return IDbConnection;
@@ -101,11 +101,11 @@ namespace EH.Connection
         {
             if (IDbConnection is null) throw new Exception("Connection is null!");
 
-            return Type switch
+            return Provider switch
             {
-                Enums.DbType.Oracle => new OracleCommand(commandText, (OracleConnection)IDbConnection),
-                Enums.DbType.SQLServer => new SqlCommand(commandText, (SqlConnection)IDbConnection),
-                _ => throw new Exception($"Database type '{Type}' not yet supported."),
+                Enums.DbProvider.Oracle => new OracleCommand(commandText, (OracleConnection)IDbConnection),
+                Enums.DbProvider.SqlServer => new SqlCommand(commandText, (SqlConnection)IDbConnection),
+                _ => throw new Exception($"Database type '{Provider}' not yet supported."),
             };
         }
 
@@ -120,21 +120,21 @@ namespace EH.Connection
         {
             if (connection is null) throw new Exception("Connection is null!");
 
-            return Type switch
+            return Provider switch
             {
-                Enums.DbType.Oracle => new OracleCommand
+                Enums.DbProvider.Oracle => new OracleCommand
                 {
                     CommandType = CommandType.StoredProcedure,
                     CommandText = procName,
                     Connection = (OracleConnection)connection
                 },
-                Enums.DbType.SQLServer => new SqlCommand
+                Enums.DbProvider.SqlServer => new SqlCommand
                 {
                     CommandType = CommandType.StoredProcedure,
                     CommandText = procName,
                     Connection = (SqlConnection)connection
                 },
-                _ => throw new Exception($"Database type '{Type}' not yet supported."),
+                _ => throw new Exception($"Database type '{Provider}' not yet supported."),
             };
         }
 
@@ -143,11 +143,11 @@ namespace EH.Connection
         /// </summary>
         public override IDataParameter CreateParameter(string parameterName, object parameterValue)
         {
-            return Type switch
+            return Provider switch
             {
-                Enums.DbType.Oracle => new OracleParameter(parameterName, parameterValue),
-                Enums.DbType.SQLServer => new SqlParameter(parameterName, parameterValue),
-                _ => throw new Exception($"Database type '{Type}' not yet supported."),
+                Enums.DbProvider.Oracle => new OracleParameter(parameterName, parameterValue),
+                Enums.DbProvider.SqlServer => new SqlParameter(parameterName, parameterValue),
+                _ => throw new Exception($"Database type '{Provider}' not yet supported."),
             };
         }
 
@@ -161,11 +161,11 @@ namespace EH.Connection
         /// <exception cref="ArgumentException">Thrown when the database type is not supported.</exception>
         public override object CreateBulkCopy()
         {
-            return Type switch
+            return Provider switch
             {
-                Enums.DbType.Oracle => new OracleBulkCopy((OracleConnection)IDbConnection),
-                Enums.DbType.SQLServer => new SqlBulkCopy((SqlConnection)IDbConnection),
-                _ => throw new ArgumentException($"Database type '{Type}' not yet supported.", nameof(Type)),
+                Enums.DbProvider.Oracle => new OracleBulkCopy((OracleConnection)IDbConnection),
+                Enums.DbProvider.SqlServer => new SqlBulkCopy((SqlConnection)IDbConnection),
+                _ => throw new ArgumentException($"Database type '{Provider}' not yet supported.", nameof(Provider)),
             };
         }
 

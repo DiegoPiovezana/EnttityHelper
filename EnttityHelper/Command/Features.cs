@@ -148,7 +148,7 @@ namespace EH.Command
                         }
                     }
 
-                    insertsQueriesEntities[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.DbContext.Type, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();
+                    insertsQueriesEntities[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.DbContext.Provider, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();
                 }
 
                 long insertions = 0;
@@ -354,7 +354,7 @@ namespace EH.Command
         public long Update<TEntity>(TEntity entity, string? nameId, string? tableName, bool ignoreInversePropertyProperties) where TEntity : class
         {
             // Entity or IEnumerable<Entity>
-            var updatesQueriesEntities = new Dictionary<object, List<string?>?>();
+            var updatesQueriesEntities = new Dictionary<object, List<QueryCommand?>?>();
             var entities = entity as IEnumerable ?? new[] { entity };
 
             var itemType = typeof(TEntity).IsGenericType && typeof(IEnumerable).IsAssignableFrom(typeof(TEntity))
@@ -389,7 +389,7 @@ namespace EH.Command
 
         public TEntity? Search<TEntity>(TEntity entity, bool includeAll, string? idPropName, string? tableName) where TEntity : class
         {
-            string? selectQuery = _enttityHelper.GetQuery.Search(entity, idPropName, _enttityHelper.ReplacesTableName, tableName);
+            var selectQuery = _enttityHelper.GetQuery.Search(entity, idPropName, _enttityHelper.ReplacesTableName, tableName);
             var entities = ExecuteSelect<TEntity>(selectQuery, null, 0, null, null, true);
             if (includeAll) { _ = IncludeAll(entities.FirstOrDefault()); }
             return entities.FirstOrDefault();
@@ -718,6 +718,11 @@ namespace EH.Command
         }
 
         public List<TEntity>? ExecuteSelect<TEntity>(string? query, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
+        {
+            return (List<TEntity>?)Execute.ExecuteReader<TEntity>(_enttityHelper.DbContext, query, false, pageSize, pageIndex, filterPage, sortColumnPage, sortAscendingPage);
+        }
+        
+        public List<TEntity>? ExecuteSelect<TEntity>(QueryCommand? query, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
         {
             return (List<TEntity>?)Execute.ExecuteReader<TEntity>(_enttityHelper.DbContext, query, false, pageSize, pageIndex, filterPage, sortColumnPage, sortAscendingPage);
         }

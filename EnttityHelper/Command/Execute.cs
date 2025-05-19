@@ -260,20 +260,9 @@ namespace EH.Commands
         {
             // dataToCopy: DataRow[], DataTable, IDataReader
 
-            if (dbContext is null)
-            {
-                throw new ArgumentNullException(nameof(dbContext), "Database context cannot be null.");
-            }
-
-            if (inputDataToCopy is null)
-            {
-                throw new ArgumentNullException(nameof(inputDataToCopy), "Data to copy cannot be null.");
-            }
-
-            if (string.IsNullOrEmpty(tableName?.Trim()))
-            {
-                throw new ArgumentNullException(nameof(tableName), "Table name cannot be null or empty.");
-            }
+            if (dbContext is null) { throw new ArgumentNullException(nameof(dbContext), "Database context cannot be null."); }
+            if (inputDataToCopy is null) { throw new ArgumentNullException(nameof(inputDataToCopy), "Data to copy cannot be null."); }
+            if (string.IsNullOrEmpty(tableName?.Trim())) { throw new ArgumentNullException(nameof(tableName), "Table name cannot be null or empty."); }
 
             try
             {

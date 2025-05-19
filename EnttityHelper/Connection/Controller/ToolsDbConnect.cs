@@ -46,7 +46,7 @@ namespace EH.Connection
                 // SQLite
                 if (dataSource.Trim().EndsWith(".db", StringComparison.OrdinalIgnoreCase))
                 {
-                    database.Type = Enums.DbType.SQLite;
+                    database.Provider = Enums.DbProvider.SqLite;
                     database.Service = dataSource.Trim();
                     return true;
                 }
@@ -54,7 +54,7 @@ namespace EH.Connection
                 // SQL Server
                 if (!string.IsNullOrEmpty(initialCatalog))
                 {
-                    database.Type = Enums.DbType.SQLServer;
+                    database.Provider = Enums.DbProvider.SqlServer;
                     database.Service = initialCatalog?.Trim();
 
                     if (!string.IsNullOrEmpty(dataSource))
@@ -89,7 +89,7 @@ namespace EH.Connection
                     if (parts.Length < 2 || !parts[1].Contains('/'))
                         throw new FormatException("Invalid Oracle Data Source format.");
 
-                    database.Type = Enums.DbType.Oracle; // Version will be determined later                    
+                    database.Provider = Enums.DbProvider.Oracle; // Version will be determined later                    
                     database.Ip = parts[0].Trim();
                     database.Port = Convert.ToInt32(parts[1].Split('/')[0]);
                     database.Service = parts[1].Split('/')[1].Trim();

@@ -51,7 +51,7 @@ namespace EH.Connection
         /// <summary>
         /// Gets the type of database (e.g., Oracle or SqlServer).
         /// </summary>
-        public Enums.DbType? Type { get; internal set; }
+        public Enums.DbProvider? Provider { get; internal set; }
 
         /// <summary>
         /// Gets the database version.

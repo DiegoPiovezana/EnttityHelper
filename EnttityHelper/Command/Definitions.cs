@@ -10,11 +10,11 @@ namespace EH.Command
         internal static Dictionary<string, string> DefineTypesDefaultColumnsDb(Database? dbContext)
         {
             if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
-            if (dbContext.Type is null) throw new InvalidOperationException("DbContext Type cannot be null.");
+            if (dbContext.Provider is null) throw new InvalidOperationException("DbContext Type cannot be null.");
 
-            return dbContext.Type switch
+            return dbContext.Provider switch
             {
-                Enums.DbType.Oracle => new Dictionary<string, string> {
+                Enums.DbProvider.Oracle => new Dictionary<string, string> {
                     { "String", "NVARCHAR2(1000)" },
                     { "Boolean", "NUMBER(1)" },
                     { "DateTime", "TIMESTAMP" },
@@ -27,7 +27,7 @@ namespace EH.Command
                     { "TimeSpan", "DATE" },
                     { "Guid", "RAW(16)" }
                     },
-                Enums.DbType.SQLServer => new Dictionary<string, string>
+                Enums.DbProvider.SqlServer => new Dictionary<string, string>
                     {
                     { "String", "NVARCHAR(1000)" },
                     { "Boolean", "BIT" },
@@ -41,7 +41,7 @@ namespace EH.Command
                     { "TimeSpan", "TIME" },
                     { "Guid", "UNIQUEIDENTIFIER" }
                     },
-                Enums.DbType.SQLite => new Dictionary<string, string>
+                Enums.DbProvider.SqLite => new Dictionary<string, string>
                     {
                     { "String", "TEXT" },
                     { "Boolean", "INTEGER" },
@@ -60,7 +60,7 @@ namespace EH.Command
                 //case Enums.DbType.MySQL:
                 //    break;
                 null => throw new InvalidOperationException($"Database type is invalid."),
-                _ => throw new InvalidOperationException($"Database type '{dbContext.Type}' not yet supported."),
+                _ => throw new InvalidOperationException($"Database type '{dbContext.Provider}' not yet supported."),
             };
         }
 
@@ -90,7 +90,7 @@ namespace EH.Command
             try
             {
                 if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
-                if (dbContext.Type is null) throw new InvalidOperationException("DbContext Type cannot be null.");
+                if (dbContext.Provider is null) throw new InvalidOperationException("DbContext Type cannot be null.");
 
                 var versionDb = features.GetDatabaseVersion(dbContext); // Ex.: "Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production"
                 var versionMatch = System.Text.RegularExpressions.Regex.Match(versionDb, @"\b(\d+(\.\d+){0,3})\b"); // @"\b(\d+\.\d+\.\d+\.\d+)\b"

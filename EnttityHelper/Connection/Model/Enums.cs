@@ -8,7 +8,7 @@
         /// <summary>
         /// Types of databases supported by the library.
         /// </summary>
-        public enum DbType
+        public enum DbProvider
         {
             /// <summary>
             /// Oracle
@@ -18,22 +18,22 @@
             /// <summary>
             /// SQL Server
             /// </summary>
-            SQLServer,
+            SqlServer,
 
             /// <summary>
             /// SQLite
             /// </summary>
-            SQLite,
+            SqLite,
 
             /// <summary>
             /// PostgreSQL
             /// </summary>
-            PostgreSQL,
+            PostgreSql,
 
             /// <summary>
             /// MySQL
             /// </summary>
-            MySQL
+            MySql
         }
     }
 }
