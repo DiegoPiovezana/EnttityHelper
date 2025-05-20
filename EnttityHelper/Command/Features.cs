@@ -76,7 +76,7 @@ namespace EH.Command
 
             long InsertEntities<TEntity>(TEntity entity, bool setPrimaryKeyAfterInsert, string? namePropUnique, bool createTable, ref string? tableName, bool ignoreInversePropertyProperties) where TEntity : class
             {
-                var insertsQueriesEntities = new Dictionary<object, List<string?>?>();
+                var insertsQueriesEntities = new Dictionary<object, List<QueryCommand?>?>();
                 var entities = entity as IEnumerable ?? new[] { entity };
 
                 if (entity is null) throw new InvalidOperationException($"$'{nameof(entity)}' is null!");
@@ -158,8 +158,8 @@ namespace EH.Command
                     if (insertQueriesEntity.Value == null) throw new Exception("EH-000: Insert query does not exist!");
 
                     var pk = ToolsProp.GetPK(insertQueriesEntity.Key) ?? throw new Exception("EH-000: Entity does not have a primary key!");
-                    var id = ExecuteScalar(insertQueriesEntity.Value.First()); // Inserts the main entity
-                    if (id == null || id == DBNull.Value) throw new Exception("EH-000: Insert query does not return an ID!");
+                    var id = Execute.ExecuteScalar(_enttityHelper.DbContext,new List<QueryCommand?> { insertQueriesEntity.Value.First() }); // Inserts the main entity
+                    if (id == null || id.First() == DBNull.Value) throw new Exception("EH-000: Insert query does not return an ID!");
 
                     var typePk = pk.PropertyType;
                     var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id.ToString(), typePk);
@@ -221,8 +221,12 @@ namespace EH.Command
                     // Useful for MxN
                     for (int i = 1; i < insertQueriesEntity.Value.Count; i++)
                     {
-                        insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'&ID1'", $"'{id}'");
-                        insertions += ExecuteNonQuery(insertQueriesEntity.Value[i], 1);
+                        // insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'&ID1'", $"'{id}'");
+                        insertQueriesEntity.Value[i].Parameters["@ID1"].Value = id;
+                        
+                        // insertions += ExecuteNonQuery(insertQueriesEntity.Value[i], 1);
+                        insertions += Execute.ExecuteNonQuery(_enttityHelper.DbContext, new List<QueryCommand?>{ insertQueriesEntity.Value[i] }, 1).First();
+                        
                     }
                 }
 
@@ -374,14 +378,14 @@ namespace EH.Command
             foreach (var updateQueriesEntity in updatesQueriesEntities)
             {
                 if (updateQueriesEntity.Value == null) throw new Exception("EH-000: Update query does not exist!");
-                updates += updateQueriesEntity.Value.Sum(updateQuery => updateQuery is null ? throw new Exception($"EH-000: Error update query!") : ExecuteNonQuery(updateQuery, 1));
+                updates += updateQueriesEntity.Value.Sum(updateQuery => updateQuery is null ? throw new Exception($"EH-000: Error update query!") : Execute.ExecuteNonQuery(_enttityHelper.DbContext, new List<QueryCommand>{updateQuery}, 1).First());
             }
             return updates;
         }
 
         public List<TEntity>? Get<TEntity>(bool includeAll, string? filter, string? tableName, int? pageSize, int pageIndex, string? sortColumn, bool sortAscending) where TEntity : class
         {
-            string? querySelect = _enttityHelper.GetQuery.Get<TEntity>(filter, _enttityHelper.ReplacesTableName, tableName);
+            var querySelect = _enttityHelper.GetQuery.Get<TEntity>(filter, _enttityHelper.ReplacesTableName, tableName);
             var entities = ExecuteSelect<TEntity>(querySelect, pageSize, pageIndex, null, sortColumn, sortAscending);
             if (includeAll) { _ = IncludeAllRange(entities); }
             return entities;
@@ -444,7 +448,7 @@ namespace EH.Command
 
                 var query = _enttityHelper.GetQuery.CheckIfExist(entity, nameId);
 
-                var result = _enttityHelper.DbContext.ExecuteScalar(new List<string?> { query }).FirstOrDefault();
+                var result = _enttityHelper.DbContext.ExecuteScalar(new List<QueryCommand?> { query }).FirstOrDefault();
                 return result != null && result != DBNull.Value;
             }
             catch (Exception ex)
@@ -466,7 +470,7 @@ namespace EH.Command
             try
             {
                 // Entity or IEnumerable<Entity>
-                var countQueriesEntities = new Dictionary<object, List<string?>?>();
+                var countQueriesEntities = new Dictionary<object, List<QueryCommand?>?>();
                 var entities = entity as IEnumerable ?? new[] { entity };
 
                 var itemType = typeof(TEntity).IsGenericType && typeof(IEnumerable).IsAssignableFrom(typeof(TEntity))
@@ -479,7 +483,7 @@ namespace EH.Command
                 foreach (var entityItem in entities)
                 {
                     var queryCheck = _enttityHelper.GetQuery.CountEntity(entityItem, nameId, _enttityHelper.ReplacesTableName, tableName);
-                    countQueriesEntities[entityItem] = new List<string?>() { queryCheck };
+                    countQueriesEntities[entityItem] = new List<QueryCommand?>() { queryCheck };
                 }
 
                 //int count = 0;
@@ -491,7 +495,7 @@ namespace EH.Command
                 //    if (result != null && result != DBNull.Value) count += Convert.ToInt32(result);
                 //}
                 var countQueries = countQueriesEntities.Values.SelectMany(x => x).ToList();
-                var result = ExecuteScalar(countQueries).FirstOrDefault();
+                var result = Execute.ExecuteScalar(_enttityHelper.DbContext, countQueries).FirstOrDefault();
                 if (result != null && result != DBNull.Value) { return Convert.ToInt64(result); }
                 return -1;
             }
@@ -565,7 +569,7 @@ namespace EH.Command
                 using (var connection = _enttityHelper.DbContext.CreateOpenConnection())
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = countQuery;
+                    command.CommandText = countQuery.Sql;
 
                     var result = Task.Run(() => command.ExecuteScalar()).Result;
                     return Convert.ToInt64(result);
@@ -599,7 +603,7 @@ namespace EH.Command
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
             var createsTableQuery = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, createOnlyPrimaryTable, ignoreProps, _enttityHelper.ReplacesTableName, tableName);
             var queryCreates = createsTableQuery.Values.Reverse().ToList();
-            var creates = ExecuteNonQuery(queryCreates, -1); // The last table is the main table
+            var creates = Execute.ExecuteNonQuery(_enttityHelper.DbContext, queryCreates, -1); // The last table is the main table
             return createsTableQuery.Count == creates.Count;
         }
 
@@ -616,8 +620,8 @@ namespace EH.Command
 
             //return CreateTable<TEntity>(createOnlyPrimaryTable, ignoreProps, tableName);
 
-            Dictionary<string, string?>? createsTablesQueries = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, createOnlyPrimaryTable, ignoreProps, _enttityHelper.ReplacesTableName, tableName);
-            foreach (KeyValuePair<string, string?> createTableQuery in createsTablesQueries)
+            Dictionary<string, QueryCommand?>? createsTablesQueries = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, createOnlyPrimaryTable, ignoreProps, _enttityHelper.ReplacesTableName, tableName);
+            foreach (KeyValuePair<string, QueryCommand?> createTableQuery in createsTablesQueries)
             {
                 if (CheckIfExist(createTableQuery.Key, 0, null))
                 {
@@ -629,7 +633,7 @@ namespace EH.Command
             if (createsTablesQueries.Count == 0) return true;
 
             var queryCreates = createsTablesQueries.Values.Reverse().ToList();
-            var creates = ExecuteNonQuery(queryCreates, -1); // The last table is the main table
+            var creates = Execute.ExecuteNonQuery(_enttityHelper.DbContext, queryCreates, -1); // The last table is the main table
             return createsTablesQueries.Count == creates.Count;
         }
 
@@ -637,9 +641,9 @@ namespace EH.Command
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
-            string? createTableQuery = _enttityHelper.GetQuery.CreateTableFromDataTable(dataTable, _enttityHelper.TypesDefault, _enttityHelper.ReplacesTableName, tableName);
+            var createTableQuery = _enttityHelper.GetQuery.CreateTableFromDataTable(dataTable, _enttityHelper.TypesDefault, _enttityHelper.ReplacesTableName, tableName);
 
-            if (ExecuteNonQuery(createTableQuery, -1) != 0) // Return = -1
+            if (Execute.ExecuteNonQuery(_enttityHelper.DbContext, new List<QueryCommand?>(){createTableQuery}, -1).First() != 0) // Return = -1
             {
                 Debug.WriteLine("Table created!");
                 return true;
@@ -682,7 +686,7 @@ namespace EH.Command
         public long Delete<TEntity>(TEntity entity, string? nameId, string? tableName) where TEntity : class
         {
             // Entity or IEnumerable<Entity>
-            var deletesQueriesEntities = new Dictionary<object, List<string?>?>();
+            var deletesQueriesEntities = new Dictionary<object, List<QueryCommand?>?>();
             var entities = entity as IEnumerable ?? new[] { entity };
 
             var itemType = typeof(TEntity).IsGenericType && typeof(IEnumerable).IsAssignableFrom(typeof(TEntity))
@@ -694,14 +698,14 @@ namespace EH.Command
             foreach (object entityItem in entities)
             {
                 var queryDelete = _enttityHelper.GetQuery.Delete(entityItem, nameId, _enttityHelper.ReplacesTableName, tableName);
-                deletesQueriesEntities[entityItem] = new List<string?>() { queryDelete };
+                deletesQueriesEntities[entityItem] = new List<QueryCommand?>() { queryDelete };
             }
 
             long deletions = 0;
             foreach (var deleteQueriesEntity in deletesQueriesEntities)
             {
                 if (deleteQueriesEntity.Value == null) throw new Exception("EH-000: Delete query does not exist!");
-                deletions += deleteQueriesEntity.Value.Sum(deleteQuery => deleteQuery is null ? throw new Exception($"EH-000: Error delete query!") : ExecuteNonQuery(deleteQuery, 1));
+                deletions += deleteQueriesEntity.Value.Sum(deleteQuery => deleteQuery is null ? throw new Exception($"EH-000: Error delete query!") : Execute.ExecuteNonQuery(_enttityHelper.DbContext, new List<QueryCommand?>() {deleteQuery}, 1).First());
             }
 
             return deletions;
@@ -821,8 +825,8 @@ namespace EH.Command
 
         public string GetDatabaseVersion(Database? database)
         {
-            string queryDbVersion = new SqlQueryString(database).GetDatabaseVersion();
-            return ExecuteScalar(queryDbVersion)?.ToString() ?? "Unknown Version";
+            var queryDbVersion = new SqlQueryString(database).GetDatabaseVersion();
+            return Execute.ExecuteScalar(database, new List<QueryCommand?>() { queryDbVersion })?.ToString() ?? "Unknown Version";
         }
 
 
