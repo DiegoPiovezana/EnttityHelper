@@ -29,7 +29,7 @@ namespace EH.Properties
         public object? Value { get; set; }
 
         /// <summary>
-        /// Gets or sets the value of the property considering the database standard.
+        /// Gets or sets the value of the property considering the database standard. Example: Bool to 1/0.
         /// </summary>
         public object? ValueText { get; set; }
 

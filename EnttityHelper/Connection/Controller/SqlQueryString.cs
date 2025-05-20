@@ -147,7 +147,7 @@ namespace EH.Connection
                 
                 PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
                 //object idValue1 = prop1.GetValue(entity);
-                // string idValue1 = "&ID1";
+                // string idValue1 = "&ID1"; -> @ID1
 
                 foreach (var item in itemsCollection)
                 {
@@ -159,11 +159,11 @@ namespace EH.Connection
                         {
                             object idValue2 = prop2.GetValue(item);
                             // queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
-                            string sql = $@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES (@ID_{idTb1}, @ID_{idTb2})";
+                            string sql = $@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES (@ID1, @ID_{idTb2})";
                             
                             Dictionary<string, Property> parameters = new()
                             {
-                                { "ID_" + idTb1, new Property(prop1, entity)},
+                                { "@ID1", new Property(prop1, entity)},
                                 { "ID_" + idTb2, new Property(prop2, item)}
                             };
 
@@ -184,7 +184,7 @@ namespace EH.Connection
         /// </summary>
         /// <typeparam name="TEntity">Type of entity to be updated.</typeparam>
         /// <param name="entity">Entity to be updated in the database.</param>
-        /// <param name="enttityHelper">(Optional) Used to perform replacements on the table name and to perform additional queries to check whether or not a specific item is already in the table and then create the query.</param>
+        /// <param name="enttityHelper">(Optional) Used to perform replacements on the table name and to perform additional queries to check whether a specific item is already in the table and then create the query.</param>
         /// <param name="nameId">(Optional) Name of the column in which the entity will be identified to be updated.</param>
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <param name="ignoreInversePropertyProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
@@ -502,7 +502,7 @@ namespace EH.Connection
         }
 
         /// <summary>
-        /// Allows you to obtain the table creation query for TEntity./>.
+        /// Allows you to get the table creation query for TEntity./>.
         /// </summary>
         /// <typeparam name="TEntity">The type of main entity.</typeparam>
         /// <param name="typesSql">Dictionary containing types related to C# code and database data.</param>
@@ -846,7 +846,7 @@ namespace EH.Connection
         /// </param>
         /// <returns>
         /// A string containing the SQL query to retrieve the database version.
-        /// This query should be executed manually to obtain the version information.
+        /// This query should be executed manually to collect the version information.
         /// </returns>
         /// <exception cref="NotSupportedException">
         /// Thrown when the database type is not recognized or supported.
