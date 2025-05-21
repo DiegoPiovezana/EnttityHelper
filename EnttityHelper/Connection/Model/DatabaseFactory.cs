@@ -59,6 +59,11 @@ namespace EH.Connection
         public Version Version { get; internal set; } = new Version();
 
         /// <summary>
+        /// Gets or sets the prefix parameter used in database operations. E.g., @ or :
+        /// </summary>
+        public string PrefixParameter { get; set; }
+
+        /// <summary>
         /// Gets or sets the database name.
         /// </summary>
         public string? Name { get; set; }

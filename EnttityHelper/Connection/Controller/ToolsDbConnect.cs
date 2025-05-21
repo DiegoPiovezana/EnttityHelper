@@ -48,6 +48,7 @@ namespace EH.Connection
                 {
                     database.Provider = Enums.DbProvider.SqLite;
                     database.Service = dataSource.Trim();
+                    database.PrefixParameter = "@";
                     return true;
                 }
 
@@ -56,6 +57,7 @@ namespace EH.Connection
                 {
                     database.Provider = Enums.DbProvider.SqlServer;
                     database.Service = initialCatalog?.Trim();
+                    database.PrefixParameter = "@";
 
                     if (!string.IsNullOrEmpty(dataSource))
                     {
@@ -93,6 +95,7 @@ namespace EH.Connection
                     database.Ip = parts[0].Trim();
                     database.Port = Convert.ToInt32(parts[1].Split('/')[0]);
                     database.Service = parts[1].Split('/')[1].Trim();
+                    database.PrefixParameter = ":";
                     return true;
                 }
 

@@ -84,7 +84,7 @@ namespace EH.Connection
             // string values = string.Join("', '", filteredProperties.Values);
 
             string columns = string.Join(", ", filteredProperties.Keys);
-            string parametersSql = string.Join(", ", filteredProperties.Keys.Select(k => "@" + k));
+            string parametersSql = string.Join(", ", filteredProperties.Keys.Select(k => Database.PrefixParameter + k));
 
             // if (EnttityHelper is null) { throw new ArgumentNullException(nameof(EnttityHelper)); }
 
@@ -159,11 +159,11 @@ namespace EH.Connection
                         {
                             object idValue2 = prop2.GetValue(item);
                             // queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
-                            string sql = $@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES (@ID1, @ID_{idTb2})";
+                            string sql = $@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ({Database.PrefixParameter}ID1, {Database.PrefixParameter}ID_{idTb2})";
                             
                             Dictionary<string, Property> parameters = new()
                             {
-                                { "@ID1", new Property(prop1, entity)},
+                                { $"{Database.PrefixParameter}ID1", new Property(prop1, entity)},
                                 { "ID_" + idTb2, new Property(prop2, item)}
                             };
 
@@ -212,12 +212,12 @@ namespace EH.Connection
                 if (pair.Key == nameId) continue;
               
                 // queryBuilder.Append($@"{pair.Key} = '{pair.Value.ValueText}', ");
-                queryBuilder.Append($"{pair.Key} = @{pair.Key}, ");
+                queryBuilder.Append($"{pair.Key} = {Database.PrefixParameter}{pair.Key}, ");
             }
 
             queryBuilder.Length -= 2; // Remove the last comma and space
             // queryBuilder.Append($@" WHERE {nameId} = '{properties[nameId]}'");
-            queryBuilder.Append($@" WHERE {nameId} = @{nameId}");
+            queryBuilder.Append($@" WHERE {nameId} = {Database.PrefixParameter}{nameId}");
             //return queryBuilder.ToString();
             // queries.Add(queryBuilder.ToString());
          
@@ -228,7 +228,7 @@ namespace EH.Connection
             return queries;
         }
 
-        private static ICollection<QueryCommand?> UpdateInverseProperty<TEntity>(TEntity entity, EnttityHelper enttityHelper) where TEntity : class
+        private ICollection<QueryCommand?> UpdateInverseProperty<TEntity>(TEntity entity, EnttityHelper enttityHelper) where TEntity : class
         {
             List<QueryCommand?> queries = new();
 
@@ -311,12 +311,12 @@ namespace EH.Connection
                         {
                             // queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{itemInsert}')");
 
-                            string sql = $@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('@{idTb1}', '@{idTb2}')";
+                            string sql = $@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ($'{Database.PrefixParameter}{idTb1}', $'{Database.PrefixParameter}{idTb2}')";
 
                             Dictionary<string, Property> parameters = new()
                             {
-                                {"@ID_" + idTb1, itemProp1},
-                                {"@ID_" + idTb2, itemInsert}
+                                {$"{Database.PrefixParameter}ID_" + idTb1, itemProp1},
+                                {$"{Database.PrefixParameter}ID_" + idTb2, itemInsert}
                             };
 
                             QueryCommand queryCommand = new(sql, parameters, enttityHelper.DbContext.Provider);
@@ -332,12 +332,12 @@ namespace EH.Connection
                         if (!itemsCollectionNew.Contains(itemDelete))
                         {
                             // queries.Add($@"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = '{idValue1}' AND ID_{idTb2} = '{itemDelete}'");
-                            string sql =$"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = @ID_{idTb1} AND ID_{idTb2} = @ID_{idTb2}";
+                            string sql =$"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = {Database.PrefixParameter}ID_{idTb1} AND ID_{idTb2} = {Database.PrefixParameter}ID_{idTb2}";
                             
                             Dictionary<string, Property> parameters = new()
                             {
-                                {"@ID_" + idTb1, itemProp1},
-                                {"@ID_" + idTb2, itemDelete}
+                                {$"{Database.PrefixParameter}ID_" + idTb1, itemProp1},
+                                {$"{Database.PrefixParameter}ID_" + idTb2, itemDelete}
                             };
                             
                             QueryCommand queryCommand = new(sql, parameters, enttityHelper.DbContext.Provider);
@@ -386,7 +386,7 @@ namespace EH.Connection
                 {idPropName, new Property(typeof(TEntity).GetProperty(idPropName), entity)}
             };
             
-            return new QueryCommand($@"SELECT * FROM {tableName} WHERE ({idPropName} = '@{idPropName}')", parameters, Database.Provider);
+            return new QueryCommand($@"SELECT * FROM {tableName} WHERE ({idPropName} = '{Database.PrefixParameter}{idPropName}')", parameters, Database.Provider);
         }
 
         /// <summary>
@@ -420,7 +420,7 @@ namespace EH.Connection
             };
             
             
-            return new QueryCommand($@"DELETE FROM {tableName} WHERE ({idPropName} = '@{idPropName}')", parameters, Database.Provider);
+            return new QueryCommand($@"DELETE FROM {tableName} WHERE ({idPropName} = '{Database.PrefixParameter}{idPropName}')", parameters, Database.Provider);
         }
 
         /// <summary>
