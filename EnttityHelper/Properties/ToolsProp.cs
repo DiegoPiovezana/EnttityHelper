@@ -234,6 +234,7 @@ namespace EH.Properties
 
             if (type == typeof(string)) return DbType.String;
             if (type == typeof(int)) return DbType.Int32;
+            if (type == typeof(long)) return DbType.Int64;
             if (type == typeof(Guid)) return DbType.Guid;
             if (type == typeof(DateTime)) return DbType.DateTime;
             if (type == typeof(bool)) return DbType.Boolean;
