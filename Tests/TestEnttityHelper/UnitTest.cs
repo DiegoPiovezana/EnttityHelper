@@ -96,7 +96,7 @@ namespace TestEH_UnitTest
                 //User entityTest = new("Diego Piovezana") { Id = 1, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
 
                 //bool result = eh.Insert(entityTest);
-                long result = eh.Insert(entityTest, nameof(entityTest.Id), true);
+                long result = eh.Insert(entityTest, true, nameof(entityTest.Id), true);
 
                 //if (result) { eh.Delete(entityTest); }
 
@@ -151,7 +151,7 @@ namespace TestEH_UnitTest
             {
                 EntityTest entityTest = new() { Id = 8, Name = "Entity Test", StartDate = DateTime.Now };
                 if (eh.CountEntity(entityTest) > 0) eh.Delete(entityTest);
-                long result1 = eh.Insert(entityTest, nameof(entityTest.Id), true);
+                long result1 = eh.Insert(entityTest, true, nameof(entityTest.Id), true);
                 Assert.That(result1, Is.EqualTo(1));
 
                 var result = eh.Get<EntityTest>();
@@ -197,7 +197,7 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 300, Name = "Testando 1 entidade 100 via C#", StartDate = DateTime.Now };
-                eh.Insert(entityTest, nameof(entityTest.Id));
+                eh.Insert(entityTest, true, nameof(entityTest.Id));
 
                 EntityTest entityTest2 = new() { Id = 300, Name = "Testando 2 entidade 300 atualizando hora via C#", StartDate = DateTime.Now };
                 eh.Update(entityTest2, nameof(entityTest.Id));
@@ -224,7 +224,7 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 300, Name = "Testando 1 entidade 100 via C#", StartDate = DateTime.Now };
-                eh.Insert(entityTest, nameof(entityTest.Id));
+                eh.Insert(entityTest, true, nameof(entityTest.Id));
 
                 EntityTest entityTest2 = new() { Id = 300, Name = "Testando 2 entidade 300 atualizando hora via C#", StartDate = DateTime.Now };
                 eh.Update(entityTest2, nameof(entityTest.Id));
@@ -261,7 +261,7 @@ namespace TestEH_UnitTest
 
             // Insert a career entity
             Career career = new Career(121, "Developer");
-            long careerInsertResult = eh.Insert(career);
+            long careerInsertResult = eh.Insert(career, true);
             Assert.AreEqual(1, careerInsertResult, "Career insertion failed.");
 
             // Insert a user entity linked to the created career
@@ -272,7 +272,7 @@ namespace TestEH_UnitTest
                 DtCreation = DateTime.Now,
                 IdCareer = 121
             };
-            long userInsertResult = eh.Insert(user);
+            long userInsertResult = eh.Insert(user, true);
             Assert.AreEqual(1, userInsertResult, "User insertion failed.");
 
             // Retrieve and validate career entities
@@ -402,7 +402,7 @@ namespace TestEH_UnitTest
                 if (eh.CheckIfExist("TableX")) eh.ExecuteNonQuery($"DROP TABLE TableX");
 
                 // Possible to insert the DataTable considering different scenarios
-                var result = eh.Insert(dt, null, true, "TableX");
+                var result = eh.Insert(dt, true, null, true, "TableX");
                 //eh.Insert(dt, null, true); // The table name will automatically be the name of the spreadsheet tab (removing special characters)
                 //eh.Insert(dt, null, false); // The table will not be created and only the DataTable will be inserted              
 
@@ -509,7 +509,7 @@ namespace TestEH_UnitTest
                 eh.Insert(userD);
 
                 // Modify entity
-                userD.Name = "Diêgo Piovezana";
+                userD.Name = "Diï¿½go Piovezana";
 
                 // Update in database
                 eh.Update(userD);
@@ -561,7 +561,7 @@ namespace TestEH_UnitTest
 
                 // Test for one entity
                 User entityTest = new("Diego Piovezana One") { Id = 1041, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 10 };
-                bool result1 = eh.Insert(entityTest, nameof(entityTest.GitHub), true) == 1;
+                bool result1 = eh.Insert(entityTest, true, nameof(entityTest.GitHub), true) == 1;
                 if (result1) { Assert.AreEqual(eh.Delete(entityTest), 1); }
                 Assert.That(result1, Is.EqualTo(true));
 
@@ -577,7 +577,7 @@ namespace TestEH_UnitTest
 
                 // Test for one entity
                 User entityError = new("John Tester") { Id = 1045, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 100 };
-                var ex = Assert.Throws<InvalidOperationException>(() => eh.Insert(entityError, nameof(entityTest.GitHub), true));
+                var ex = Assert.Throws<InvalidOperationException>(() => eh.Insert(entityError, true, nameof(entityTest.GitHub), true));
                 Assert.That(ex.Message, Does.Contain("Career with IdCareer '100' or table 'TB_CAREERS' does not exist!"));
 
                 Assert.AreEqual(eh.Delete(carrer1), 1);
@@ -621,12 +621,12 @@ namespace TestEH_UnitTest
 
                 // Test for one entity - Without Career
                 User entityTest1 = new("Diego Piovezana One") { Id = 1051, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now };
-                long result2 = eh.Insert(entityTest1, nameof(entityTest1.GitHub), true);
+                long result2 = eh.Insert(entityTest1, true, nameof(entityTest1.GitHub), true);
                 Assert.AreEqual(1, result2);
 
                 // Test for one entity - With Career
                 User entityTest2 = new("Diego Piovezana Two") { Id = 1052, GitHub = "@DiegoPiovezanaTwo", DtCreation = DateTime.Now, IdCareer = 3 };
-                long result3 = eh.Insert(entityTest2, nameof(entityTest2.GitHub), true);
+                long result3 = eh.Insert(entityTest2, true, nameof(entityTest2.GitHub), true);
                 Assert.AreEqual(1, result3);
 
                 if (result2 > 0) { eh.Delete(entityTest1); }
@@ -646,7 +646,7 @@ namespace TestEH_UnitTest
                 Group group4 = new() { Id = 1061, Name = "Masters106-2", Description = "Masters Group" };
                 Group group5 = new() { Id = 1062, Name = "Managers106", Description = "Managers Group" };
                 List<Group> groups = new() { group4, group5 };
-                long result3 = eh.Insert(groups, nameof(Group.Name), true);
+                long result3 = eh.Insert(groups, true, nameof(Group.Name), true);
                 Assert.That(result3 == 2, Is.EqualTo(true));
 
                 eh.CreateTableIfNotExist<Career>(true);
@@ -665,7 +665,7 @@ namespace TestEH_UnitTest
                 User userM = new("Maria da Silva") { Id = 1061, GitHub = "@MariaSilva", DtCreation = DateTime.Now, IdCareer = 1061 };
                 userM.Groups.Add(group4);
                 userM.Groups.Add(group5);
-                long result4 = eh.Insert(userM, nameof(userM.GitHub), true);
+                long result4 = eh.Insert(userM, true, nameof(userM.GitHub), true);
                 Assert.That(result4 == 3, Is.EqualTo(true));
 
                 eh.ExecuteNonQuery($"DELETE FROM TB_GROUP_USERSTOGROUPS WHERE ID_TB_USERS = {userM.Id}");
@@ -702,17 +702,17 @@ namespace TestEH_UnitTest
                 User userX = new("Jayme Souza") { Id = 1071, GitHub = "@JSouza", DtCreation = DateTime.Now, IdCareer = 1072 };
                 User userY = new("Bruna Corsa") { Id = 1072, GitHub = "@BrunaCorsa", DtCreation = DateTime.Now };
                 List<User> users = new() { userX, userY };
-                long result5 = eh.Insert(users, nameof(User.Name), false);
+                long result5 = eh.Insert(users, true, nameof(User.Name), false);
                 Assert.AreEqual(result5, 2);
 
                 User userNameRepeat = new("Jhonny Souza") { Id = 1070, GitHub = "@JSouza", DtCreation = DateTime.Now, IdCareer = 1072 };
-                var ex = Assert.Throws<Exception>(() => eh.Insert(userNameRepeat, nameof(userNameRepeat.GitHub), true));
+                var ex = Assert.Throws<Exception>(() => eh.Insert(userNameRepeat, true, nameof(userNameRepeat.GitHub), true));
                 Assert.That(ex.Message, Does.Contain("EH-101"));
 
                 Group group6 = new() { Id = 1071, Name = "Group Six", Description = "Group Six Test" };
                 group6.Users.Add(userX);
                 group6.Users.Add(userY);
-                long result6 = eh.Insert(group6, nameof(group6.Name), true);
+                long result6 = eh.Insert(group6, true, nameof(group6.Name), true);
                 Assert.That(result6 == 3, Is.EqualTo(true));
 
                 eh.ExecuteNonQuery($"DELETE FROM TB_GROUP_USERSTOGROUPS WHERE ID_TB_GROUP_USERS  = {group6.Id}");
@@ -772,7 +772,7 @@ namespace TestEH_UnitTest
                 ticketEmpty.DateCreate = DateTime.Now;
                 ticketEmpty.IdUser = null;
                 ticketEmpty.User = userY; // Will be ignored because IdUser is null
-                Assert.That(eh.Insert(ticketEmpty, null, true), Is.EqualTo(1));
+                Assert.That(eh.Insert(ticketEmpty, true, null, true), Is.EqualTo(1));
 
                 eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Ticket>()}");
                 eh.Delete(userX);
@@ -829,7 +829,7 @@ namespace TestEH_UnitTest
                 ticketEmpty.DateCreate = DateTime.Now;
                 ticketEmpty.IdUser = null;  // Check if nullable handling works here
                 ticketEmpty.User = userY; // Will be ignored because IdUser is null
-                Assert.That(eh.Insert(ticketEmpty, null, true), Is.EqualTo(1));
+                Assert.That(eh.Insert(ticketEmpty, true, null, true), Is.EqualTo(1));
 
                 // Test: Insert with empty string for required fields
                 Ticket ticketWithEmptyStrings = new(userX, "", "", "", "");
@@ -1335,10 +1335,10 @@ namespace TestEH_UnitTest
             var result = results.FirstOrDefault();
 
             // Assert
-            StringAssert.StartsWith("INSERT INTO TB_USERS (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor) VALUES ('20201', 'John Victor', '@JohnVictor', '", result);
-            StringAssert.Contains("'20202'", result);
-            StringAssert.Contains("'20201'", result);
-            StringAssert.EndsWith("RETURNING Id INTO :Result", result);
+            StringAssert.StartsWith("INSERT INTO TB_USERS (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor) VALUES ('20201', 'John Victor', '@JohnVictor', ", result.Sql);
+            StringAssert.Contains("'20202'", result.Sql);
+            StringAssert.Contains("'20201'", result.Sql);
+            StringAssert.EndsWith("RETURNING Id INTO :Result", result.Sql);
 
             Debug.WriteLine(result);
         }
@@ -1427,16 +1427,16 @@ namespace TestEH_UnitTest
                     new() { Id = 20407, Name = "Pedro Santos", GitHub = "@PedroSantos", DtCreation = DateTime.Now, IdCareer = 20401 },
                     new() { Id = 20408, Name = "Fernanda Lima", GitHub = "@FernandaLima", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20405 },
                     new() { Id = 20409, Name = "Lucas Pereira", GitHub = "@LucasPereira", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20410, Name = "Júlia Alves", GitHub = "@JuliaAlves", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20407 },
+                    new() { Id = 20410, Name = "Jï¿½lia Alves", GitHub = "@JuliaAlves", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20407 },
                     new() { Id = 20411, Name = "Gustavo Rocha", GitHub = "@GustavoRocha", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20412, Name = "Letícia Costa", GitHub = "@LeticiaCosta", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20406 },
+                    new() { Id = 20412, Name = "Letï¿½cia Costa", GitHub = "@LeticiaCosta", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20406 },
                     new() { Id = 20413, Name = "Thiago Martins", GitHub = "@ThiagoMartins", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20414, Name = "Natália Souza", GitHub = "@NataliaSouza", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20410 },
-                    new() { Id = 20415, Name = "Vinícius Oliveira", GitHub = "@ViniciusOliveira", DtCreation = DateTime.Now, IdCareer = 20401 },
+                    new() { Id = 20414, Name = "Natï¿½lia Souza", GitHub = "@NataliaSouza", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20410 },
+                    new() { Id = 20415, Name = "Vinï¿½cius Oliveira", GitHub = "@ViniciusOliveira", DtCreation = DateTime.Now, IdCareer = 20401 },
                     new() { Id = 20416, Name = "Amanda Ribeiro", GitHub = "@AmandaRibeiro", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20411 },
                     new() { Id = 20417, Name = "Renato Almeida", GitHub = "@RenatoAlmeida", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20418, Name = "Patrícia Silva", GitHub = "@PatriciaSilva", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20413 },
-                    new() { Id = 20419, Name = "Fábio Gomes", GitHub = "@FabioGomes", DtCreation = DateTime.Now, IdCareer = 20401 },
+                    new() { Id = 20418, Name = "Patrï¿½cia Silva", GitHub = "@PatriciaSilva", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20413 },
+                    new() { Id = 20419, Name = "Fï¿½bio Gomes", GitHub = "@FabioGomes", DtCreation = DateTime.Now, IdCareer = 20401 },
                     new() { Id = 20420, Name = "Gabriela Santos", GitHub = "@GabrielaSantos", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20404 }
                 };
 
@@ -1479,19 +1479,19 @@ namespace TestEH_UnitTest
             try
             {
 
-                // Criação das tabelas
+                // Criaï¿½ï¿½o das tabelas
                 eh.CreateTableIfNotExist<Group>(createOnlyPrimaryTable: true); // Doesnt create the TB_GROUP_USERStoGROUPS table
                 eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false); // Cretes the TB_GROUP_USERStoGROUPS table
                 eh.CreateTableIfNotExist<Career>(createOnlyPrimaryTable: false);
 
 
-                // Inserção de carreira
+                // Inserï¿½ï¿½o de carreira
                 Career career1 = new() { IdCareer = 20501, Name = "Junior", CareerLevel = 1, Active = true };
                 Career career2 = new() { IdCareer = 20502, Name = "Pleno", CareerLevel = 2, Active = true };
                 Assert.AreEqual(eh.Insert(new List<Career> { career1, career2 }), 2);
 
 
-                // Inserção de grupos
+                // Inserï¿½ï¿½o de grupos
                 var groups = Enumerable.Range(20501, 5).Select(i => new Group
                 {
                     Id = i,
@@ -1501,7 +1501,7 @@ namespace TestEH_UnitTest
                 Assert.AreEqual(eh.Insert(groups), groups.Count);
 
 
-                // Inserção de usuários
+                // Inserï¿½ï¿½o de usuï¿½rios
                 var users = Enumerable.Range(20501, 20).Select(i =>
                 {
                     var user = new User
@@ -1513,7 +1513,7 @@ namespace TestEH_UnitTest
                         IdCareer = i % 2 == 0 ? 20501 : 20502
                     };
 
-                    // Adiciona os grupos ao usuário
+                    // Adiciona os grupos ao usuï¿½rio
                     user.Groups.Add(groups[i % groups.Count]);
                     if (i % 3 == 0) // Adiciona outro grupo como exemplo
                     {
@@ -1524,15 +1524,15 @@ namespace TestEH_UnitTest
 
                 }).ToList();
 
-                // Insere usuários e valida a quantidade de registros inseridos em ambas as tabelas
+                // Insere usuï¿½rios e valida a quantidade de registros inseridos em ambas as tabelas
                 int expectedUserCount = users.Count;
                 int expectedAuxiliaryCount = users.Sum(u => u.Groups.Count); // Soma os relacionamentos User-Group
                 int totalExpectedInserts = expectedUserCount + expectedAuxiliaryCount;
 
-                // Realiza a inserção
+                // Realiza a inserï¿½ï¿½o
                 long actualInsertCount = eh.Insert(users);
 
-                // Valida a quantidade total de inserções
+                // Valida a quantidade total de inserï¿½ï¿½es
                 Assert.AreEqual(totalExpectedInserts, actualInsertCount);
 
 
@@ -1588,12 +1588,12 @@ namespace TestEH_UnitTest
                     eh.GetTableName<Career>());
 
 
-                // Teste de paginação
+                // Teste de paginaï¿½ï¿½o
                 var paginatedResult = eh.ExecuteSelectDt(complexQuery, pageSize: 10, pageIndex: 0);
                 Assert.AreEqual(10, paginatedResult.Rows.Count);
 
                 var secondPageResult = eh.ExecuteSelectDt(complexQuery, pageSize: 10, pageIndex: 3); // Total: 32 (4 pages)
-                Assert.AreEqual(2, secondPageResult.Rows.Count); // Segunda página deve ter registros (dependendo da quantidade de dados)
+                Assert.AreEqual(2, secondPageResult.Rows.Count); // Segunda pï¿½gina deve ter registros (dependendo da quantidade de dados)
 
 
                 // Teste de contagem total
@@ -1601,7 +1601,7 @@ namespace TestEH_UnitTest
                 Assert.AreEqual(32, totalRecords); // Deve retornar a quantidade total de registros da query
 
 
-                // Validação cruzada
+                // Validaï¿½ï¿½o cruzada
                 long allRecords = eh.ExecuteSelectDt(complexQuery, pageSize: null).Rows.Count;
                 Assert.AreEqual(totalRecords, allRecords);
 
@@ -1627,13 +1627,13 @@ namespace TestEH_UnitTest
 
             ResetTables("206");
 
-            // Inserção de carreira
+            // Inserï¿½ï¿½o de carreira
             Career career1 = new() { IdCareer = 20601, Name = "Junior", CareerLevel = 1, Active = true };
             Career career2 = new() { IdCareer = 20602, Name = "Pleno", CareerLevel = 2, Active = true };
             Assert.AreEqual(eh.Insert(new List<Career> { career1, career2 }), 2);
 
 
-            // Inserção de grupos
+            // Inserï¿½ï¿½o de grupos
             var groups = Enumerable.Range(20601, 5).Select(i => new Group
             {
                 Id = i,
@@ -1643,7 +1643,7 @@ namespace TestEH_UnitTest
             Assert.AreEqual(eh.Insert(groups), groups.Count);
 
 
-            // Inserção de usuários
+            // Inserï¿½ï¿½o de usuï¿½rios
             var users = Enumerable.Range(20601, 20).Select(i =>
             {
                 var user = new User
@@ -1655,7 +1655,7 @@ namespace TestEH_UnitTest
                     IdCareer = i % 2 == 0 ? 20601 : 20602
                 };
 
-                // Adiciona os grupos ao usuário
+                // Adiciona os grupos ao usuï¿½rio
                 user.Groups.Add(groups[i % groups.Count]);
                 if (i % 3 == 0) // Adiciona outro grupo como exemplo
                 {
@@ -1666,15 +1666,15 @@ namespace TestEH_UnitTest
 
             }).ToList();
 
-            // Insere usuários e valida a quantidade de registros inseridos em ambas as tabelas
+            // Insere usuï¿½rios e valida a quantidade de registros inseridos em ambas as tabelas
             int expectedUserCount = users.Count;
             int expectedAuxiliaryCount = users.Sum(u => u.Groups.Count); // Soma os relacionamentos User-Group
             int totalExpectedInserts = expectedUserCount + expectedAuxiliaryCount;
 
-            // Realiza a inserção
+            // Realiza a inserï¿½ï¿½o
             long actualInsertCount = eh.Insert(users);
 
-            // Valida a quantidade total de inserções
+            // Valida a quantidade total de inserï¿½ï¿½es
             Assert.AreEqual(totalExpectedInserts, actualInsertCount);
 
 
@@ -1706,7 +1706,7 @@ namespace TestEH_UnitTest
                 AND TO_CHAR(Id) LIKE '206%'
                 ORDER BY Name";
 
-            // Query simples sem cláusulas adicionais - 20 registros
+            // Query simples sem clï¿½usulas adicionais - 20 registros
             string simpleQuery = "SELECT Id, Name FROM TB_USERS WHERE TO_CHAR(Id) LIKE '206%'";
 
             // Query com subquery - 6 registros
@@ -1721,19 +1721,19 @@ namespace TestEH_UnitTest
 
             // Teste com complexQueryWithWithAndJoin
             totalRecords = await eh.GetTotalRecordCountAsync(complexQueryWithWithAndJoin);
-            Assert.AreEqual(27, totalRecords, "A contagem de registros da query complexa está incorreta.");
+            Assert.AreEqual(27, totalRecords, "A contagem de registros da query complexa estï¿½ incorreta.");
 
             // Teste com queryWithUnion
             totalRecords = await eh.GetTotalRecordCountAsync(queryWithUnion);
-            Assert.AreEqual(8, totalRecords, "A contagem de registros da query com UNION está incorreta.");
+            Assert.AreEqual(8, totalRecords, "A contagem de registros da query com UNION estï¿½ incorreta.");
 
             // Teste com simpleQuery
             totalRecords = await eh.GetTotalRecordCountAsync(simpleQuery);
-            Assert.AreEqual(20, totalRecords, "A contagem de registros da query simples está incorreta.");
+            Assert.AreEqual(20, totalRecords, "A contagem de registros da query simples estï¿½ incorreta.");
 
             // Teste com queryWithSubquery
             totalRecords = await eh.GetTotalRecordCountAsync(queryWithSubquery);
-            Assert.AreEqual(6, totalRecords, "A contagem de registros da query com subquery está incorreta.");
+            Assert.AreEqual(6, totalRecords, "A contagem de registros da query com subquery estï¿½ incorreta.");
 
 
             eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))}");

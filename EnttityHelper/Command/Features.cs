@@ -139,7 +139,7 @@ namespace EH.Command
                     {
                         var properties = ToolsProp.GetProperties(entityItem, true, false);
 
-                        // Check if entity exists (duplicates)
+                        // Check if ENTITY exists (duplicates)
                         if (CheckIfExist(tableName, 1, $"{namePropUnique} = '{properties[namePropUnique]}'"))
                         {
                             //Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");

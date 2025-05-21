@@ -66,7 +66,7 @@ namespace EH
 
 
         /// <inheritdoc/>
-        public long Insert<TEntity>(TEntity entity, bool setPrimaryKeyAfterInsert, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class
+        public long Insert<TEntity>(TEntity entity, bool setPrimaryKeyAfterInsert = true, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class
         {
             try
             {

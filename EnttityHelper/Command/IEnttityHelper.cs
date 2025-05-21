@@ -16,7 +16,7 @@ namespace EH.Command
         /// The data to be inserted, which can be an entity, a collection of entities, a DataTable, IDataReader, or an array of DataRow.
         /// </param>
         /// <param name="setPrimaryKeyAfterInsert">
-        /// If set to <c>true</c>, the primary key of the inserted entity will be set after successful insertion.
+        /// If set to <c>true</c>, the primary key of the inserted entity will be set after successful insertion (default: <c>true</c>).
         /// </param>
         /// <param name="namePropUnique">
         /// (Optional) The name of a property used to ensure unique entries in the database. 
@@ -53,7 +53,7 @@ namespace EH.Command
         /// or if duplicate entries are detected when <paramref name="namePropUnique"/> is specified.
         /// </exception>
         /// <exception cref="Exception">Thrown for other errors, such as missing insert queries or execution failures.</exception>
-        public long Insert<TEntity>(TEntity entity, bool setPrimaryKeyAfterInsert, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class;
+        public long Insert<TEntity>(TEntity entity, bool setPrimaryKeyAfterInsert = true, string? namePropUnique = null, bool createTable = true, string? tableName = null, bool ignoreInversePropertyProperties = false, int timeOutSeconds = 600) where TEntity : class;
 
         /// <summary>
         /// Executes a SELECT query on one database and inserts the result into another database (or in the same).
