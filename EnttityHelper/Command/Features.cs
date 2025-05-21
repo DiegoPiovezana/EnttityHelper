@@ -158,8 +158,8 @@ namespace EH.Command
                     if (insertQueriesEntity.Value == null) throw new Exception("EH-000: Insert query does not exist!");
 
                     var pk = ToolsProp.GetPK(insertQueriesEntity.Key) ?? throw new Exception("EH-000: Entity does not have a primary key!");
-                    var id = Execute.ExecuteScalar(_enttityHelper.DbContext,new List<QueryCommand?> { insertQueriesEntity.Value.First() }); // Inserts the main entity
-                    if (id == null || id.First() == DBNull.Value) throw new Exception("EH-000: Insert query does not return an ID!");
+                    var id = Execute.ExecuteScalar(_enttityHelper.DbContext,new List<QueryCommand?> { insertQueriesEntity.Value.First() }).First(); // Inserts the main entity
+                    if (id == null || id == DBNull.Value) throw new Exception("EH-000: Insert query does not return an ID!");
 
                     var typePk = pk.PropertyType;
                     var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id.ToString(), typePk);
