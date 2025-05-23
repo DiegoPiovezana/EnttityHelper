@@ -94,16 +94,13 @@ namespace EH.Connection
         /// <summary>
         /// Creates a command object.
         /// </summary>
-        /// <param name="commandText"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
         public override IDbCommand CreateCommand(string commandText)
         {
             if (IDbConnection is null) throw new Exception("Connection is null!");
 
             return Provider switch
             {
-                Enums.DbProvider.Oracle => new OracleCommand(commandText, (OracleConnection)IDbConnection),
+                Enums.DbProvider.Oracle => new OracleCommand(commandText, (OracleConnection)IDbConnection){ BindByName = true },
                 Enums.DbProvider.SqlServer => new SqlCommand(commandText, (SqlConnection)IDbConnection),
                 _ => throw new Exception($"Database type '{Provider}' not yet supported."),
             };
@@ -112,10 +109,6 @@ namespace EH.Connection
         /// <summary>
         /// Create a stored procedure command object.
         /// </summary>
-        /// <param name="procName"></param>
-        /// <param name="connection"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
         public override IDbCommand CreateStoredProcCommand(string procName, IDbConnection? connection)
         {
             if (connection is null) throw new Exception("Connection is null!");
