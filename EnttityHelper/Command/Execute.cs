@@ -246,8 +246,7 @@ namespace EH.Commands
 
                     using IDbCommand command = DbContext.CreateCommand(queryCommand.Sql);
                     command.Transaction = transaction;
-
-                    // Adiciona os parâmetros definidos na query
+                    
                     foreach (var param in queryCommand.Parameters)
                     {
                         var dbParam = command.CreateParameter();

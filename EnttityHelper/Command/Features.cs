@@ -369,8 +369,8 @@ namespace EH.Command
 
             foreach (var entityItem in entities)
             {
-                var queryUpdate = _enttityHelper.GetQuery.Update(entityItem, _enttityHelper, nameId, tableName, ignoreInversePropertyProperties);
-                updatesQueriesEntities[entityItem] = queryUpdate.ToList();
+                var queriesUpdate = _enttityHelper.GetQuery.Update(entityItem, _enttityHelper, nameId, tableName, ignoreInversePropertyProperties);
+                updatesQueriesEntities[entityItem] = queriesUpdate.ToList();
             }
 
             long updates = 0;
@@ -378,7 +378,12 @@ namespace EH.Command
             foreach (var updateQueriesEntity in updatesQueriesEntities)
             {
                 if (updateQueriesEntity.Value == null) throw new Exception("EH-000: Update query does not exist!");
-                updates += updateQueriesEntity.Value.Sum(updateQuery => updateQuery is null ? throw new Exception($"EH-000: Error update query!") : Execute.ExecuteNonQuery(_enttityHelper.DbContext, new List<QueryCommand>{updateQuery}, 1).First());
+
+                updates += updateQueriesEntity.Value.Sum(updateQuery => 
+                        updateQuery is null 
+                            ? throw new Exception($"EH-000: Error update query!")
+                            : _enttityHelper.DbContext.ExecuteNonQuery(new[] { (QueryCommand?)updateQuery }, 1).First()
+                            );
             }
             return updates;
         }
