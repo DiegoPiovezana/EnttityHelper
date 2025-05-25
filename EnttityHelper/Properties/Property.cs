@@ -184,9 +184,9 @@ namespace EH.Properties
             IsNullable = Nullable.GetUnderlyingType(propertyInfo.PropertyType) != null;
 
             Value = objectEntity != null ? propertyInfo.GetValue(objectEntity) : null;
-            ValueText = ConvertValueToSqlFormat(Value, propertyInfo.PropertyType);
+            ValueText = ConvertValueToSqlTextFormat(Value, propertyInfo.PropertyType);
             
-            static object? ConvertValueToSqlFormat(object? value, Type propertyType)
+            static object? ConvertValueToSqlTextFormat(object? value, Type propertyType)
             {
                 return value != null ? propertyType switch
                 {

@@ -228,7 +228,7 @@ namespace EH.Properties
             return tableNameResult.Substring(0, Math.Min(tableNameResult.Length, 30));
         }
 
-        internal static DbType MapToDbType(Type type)
+        internal static DbType MapToDbType(this Type type)
         {
             type = Nullable.GetUnderlyingType(type) ?? type;
 
@@ -238,6 +238,8 @@ namespace EH.Properties
             if (type == typeof(Guid)) return DbType.Guid;
             if (type == typeof(DateTime)) return DbType.DateTime;
             if (type == typeof(bool)) return DbType.Boolean;
+            if (type == typeof(double)) return DbType.Double;
+            if (type == typeof(float)) return DbType.Single;
             if (type.IsEnum) return DbType.Int32;
 
             throw new NotSupportedException($"Type not supported: {type.FullName}");

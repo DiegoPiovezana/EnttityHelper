@@ -115,9 +115,9 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 EntityTest entityTest = new() { Id = 90, Name = "Testing entity 90 updating start time via C#", StartDate = DateTime.Now };
-                bool result = eh.Update(entityTest, nameof(entityTest.Id)) == 1;
+                var result = eh.Update(entityTest, nameof(entityTest.Id));
 
-                Assert.That(result, Is.EqualTo(true));
+                Assert.That(result, Is.EqualTo(1));
             }
             else
             {
@@ -181,8 +181,8 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
-                bool result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 90") == 1;
-                Assert.That(result, Is.EqualTo(true));
+                var result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 90");
+                Assert.That(result, Is.EqualTo(1));
             }
             else
             {
@@ -207,7 +207,7 @@ namespace TestEH_UnitTest
                 if (entities is not null && entities[0].Name.Equals("Testando 2 entidade 300 atualizando hora via C#"))
                 {
                     long result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 300");
-                    Assert.That(result == 1, Is.EqualTo(true));
+                    Assert.That(result, Is.EqualTo(1));
                 }
             }
             else
@@ -234,7 +234,7 @@ namespace TestEH_UnitTest
                 if (entities is not null && entities[0].Name.Equals("Testando 2 entidade 300 atualizando hora via C#"))
                 {
                     long result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 300");
-                    Assert.That(result == 1, Is.EqualTo(true));
+                    Assert.That(result, Is.EqualTo(1));
                 }
             }
             else

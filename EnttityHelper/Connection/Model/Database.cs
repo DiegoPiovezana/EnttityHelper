@@ -167,22 +167,23 @@ namespace EH.Connection
         /// </summary>
         public bool ValidateConnection()
         {
-            try
+            // try
+            // {
+            if (OpenConnection())
             {
-                if (OpenConnection())
-                {
-                    CloseConnection();
-                    return true;
-                }
-                else
-                {
-                    throw new Exception("Failed to open database connection!");
-                }
+                CloseConnection();
+                return true;
             }
-            catch (Exception)
+            else
             {
+                //throw new Exception("Failed to open database connection!");
                 return false;
             }
+            // }
+            // catch (Exception)
+            // {
+            //     return false;
+            // }
         }
 
         /// <summary>
@@ -193,7 +194,11 @@ namespace EH.Connection
             try
             {
                 if (IDbConnection is null) throw new Exception("Connection is null!");
-                if (IDbConnection.State != ConnectionState.Open) { IDbConnection.Open(); }
+                if (IDbConnection.State != ConnectionState.Open)
+                {
+                    IDbConnection.Open();
+                }
+
                 return true;
             }
             catch (Exception)
@@ -228,6 +233,5 @@ namespace EH.Connection
         {
             return MemberwiseClone();
         }
-
     }
 }

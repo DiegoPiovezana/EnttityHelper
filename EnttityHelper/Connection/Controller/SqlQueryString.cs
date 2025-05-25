@@ -150,7 +150,7 @@ namespace EH.Connection
                 
                 PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
                 //object idValue1 = prop1.GetValue(entity);
-                // string idValue1 = "&ID1"; -> @ID1
+                // string idValue1 = "&ID1"; -> :ID1 (oracle) @ID1 (sqlserver)
 
                 foreach (var item in itemsCollection)
                 {
@@ -263,7 +263,13 @@ namespace EH.Connection
                 string idName2 = ToolsProp.GetPK((object)entity2Type).Name;  // Ex: IdGroup
 
                 MethodInfo selectMethod = typeof(EnttityHelper).GetMethod("ExecuteSelectDt");
-                var itemsBd = (DataTable)selectMethod.Invoke(enttityHelper, new object[] { $@"SELECT ID_{tableName2} FROM {tableNameInverseProperty} WHERE ID_{tableName1}='{pk1.GetValue(entity)}'", null, 0, null, null, true });
+                
+                var itemsBd = (DataTable)selectMethod.Invoke(enttityHelper,
+                    new object[]
+                    {
+                        $@"SELECT ID_{tableName2} FROM {tableNameInverseProperty} WHERE ID_{tableName1} = '{pk1.GetValue(entity)}'",
+                        null, 0, null, null, true
+                    });
 
                 var getMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(entity2Type);
                 List<object>? itemsCollectionBd = new(itemsBd.Rows.Count);
@@ -390,7 +396,7 @@ namespace EH.Connection
                 {idPropName, new Property(typeof(TEntity).GetProperty(idPropName), entity)}
             };
             
-            return new QueryCommand($@"SELECT * FROM {tableName} WHERE ({idPropName} = '{Database.PrefixParameter}{idPropName}')", parameters, Database.Provider, Database.PrefixParameter);
+            return new QueryCommand($@"SELECT * FROM {tableName} WHERE ({idPropName} = {Database.PrefixParameter}{idPropName})", parameters, Database.Provider, Database.PrefixParameter);
         }
 
         /// <summary>
@@ -424,7 +430,7 @@ namespace EH.Connection
             };
             
             
-            return new QueryCommand($@"DELETE FROM {tableName} WHERE ({idPropName} = '{Database.PrefixParameter}{idPropName}')", parameters, Database.Provider, Database.PrefixParameter);
+            return new QueryCommand($@"DELETE FROM {tableName} WHERE ({idPropName} = {Database.PrefixParameter}{idPropName})", parameters, Database.Provider, Database.PrefixParameter);
         }
 
         /// <summary>
@@ -449,7 +455,8 @@ namespace EH.Connection
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
             var idPropValue = entity.GetType().GetProperty(idPropName).GetValue(entity, null);
 
-            string whereClause = $"{idPropName} = '{idPropValue}'";
+            // string whereClause = $"{idPropName} = '{idPropValue}'";
+            string whereClause = $"{idPropName} = {Database.PrefixParameter}{idPropValue}";
 
             string sql = Database.Provider switch
             {
@@ -502,7 +509,7 @@ namespace EH.Connection
                 {idPropName, new Property(entity.GetType().GetProperty(idPropName), entity)}
             };
             
-            return new QueryCommand($@"SELECT COUNT(*) FROM {tableName} WHERE ({idPropName} = '@{idPropName}')", parameters, Database.Provider, Database.PrefixParameter);
+            return new QueryCommand($@"SELECT COUNT(*) FROM {tableName} WHERE ({idPropName} = {Database.PrefixParameter}{idPropName})", parameters, Database.Provider, Database.PrefixParameter);
         }
 
         /// <summary>
