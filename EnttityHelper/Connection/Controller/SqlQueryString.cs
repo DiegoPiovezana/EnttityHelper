@@ -99,21 +99,24 @@ namespace EH.Connection
                     sql: $"INSERT INTO {tableName1} ({columns}) VALUES ({parametersSql}) RETURNING {pk.Name} INTO :Result",
                     parameters: filteredProperties,
                     dbProvider: dbType.Value,
-                    prefixParameter: Database.PrefixParameter
+                    prefixParameter: Database.PrefixParameter,
+                    parametersOutput: new Dictionary<string, Property> { { "Result", new Property(pk, entity) } }
                 ),
                 Enums.DbProvider.SqlServer => new QueryCommand
                 (
                     sql: $"INSERT INTO {tableName1} ({columns}) OUTPUT INSERTED.{pk.Name} VALUES ({parametersSql})",
                     parameters: filteredProperties,
                     dbProvider: dbType.Value,
-                    prefixParameter: Database.PrefixParameter
+                    prefixParameter: Database.PrefixParameter,
+                    parametersOutput: new Dictionary<string, Property> { { "Result", new Property(pk, entity) } }
                 ),
                 Enums.DbProvider.SqLite => new QueryCommand
                 (
                     sql: $"INSERT INTO {tableName1} ({columns}) VALUES ({parametersSql}) RETURNING {pk.Name}",
                     parameters: filteredProperties,
                     dbProvider: dbType.Value,
-                    prefixParameter: Database.PrefixParameter
+                    prefixParameter: Database.PrefixParameter,
+                    parametersOutput: new Dictionary<string, Property> { { "Result", new Property(pk, entity) } }
                 ),
                 _ => throw new NotSupportedException($"Database type '{dbType}' not yet supported.")
             };

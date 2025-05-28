@@ -33,6 +33,17 @@ namespace EH.Connection
         public IDictionary<string, Property> Parameters { get; private set; } = new Dictionary<string, Property>();
 
         /// <summary>
+        /// Gets the output parameters associated with the SQL query.
+        /// </summary>
+        /// <remarks>
+        /// This property contains a collection of output parameters that are returned
+        /// by the execution of the SQL query. Each entry in the collection is a key-value
+        /// pair where the key is the parameter name and the value is the associated <see cref="Property"/> object.
+        /// Output parameters are typically used to return values from stored procedures or queries.
+        /// </remarks>
+        public IDictionary<string, Property> ParametersOutput { get; private set; } = new Dictionary<string, Property>();
+
+        /// <summary>
         /// Gets or sets the database provider to be used for the query execution.
         /// </summary>
         /// <remarks>
@@ -49,7 +60,7 @@ namespace EH.Connection
         public string PrefixParameter { get; set; }
         
 
-        public QueryCommand(string sql, IDictionary<string, Property>? parameters, Enums.DbProvider? dbProvider, string prefixParameter)
+        public QueryCommand(string sql, IDictionary<string, Property>? parameters, Enums.DbProvider? dbProvider, string prefixParameter, IDictionary<string, Property>? parametersOutput = null)
         {
             if (string.IsNullOrWhiteSpace(prefixParameter))
                 throw new ArgumentException("Prefix parameter cannot be null or empty.", nameof(prefixParameter));
@@ -62,6 +73,7 @@ namespace EH.Connection
             
             Sql = sql;
             Parameters = parameters ?? new Dictionary<string, Property>();
+            ParametersOutput = parametersOutput ?? new Dictionary<string, Property>();
             DbProvider = dbProvider;
             PrefixParameter = prefixParameter;
         }
