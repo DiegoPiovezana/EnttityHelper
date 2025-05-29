@@ -22,7 +22,7 @@ namespace EH.Connection
         /// <summary>
         /// The <see cref="EnttityHelper"/> instance used to perform replacements on the table name and to perform additional queries to check whether a specific item is already in the table and then create the query.
         /// </summary>
-        public EnttityHelper? EnttityHelper { get; set; }
+        public EnttityHelper? EnttityHelper { get; set; } // TODO: Remove EnttityHelper and use Database directly.
 
         /// <summary>
         /// The <see cref="Database"/> instance used to execute the commands.

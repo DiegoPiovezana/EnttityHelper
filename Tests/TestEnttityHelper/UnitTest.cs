@@ -70,13 +70,28 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(4)]
-        public void TestCreateTable()
+        public void TestCreateTableAlreadExist()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
                 // Oracle.ManagedDataAccess.Client.OracleException : ORA-00955: name is already used by an existing object
                 Assert.Throws<OracleException>(() => { eh.CreateTable<EntityTest>(false); });
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
+        
+        [Test, Order(4)]
+        public void TestDropTable()
+        {
+            EnttityHelper eh = new(stringConnectionBd1);
+            if (eh.DbContext.ValidateConnection())
+            {
+               var result = eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<EntityTest>()}");
+               Assert.That(result, Is.EqualTo(-1)); // If the table does not exist, it returns 0
             }
             else
             {

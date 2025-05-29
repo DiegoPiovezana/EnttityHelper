@@ -8,5 +8,9 @@ namespace TestEnttityHelper.OthersEntity
         public long Id { get; set; }
         public string Name { get; set; }
         public DateTime StartDate { get; set; }
+        
+        public double TestDouble { get; set; } = 10.5;  // Db => NUMBER(*) - OK
+
+        public bool TestBoolean { get; set; } = true; // Db => NUMBER(1) - !!!
     }
 }

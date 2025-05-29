@@ -831,7 +831,7 @@ namespace EH.Command
         public string GetDatabaseVersion(Database? database)
         {
             var queryDbVersion = new SqlQueryString(database).GetDatabaseVersion();
-            return Execute.ExecuteScalar(database, new List<QueryCommand?>() { queryDbVersion })?.ToString() ?? "Unknown Version";
+            return Execute.ExecuteScalar(database, new List<QueryCommand?>() { queryDbVersion }).First()?.ToString() ?? "Unknown Version";
         }
 
 

@@ -31,7 +31,7 @@ namespace EH.Properties
         /// <summary>
         /// Gets or sets the value of the property considering the database standard. Example: Bool to 1/0.
         /// </summary>
-        public object? ValueText { get; set; }
+        public object? ValueSql { get; set; }
 
         /// <summary>
         /// Gets or sets the type of the property.
@@ -39,7 +39,8 @@ namespace EH.Properties
         public Type? Type { get; set; }
 
         /// <summary>
-        /// Gets or sets the database type of the property.
+        /// Gets or sets the database type of the property. ValueSql is considered for this property.
+        /// Example: If bool, ValueSql is 1 or 0, DbType is Int16.
         /// </summary>
         public DbType DbType { get; set; }
 
@@ -184,7 +185,7 @@ namespace EH.Properties
             IsNullable = Nullable.GetUnderlyingType(propertyInfo.PropertyType) != null;
 
             Value = objectEntity != null ? propertyInfo.GetValue(objectEntity) : null;
-            ValueText = ConvertValueToSqlTextFormat(Value, propertyInfo.PropertyType);
+            ValueSql = ConvertValueToSqlTextFormat(Value, propertyInfo.PropertyType);
             
             static object? ConvertValueToSqlTextFormat(object? value, Type propertyType)
             {
@@ -194,13 +195,13 @@ namespace EH.Properties
                     Type t when t == typeof(decimal) => ((decimal)value).ToString(),
                     Type t when t == typeof(bool) => (bool)value ? 1 : 0,
                     _ => value
-                } : null;
+                } : DBNull.Value;
             }
         }
 
         override public string? ToString()
         {
-            return ValueText?.ToString();
+            return ValueSql?.ToString();
         }
     }
 }
