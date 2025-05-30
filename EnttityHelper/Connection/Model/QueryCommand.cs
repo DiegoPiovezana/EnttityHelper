@@ -122,7 +122,7 @@ namespace EH.Connection
             foreach (var parameter in Parameters)
             {
                 var placeholder = $"{PrefixParameter}{parameter.Key}";
-                var value = parameter.Value?.Value;
+                var value = parameter.Value?.ValueSql;
 
                 // if (value is string)
                 //     query = query.Replace(placeholder, $"'{value}'");

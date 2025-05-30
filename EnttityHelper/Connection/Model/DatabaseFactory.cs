@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 
 namespace EH.Connection
@@ -57,6 +58,17 @@ namespace EH.Connection
         /// Gets the database version.
         /// </summary>
         public Version Version { get; internal set; } = new Version();
+        
+        /// <summary>
+        /// Common reserved type for database data. Example: "Boolean" => "NUMBER(1)".
+        /// <para>Note: the size of a string (informed in parentheses), for example, can be changed via the property attribute of entity.</para>
+        /// </summary>
+        public Dictionary<string, string> TypesDefault { get; set; }
+        
+        /// <summary>
+        /// (Optional) Terms (or full names) that can be replaced in table names.
+        /// </summary>
+        public Dictionary<string, string>? ReplacesTableName { get; set; }
 
         /// <summary>
         /// Gets or sets the prefix parameter used in database operations. E.g., @ or :

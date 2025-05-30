@@ -17,22 +17,34 @@ namespace EH
         /// Database where the entities will be manipulated.
         /// </summary>
         public Database DbContext { get; set; }
-
+        
         /// <summary>
-        /// Common reserved type for database data. Example: "Boolean" => "NUMBER(1)".
-        /// <para>Note: the size of a string (informed in parentheses), for example, can be changed via the property attribute.</para>
+        /// Common reserved types for database data.
         /// </summary>
-        public Dictionary<string, string> TypesDefault { get; set; }
+        /// <remarks>
+        /// Example: "Boolean" => "NUMBER(1)".
+        /// The size of a string (in parentheses), for example, can be changed via the property's attribute.
+        /// </remarks>
+        public Dictionary<string, string> TypesDefault
+        {
+            get => DbContext.TypesDefault;
+            set => DbContext.TypesDefault = value;
+        }
 
         /// <summary>
         /// (Optional) Terms (or full names) that can be replaced in table names.
         /// </summary>
-        public Dictionary<string, string>? ReplacesTableName { get; set; }
+        public Dictionary<string, string>? ReplacesTableName
+        {
+            get => DbContext.ReplacesTableName; 
+            set => DbContext.ReplacesTableName = value;
+        }
 
         /// <summary>
         /// Allows you to obtain the main commands to be executed on the database.
         /// </summary>
         public SqlQueryString GetQuery { get; }
+        
 
 
         private readonly Features _features;
@@ -47,7 +59,7 @@ namespace EH
             DbContext = new Database(connectionString);
             _features = new(this);
             Definitions.DefineVersionDb(DbContext, _features);
-            TypesDefault = Definitions.DefineTypesDefaultColumnsDb(DbContext);
+            Definitions.DefineTypesDefaultColumnsDb(DbContext);
             GetQuery = new(this);
         }
 
@@ -60,9 +72,10 @@ namespace EH
             DbContext = db;
             _features = new(this);
             Definitions.DefineVersionDb(db, _features);
-            TypesDefault = Definitions.DefineTypesDefaultColumnsDb(DbContext);
+            Definitions.DefineTypesDefaultColumnsDb(DbContext);
             GetQuery = new(this);
         }
+        
 
 
         /// <inheritdoc/>

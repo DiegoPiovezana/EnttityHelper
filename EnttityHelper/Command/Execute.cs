@@ -56,7 +56,7 @@ namespace EH.Commands
         /// - If <paramref name="pageSize"/> is not specified, the query will execute without pagination.
         /// - The method uses the specified filtering and sorting options only if <paramref name="pageSize"/> is provided.
         /// </remarks>
-        internal static object? ExecuteReader<TEntity>(this Database dbContext, string? query, bool getDataReader, Dictionary<string, string>? typesDefault, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
+        internal static object? ExecuteReader<TEntity>(this Database dbContext, string? query, bool getDataReader, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
         {
             if (dbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
             if (query is null) { throw new InvalidOperationException("Query does not exist."); }
@@ -82,7 +82,7 @@ namespace EH.Commands
             return null;
         }
         
-        internal static object? ExecuteReader<TEntity>(this Database dbContext, QueryCommand? query, bool getDataReader, Dictionary<string, string>? typesDefault, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
+        internal static object? ExecuteReader<TEntity>(this Database dbContext, QueryCommand? query, bool getDataReader, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
         {
             if (dbContext?.IDbConnection is null)
                 throw new InvalidOperationException("Connection does not exist.");
@@ -106,7 +106,7 @@ namespace EH.Commands
                     dbParam.Value = param.Value?.Value ?? DBNull.Value;
                     dbParam.Direction = ParameterDirection.Input;
                     
-                    AdjustDbTypeForProvider(dbParam, dbContext, typesDefault);
+                    AdjustDbTypeForProvider(dbParam, dbContext);
                     
                     command.Parameters.Add(dbParam);
                 }
@@ -228,7 +228,7 @@ namespace EH.Commands
             }
         }
         
-        internal static ICollection<long> ExecuteNonQuery(this Database dbContext, ICollection<QueryCommand?> queries, Dictionary<string, string>? typesDefault, int expectedChanges = -1)
+        internal static ICollection<long> ExecuteNonQuery(this Database dbContext, ICollection<QueryCommand?> queries, int expectedChanges = -1)
         {
             if (dbContext?.IDbConnection is null)
                 throw new InvalidOperationException("Connection does not exist.");
@@ -261,7 +261,7 @@ namespace EH.Commands
                         dbParam.Value = param.Value?.Value ?? DBNull.Value;
                         dbParam.Direction = ParameterDirection.Input;
                         
-                        AdjustDbTypeForProvider(dbParam, dbContext, typesDefault);
+                        AdjustDbTypeForProvider(dbParam, dbContext);
                         
                         command.Parameters.Add(dbParam);
                     }
@@ -337,7 +337,7 @@ namespace EH.Commands
         /// <exception cref="InvalidOperationException">Thrown if the database connection or transaction is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if the queries collection or any individual query is null or empty.</exception>
         /// <exception cref="Exception">Thrown if an error occurs during the execution of the queries, triggering a transaction rollback.</exception>
-        internal static ICollection<object?> ExecuteScalar(this Database dbContext, ICollection<string?> queries, Dictionary<string, string>? typesDefault)
+        internal static ICollection<object?> ExecuteScalar(this Database dbContext, ICollection<string?> queries)
         {
             if (dbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
             if (queries is null) throw new ArgumentNullException(nameof(queries), "Queries do not exist.");
@@ -367,7 +367,7 @@ namespace EH.Commands
                     parameter.Size = 4000; // Mandatory
                     parameter.Direction = ParameterDirection.Output;
                     
-                    AdjustDbTypeForProvider(parameter, dbContext, typesDefault);
+                    AdjustDbTypeForProvider(parameter, dbContext);
                     
                     command.Parameters.Add(parameter);
 
@@ -396,7 +396,7 @@ namespace EH.Commands
             }
         }
         
-        internal static ICollection<object?> ExecuteScalar(this Database dbContext, ICollection<QueryCommand?> queries, Dictionary<string, string>? typesDefault)
+        internal static ICollection<object?> ExecuteScalar(this Database dbContext, ICollection<QueryCommand?> queries)
         {
             if (dbContext?.IDbConnection is null)
                 throw new InvalidOperationException("Connection does not exist.");
@@ -431,7 +431,7 @@ namespace EH.Commands
                         dbParam.DbType = param.Value.DbType;
                         dbParam.Direction = ParameterDirection.Input;
                         
-                        AdjustDbTypeForProvider(dbParam, dbContext, typesDefault);
+                        AdjustDbTypeForProvider(dbParam, dbContext);
                         
                         command.Parameters.Add(dbParam);
                     }
@@ -450,10 +450,10 @@ namespace EH.Commands
                         dbParam.DbType = param.Value.DbType;
                         dbParam.Direction = ParameterDirection.Output;
                         
-                        AdjustDbTypeForProvider(dbParam, dbContext, typesDefault);
+                        AdjustDbTypeForProvider(dbParam, dbContext);
 
-                        if (dbParam.DbType == DbType.String || dbParam.DbType == DbType.AnsiString)
-                            dbParam.Size = 4000;
+                        // if (dbParam.DbType == DbType.String || dbParam.DbType == DbType.AnsiString)
+                        //     dbParam.Size = 4000;
 
                         command.Parameters.Add(dbParam);
                     }
@@ -546,14 +546,16 @@ namespace EH.Commands
             }
         }
         
-        private static void AdjustDbTypeForProvider(IDbDataParameter dbParam, Database dbContext, Dictionary<string, string>? typesDefault)
+        private static void AdjustDbTypeForProvider(IDbDataParameter dbParam, Database dbContext)
         {
             switch (dbContext.Provider)
             {
                 case Enums.DbProvider.Oracle:
+                    
+                    // Booleano → NUMBER(1)
                     if (dbParam.DbType == DbType.Boolean)
                     {
-                        dbParam.DbType = DbType.Int32;
+                        dbParam.DbType = DbType.Int16;
                         if (dbParam.Value is bool boolValue)
                         {
                             dbParam.Value = boolValue ? 1 : 0;
@@ -569,21 +571,24 @@ namespace EH.Commands
                     // }
                     break;
 
-                case Enums.DbProvider.MySql:
-                    if (dbParam.DbType == DbType.Boolean)
-                    {
-                        dbParam.DbType = DbType.Byte; // MySQL uses TINYINT(1) for boolean
-                        if (dbParam.Value is bool boolValue)
-                        {
-                            dbParam.Value = boolValue ? (byte)1 : (byte)0;
-                        }
-                    }
-                    break;
+                // case Enums.DbProvider.MySql:
+                //     
+                //     // Booleano → TINYINT(1)
+                //     if (dbParam.DbType == DbType.Boolean)
+                //     {
+                //         dbParam.DbType = DbType.Byte; // MySQL uses TINYINT(1) for boolean
+                //         if (dbParam.Value is bool boolValue)
+                //         {
+                //             dbParam.Value = boolValue ? (byte)1 : (byte)0;
+                //         }
+                //     }
+                //     break;
 
                 default:
                     // No adjustment needed for other providers
                     break;
             }
+           
         }
 
     }

@@ -7,12 +7,12 @@ namespace EH.Command
 {
     internal static class Definitions
     {
-        internal static Dictionary<string, string> DefineTypesDefaultColumnsDb(Database? dbContext)
+        internal static void DefineTypesDefaultColumnsDb(Database? dbContext)
         {
             if (dbContext is null) throw new InvalidOperationException("DbContext cannot be null.");
             if (dbContext.Provider is null) throw new InvalidOperationException("DbContext Type cannot be null.");
 
-            return dbContext.Provider switch
+            var typesDefaultColumnsDb = dbContext.Provider switch
             {
                 Enums.DbProvider.Oracle => new Dictionary<string, string> {
                     { "String", "NVARCHAR2(1000)" },
@@ -62,6 +62,8 @@ namespace EH.Command
                 null => throw new InvalidOperationException($"Database type is invalid."),
                 _ => throw new InvalidOperationException($"Database type '{dbContext.Provider}' not yet supported."),
             };
+            
+            dbContext.TypesDefault = typesDefaultColumnsDb;
         }
 
         //internal static void DefineTypeVersionDb(Database? dbContext, Features features)
