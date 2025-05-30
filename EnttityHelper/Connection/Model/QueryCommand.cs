@@ -43,39 +43,21 @@ namespace EH.Connection
         /// </remarks>
         public IDictionary<string, Property> ParametersOutput { get; private set; } = new Dictionary<string, Property>();
 
-        /// <summary>
-        /// Gets or sets the database provider to be used for the query execution.
-        /// </summary>
-        /// <remarks>
-        /// The database provider determines the type of database for which the query is intended.
-        /// Examples of supported providers include Oracle, SQL Server, SQLite, PostgreSQL, and MySQL.
-        /// This property plays a critical role in ensuring that the query and parameters are compatible
-        /// with the corresponding database engine.
-        /// </remarks>
-        public Enums.DbProvider? DbProvider { get; set; }
+        // public string SqlRollback { get; set; } = string.Empty;
+        // public DbTransaction? Transaction { get; set; }
+        // public DateTime ExecutionDate { get; set; }
+        // public bool Commited { get; set; } = false;
         
-        /// <summary>
-        /// Gets or sets the prefix parameter used in database operations. E.g., @ or :
-        /// </summary>
-        public string PrefixParameter { get; set; }
         
 
-        public QueryCommand(string sql, IDictionary<string, Property>? parameters, Enums.DbProvider? dbProvider, string prefixParameter, IDictionary<string, Property>? parametersOutput = null)
+        public QueryCommand(string sql, IDictionary<string, Property>? parameters, IDictionary<string, Property>? parametersOutput = null)
         {
-            if (string.IsNullOrWhiteSpace(prefixParameter))
-                throw new ArgumentException("Prefix parameter cannot be null or empty.", nameof(prefixParameter));
-            
-            if (dbProvider == null)
-                throw new ArgumentNullException(nameof(dbProvider), "Database provider cannot be null.");
-        
             if (string.IsNullOrWhiteSpace(sql))
                 throw new ArgumentException("SQL query cannot be null or empty.", nameof(sql));
             
             Sql = sql;
             Parameters = parameters ?? new Dictionary<string, Property>();
             ParametersOutput = parametersOutput ?? new Dictionary<string, Property>();
-            DbProvider = dbProvider;
-            PrefixParameter = prefixParameter;
         }
 
         /// <summary>
@@ -116,12 +98,12 @@ namespace EH.Connection
         /// <returns>
         /// A string representing the SQL query with parameter placeholders replaced by their respective values.
         /// </returns>
-        public string ToQuery()
+        public string ToQuery(Database db)
         {
             var query = Sql;
             foreach (var parameter in Parameters)
             {
-                var placeholder = $"{PrefixParameter}{parameter.Key}";
+                var placeholder = $"{db.PrefixParameter}{parameter.Key}";
                 var value = parameter.Value?.ValueSql;
 
                 // if (value is string)
