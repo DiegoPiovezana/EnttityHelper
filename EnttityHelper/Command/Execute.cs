@@ -461,13 +461,17 @@ namespace EH.Commands
                     var result = command.ExecuteScalar();
                     // results.Add(result ?? outputParam.Value);
                     
+                    foreach (var outputParam in queryCommand.ParametersOutput)
+                    {
+                        var dbParam = (IDbDataParameter)command.Parameters[outputParam.Key];
+                        if (dbParam != null && dbParam.Value != DBNull.Value)
+                        {
+                            outputParam.Value.Value = dbParam.Value;
+                        }
+                    }
+                    
                     var firstOutput = queryCommand.ParametersOutput.FirstOrDefault();
-                    results.Add(
-                        // firstOutput.Value != null && command.Parameters.Contains(firstOutput.Key)
-                        result == null || result == DBNull.Value
-                            ? ((IDbDataParameter)command.Parameters[firstOutput.Key]).Value
-                            : result
-                    );
+                    results.Add(result ?? firstOutput.Value);
                 }
 
                 transaction.Commit();
