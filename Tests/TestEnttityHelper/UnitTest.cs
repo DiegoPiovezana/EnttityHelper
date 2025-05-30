@@ -190,7 +190,7 @@ namespace TestEH_UnitTest
             Assert.That(exception.Message, Is.EqualTo("Invalid connection string!"));
         }
 
-        [Test, Order(9)]
+        [Test, Order(10)]
         public void TestNonQuery()
         {
             EnttityHelper eh = new(stringConnectionBd1);

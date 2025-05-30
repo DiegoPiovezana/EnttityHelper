@@ -199,33 +199,6 @@ namespace EH.Commands
             {
                 if (connection.State == ConnectionState.Open) connection.Close();
             }
-
-            static List<string> GetTbDependence(string query)
-            {
-                var tables = new List<string>();
-
-                // 'FROM' e 'JOIN'
-                var fromMatches = Regex.Matches(query, @"\b(?:FROM|JOIN)\s+([^\s,]+)", RegexOptions.IgnoreCase);
-                foreach (Match match in fromMatches)
-                {
-                    if (match.Success)
-                    {
-                        tables.Add(match.Groups[1].Value);
-                    }
-                }
-
-                // 'FOREIGN KEY REFERENCES'
-                var foreignKeyMatches = Regex.Matches(query, @"\bFOREIGN\s+KEY\s+\([^\)]+\)\s+REFERENCES\s+([^\s\(]+)", RegexOptions.IgnoreCase);
-                foreach (Match match in foreignKeyMatches)
-                {
-                    if (match.Success)
-                    {
-                        tables.Add(match.Groups[1].Value);
-                    }
-                }
-
-                return tables;
-            }
         }
         
         internal static ICollection<long> ExecuteNonQuery(this Database dbContext, ICollection<QueryCommand?> queries, int expectedChanges = -1)
@@ -265,9 +238,30 @@ namespace EH.Commands
                         
                         command.Parameters.Add(dbParam);
                     }
+                    
+                    foreach (var param in queryCommand.ParametersOutput)
+                    {
+                        var dbParam = command.CreateParameter();
+                        dbParam.ParameterName = param.Key;
+                        dbParam.DbType = param.Value.DbType;
+                        dbParam.Direction = ParameterDirection.Output;
+                        
+                        AdjustDbTypeForProvider(dbParam, dbContext);
+                        
+                        command.Parameters.Add(dbParam);
+                    }
 
                     long rowsAffected = command.ExecuteNonQuery();
                     result.Add(rowsAffected);
+                    
+                    foreach (var outputParam in queryCommand.ParametersOutput)
+                    {
+                        var dbParam = (IDbDataParameter)command.Parameters[outputParam.Key];
+                        if (dbParam != null && dbParam.Value != DBNull.Value)
+                        {
+                            outputParam.Value.Value = dbParam.Value;
+                        }
+                    }
                 }
 
                 long changes = result.Sum();
@@ -295,35 +289,34 @@ namespace EH.Commands
                 if (connection.State == ConnectionState.Open)
                     connection.Close();
             }
-
-            static List<string> GetTbDependence(string query)
-            {
-                var tables = new List<string>();
-
-                // 'FROM' e 'JOIN'
-                var fromMatches = Regex.Matches(query, @"\b(?:FROM|JOIN)\s+([^\s,]+)", RegexOptions.IgnoreCase);
-                foreach (Match match in fromMatches)
-                {
-                    if (match.Success)
-                    {
-                        tables.Add(match.Groups[1].Value);
-                    }
-                }
-
-                // 'FOREIGN KEY REFERENCES'
-                var foreignKeyMatches = Regex.Matches(query, @"\bFOREIGN\s+KEY\s+\([^\)]+\)\s+REFERENCES\s+([^\s\(]+)", RegexOptions.IgnoreCase);
-                foreach (Match match in foreignKeyMatches)
-                {
-                    if (match.Success)
-                    {
-                        tables.Add(match.Groups[1].Value);
-                    }
-                }
-
-                return tables;
-            }
         }
+        
+        private static List<string> GetTbDependence(string query)
+        {
+            var tables = new List<string>();
 
+            // 'FROM' e 'JOIN'
+            var fromMatches = Regex.Matches(query, @"\b(?:FROM|JOIN)\s+([^\s,]+)", RegexOptions.IgnoreCase);
+            foreach (Match match in fromMatches)
+            {
+                if (match.Success)
+                {
+                    tables.Add(match.Groups[1].Value);
+                }
+            }
+
+            // 'FOREIGN KEY REFERENCES'
+            var foreignKeyMatches = Regex.Matches(query, @"\bFOREIGN\s+KEY\s+\([^\)]+\)\s+REFERENCES\s+([^\s\(]+)", RegexOptions.IgnoreCase);
+            foreach (Match match in foreignKeyMatches)
+            {
+                if (match.Success)
+                {
+                    tables.Add(match.Groups[1].Value);
+                }
+            }
+
+            return tables;
+        }
 
         /// <summary>
         /// Executes a collection of SQL queries within a transaction using the provided database context,
@@ -361,22 +354,23 @@ namespace EH.Commands
                     //command.Parameters.Add(parameter);
 
                     // Generic Parameter
-                    var parameter = command.CreateParameter();
-                    parameter.ParameterName = "Result";
-                    parameter.DbType = DbType.String; // Int32, String, etc
-                    parameter.Size = 4000; // Mandatory
-                    parameter.Direction = ParameterDirection.Output;
+                    // var parameter = command.CreateParameter();
+                    // parameter.ParameterName = "Result";
+                    // parameter.DbType = DbType.String; // Int32, String, etc
+                    // parameter.Size = 4000; // Mandatory
+                    // parameter.Direction = ParameterDirection.Output;
+                    //
+                    // AdjustDbTypeForProvider(parameter, dbContext);
                     
-                    AdjustDbTypeForProvider(parameter, dbContext);
-                    
-                    command.Parameters.Add(parameter);
+                    // command.Parameters.Add(parameter);
 
                     var result = command.ExecuteScalar();
                     //Debug.WriteLine(query);
 
                     //Debug.WriteLine($"Result: {resultParam.Value}");
                     //results.Add(parameter.Value ?? result);
-                    results.Add(result ?? parameter.Value);
+                    // results.Add(result ?? parameter.Value);
+                    results.Add(result);
                 }
 
                 transaction.Commit();
@@ -471,7 +465,7 @@ namespace EH.Commands
                     }
                     
                     var firstOutput = queryCommand.ParametersOutput.FirstOrDefault();
-                    results.Add(result ?? firstOutput.Value);
+                    results.Add(result ?? firstOutput.Value?.Value);
                 }
 
                 transaction.Commit();
