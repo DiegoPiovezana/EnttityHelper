@@ -76,10 +76,11 @@ namespace EH.Command
 
             long InsertEntities<TEntity>(TEntity entity, bool setPrimaryKeyAfterInsert, string? namePropUnique, bool createTable, ref string? tableName, bool ignoreInversePropertyProperties) where TEntity : class
             {
+                if (entity is null) throw new InvalidOperationException($"$'{nameof(entity)}' is null!");
+                
                 var insertsQueriesEntities = new Dictionary<object, List<QueryCommand?>?>();
                 var entities = entity as IEnumerable ?? new[] { entity };
 
-                if (entity is null) throw new InvalidOperationException($"$'{nameof(entity)}' is null!");
                 var entityFirst = entities.Cast<object>().FirstOrDefault() ?? throw new InvalidOperationException($"$'{nameof(entity)}' is invalid!");
 
                 // TODO: If >100, use bulk insert - test performance
@@ -194,7 +195,7 @@ namespace EH.Command
                         {
                             try
                             {
-                                pk.SetValue(entity, convertedId);
+                                pk.SetValue(insertQueriesEntity.Key, convertedId);
                             }
                             catch (Exception ex)
                             {
@@ -207,7 +208,7 @@ namespace EH.Command
                             var backingField = entity.GetType().GetField($"<{pk.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
                             if (backingField != null)
                             {
-                                backingField.SetValue(entity, convertedId);
+                                backingField.SetValue(insertQueriesEntity.Key, convertedId);
                             }
                             else
                             {
@@ -222,11 +223,10 @@ namespace EH.Command
                     for (int i = 1; i < insertQueriesEntity.Value.Count; i++)
                     {
                         // insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'&ID1'", $"'{id}'");
-                        insertQueriesEntity.Value[i].Parameters["@ID1"].Value = id;
+                        insertQueriesEntity.Value[i].Parameters[$"{_enttityHelper.DbContext.PrefixParameter}ID1"].Value = id;
                         
                         // insertions += ExecuteNonQuery(insertQueriesEntity.Value[i], 1);
                         insertions += Execute.ExecuteNonQuery(_enttityHelper.DbContext, new List<QueryCommand?>{ insertQueriesEntity.Value[i] }, 1).First();
-                        
                     }
                 }
 

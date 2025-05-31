@@ -116,7 +116,6 @@ namespace EH.Connection
             };
             
             queries.Add(queryCommand);
-            
 
             if (!ignoreInversePropertyProperties) InsertInverseProperty(entity, replacesTableName, queries, properties);
             return queries;

@@ -287,6 +287,7 @@ namespace TestEH_UnitTest
                 DtCreation = DateTime.Now,
                 IdCareer = 121
             };
+            
             long userInsertResult = eh.Insert(user, true);
             Assert.AreEqual(1, userInsertResult, "User insertion failed.");
 
