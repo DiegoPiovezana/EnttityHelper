@@ -8,6 +8,7 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
+using EH.Properties;
 
 namespace EH.Commands
 {
@@ -243,7 +244,7 @@ namespace EH.Commands
                     {
                         var dbParam = command.CreateParameter();
                         dbParam.ParameterName = param.Key;
-                        dbParam.DbType = param.Value.DbType;
+                        dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
                         dbParam.Direction = ParameterDirection.Output;
                         
                         AdjustDbTypeForProvider(dbParam, dbContext);
@@ -422,7 +423,7 @@ namespace EH.Commands
                         var dbParam = command.CreateParameter();
                         dbParam.ParameterName = param.Key;
                         dbParam.Value = param.Value.Value ?? DBNull.Value;
-                        dbParam.DbType = param.Value.DbType;
+                        // dbParam.DbType = param.Value.DbType;
                         dbParam.Direction = ParameterDirection.Input;
                         
                         AdjustDbTypeForProvider(dbParam, dbContext);
@@ -441,7 +442,7 @@ namespace EH.Commands
                     {
                         var dbParam = command.CreateParameter();
                         dbParam.ParameterName = param.Key;
-                        dbParam.DbType = param.Value.DbType;
+                        dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
                         dbParam.Direction = ParameterDirection.Output;
                         
                         AdjustDbTypeForProvider(dbParam, dbContext);

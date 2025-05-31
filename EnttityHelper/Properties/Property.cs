@@ -38,11 +38,11 @@ namespace EH.Properties
         /// </summary>
         public Type? Type { get; set; }
 
-        /// <summary>
-        /// Gets or sets the database type of the property. ValueSql is considered for this property.
-        /// Example: If bool, ValueSql is 1 or 0, DbType is Int16.
-        /// </summary>
-        public DbType DbType { get; set; }
+        // /// <summary>
+        // /// Gets or sets the database type of the property. ValueSql is considered for this property.
+        // /// Example: If bool, ValueSql is 1 or 0, DbType is Int16.
+        // /// </summary>
+        // public DbType DbType { get; set; }
 
         /// <summary>
         /// Indicates whether the property is nullable.
@@ -181,7 +181,7 @@ namespace EH.Properties
             MinLength = propertyInfo.GetCustomAttribute<StringLengthAttribute>()?.MinimumLength;
 
             Type = Nullable.GetUnderlyingType(propertyInfo.PropertyType) ?? propertyInfo.PropertyType;
-            DbType = ToolsProp.MapToDbType(Type);
+            // DbType = ToolsProp.MapToDbType(Type);
             IsNullable = Nullable.GetUnderlyingType(propertyInfo.PropertyType) != null;
 
             Value = objectEntity != null ? propertyInfo.GetValue(objectEntity) : null;
