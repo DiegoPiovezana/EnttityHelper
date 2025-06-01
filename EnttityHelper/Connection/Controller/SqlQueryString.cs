@@ -241,7 +241,7 @@ namespace EH.Connection
                 var tableName1 = ToolsProp.GetTableName(entity.GetType(), enttityHelper.ReplacesTableName); // Ex.: TB_USER
                 var tableName2 = ToolsProp.GetTableName(entity2Type, enttityHelper.ReplacesTableName);  // Ex.: TB_GROUP_USERS
 
-                MethodInfo checkIfExistMethod = typeof(EnttityHelper).GetMethod("CheckIfExist");
+                MethodInfo checkIfExistMethod = typeof(EnttityHelper).GetMethod("CheckIfExist", new[] { typeof(string), typeof(int), typeof(string) });
                 ValidateTableExist(tableName1);
                 ValidateTableExist(tableName2);
 
