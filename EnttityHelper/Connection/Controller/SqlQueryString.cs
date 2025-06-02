@@ -588,10 +588,16 @@ namespace EH.Connection
                     }
 
                     // MaxLength?
-                    if (prop.Value.MaxLength > 0)
+                    if (prop.Value.MaxLength > 0 && prop.Value.MaxLength < int.MaxValue)
                     {
                         value = Regex.Replace(value, @"\([^()]*\)", "");
                         value += $"({prop.Value.MaxLength})";
+                    }
+                    else if (value.StartsWith("nvarchar", StringComparison.OrdinalIgnoreCase) ||
+                              value.StartsWith("varchar", StringComparison.OrdinalIgnoreCase))
+                    {
+                        value = Regex.Replace(value, @"\([^()]*\)", "");
+                        value = GetMaxTextType(Database, value);
                     }
 
                     // PK?                    
@@ -653,6 +659,21 @@ namespace EH.Connection
             queryCreatesTable[tableName] = queryCommand;
             return queryCreatesTable;
         }
+        
+        private string GetMaxTextType(Database db, string baseTypeColumn)
+        {
+            baseTypeColumn = baseTypeColumn.ToLowerInvariant();
+
+            return db.Provider switch
+            {
+                Enums.DbProvider.Oracle when baseTypeColumn is "varchar2" => "varchar2(4000)",
+                Enums.DbProvider.SqlServer when baseTypeColumn is "nvarchar" or "varchar" => $"{baseTypeColumn}(max)",
+                Enums.DbProvider.PostgreSql when baseTypeColumn is "varchar" => "text",
+                Enums.DbProvider.MySql when baseTypeColumn is "varchar" => "longtext",
+                _ => $"{baseTypeColumn}(4000)" // fallback seguro
+            };
+        }
+
 
         internal Dictionary<string, QueryCommand?> CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, string? pkEntity1, Dictionary<string, string>? replacesTableName)
         {
