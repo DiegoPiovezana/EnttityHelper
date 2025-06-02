@@ -23,7 +23,6 @@ namespace EH.Command
         public Features(EnttityHelper enttityHelper)
         {
             _enttityHelper = enttityHelper;
-
         }
 
         public long Insert<TEntity>(TEntity entity, bool setPrimaryKeyAfterInsert, string? namePropUnique, bool createTable, string? tableName, bool ignoreInversePropertyProperties, int timeOutSeconds) where TEntity : class
@@ -370,7 +369,7 @@ namespace EH.Command
             foreach (var entityItem in entities)
             {
                 var queriesUpdate = _enttityHelper.GetQuery.Update(entityItem, _enttityHelper, nameId, tableName, ignoreInversePropertyProperties);
-                updatesQueriesEntities[entityItem] = queriesUpdate.ToList();
+                updatesQueriesEntities[entityItem] = queriesUpdate.Reverse().ToList();
             }
 
             long updates = 0;
@@ -387,6 +386,36 @@ namespace EH.Command
             }
             return updates;
         }
+        
+        // public IList Get(Type entityType, bool includeAll, string? filter, string? tableName, int? pageSize, int pageIndex, string? sortColumn, bool sortAscending)
+        // {
+        //     if (entityType == null) throw new ArgumentNullException(nameof(entityType));
+        //     var genericGetDef = typeof(Features).GetMethod(
+        //         nameof(Features.Get),
+        //         new[] 
+        //         { 
+        //             typeof(bool), typeof(string), typeof(string), typeof(int?), typeof(int), typeof(string), typeof(bool) 
+        //         }
+        //     ) ?? throw new InvalidOperationException("Get<T> method not found in Features class.");
+        //     
+        //     MethodInfo getClosed = genericGetDef.MakeGenericMethod(entityType);
+        //     
+        //     object? result = getClosed.Invoke(
+        //         this,
+        //         new object?[]
+        //         {
+        //             includeAll,
+        //             filter,
+        //             tableName,
+        //             pageSize,
+        //             pageIndex,
+        //             sortColumn,
+        //             sortAscending
+        //         }
+        //     );
+        //     
+        //     return (IList)(result ?? Array.Empty<object>());
+        // }
 
         public List<TEntity>? Get<TEntity>(bool includeAll, string? filter, string? tableName, int? pageSize, int pageIndex, string? sortColumn, bool sortAscending) where TEntity : class
         {
@@ -725,6 +754,16 @@ namespace EH.Command
         {
             return Execute.ExecuteNonQuery(_enttityHelper.DbContext, queries, expectedChanges);
         }
+        
+        public long ExecuteNonQuery(QueryCommand? query, int expectedChanges)
+        {
+            return ExecuteNonQuery(new List<QueryCommand?>() { query }, expectedChanges).FirstOrDefault();
+        }
+
+        public ICollection<long> ExecuteNonQuery(ICollection<QueryCommand?> queries, int expectedChanges)
+        {
+            return Execute.ExecuteNonQuery(_enttityHelper.DbContext, queries, expectedChanges);
+        }
 
         public List<TEntity>? ExecuteSelect<TEntity>(string? query, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
         {
@@ -755,6 +794,26 @@ namespace EH.Command
                 if (_enttityHelper.DbContext?.IDbConnection is not null && _enttityHelper.DbContext.IDbConnection.State == ConnectionState.Open) _enttityHelper.DbContext.IDbConnection.Close();
             }
         }
+        
+        public DataTable? ExecuteSelectDt(QueryCommand? query, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
+        {
+            try
+            {
+                if (Execute.ExecuteReader<IDataReader>(_enttityHelper.DbContext, query, true, pageSize, pageIndex, filterPage, sortColumnPage, sortAscendingPage) is not IDataReader resultSelect) return null;
+                DataTable dtResult = resultSelect.ToDataTable();
+                resultSelect.Close();
+                _enttityHelper.DbContext.CloseConnection();
+                return dtResult;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                if (_enttityHelper.DbContext?.IDbConnection is not null && _enttityHelper.DbContext.IDbConnection.State == ConnectionState.Open) _enttityHelper.DbContext.IDbConnection.Close();
+            }
+        }
 
         public object? ExecuteScalar(string? query)
         {
@@ -767,8 +826,25 @@ namespace EH.Command
                 throw;
             }
         }
+        
+        public object? ExecuteScalar(QueryCommand? query)
+        {
+            try
+            {
+                return ExecuteScalar(new List<QueryCommand?>() { query }).FirstOrDefault();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
 
         public ICollection<object?> ExecuteScalar(ICollection<string?> queries)
+        {
+            return Execute.ExecuteScalar(_enttityHelper.DbContext, queries);
+        }
+        
+        public ICollection<object?> ExecuteScalar(ICollection<QueryCommand?> queries)
         {
             return Execute.ExecuteScalar(_enttityHelper.DbContext, queries);
         }
