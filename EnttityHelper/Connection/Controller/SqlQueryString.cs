@@ -28,6 +28,11 @@ namespace EH.Connection
         /// The <see cref="Database"/> instance used to execute the commands.
         /// </summary>
         public Database Database { get; set; }
+        
+       /// <summary>
+       /// /// The <see cref="Features"/> instance used to define the features of the database.
+       /// </summary>
+        internal Features Features { get; set; }
 
 
         //Enums.DbType? DbType { get; set; }
@@ -42,6 +47,7 @@ namespace EH.Connection
         {
             EnttityHelper = enttityHelper ?? throw new ArgumentNullException(nameof(enttityHelper));
             Database = enttityHelper.DbContext ?? throw new ArgumentNullException(nameof(enttityHelper.DbContext));
+            Features = new Features(enttityHelper);
         }
 
         /// <summary>
@@ -241,13 +247,14 @@ namespace EH.Connection
                 var tableName1 = ToolsProp.GetTableName(entity.GetType(), enttityHelper.ReplacesTableName); // Ex.: TB_USER
                 var tableName2 = ToolsProp.GetTableName(entity2Type, enttityHelper.ReplacesTableName);  // Ex.: TB_GROUP_USERS
 
-                MethodInfo checkIfExistMethod = typeof(EnttityHelper).GetMethod("CheckIfExist", new[] { typeof(string), typeof(int), typeof(string) });
+                // MethodInfo checkIfExistMethod = typeof(EnttityHelper).GetMethod("CheckIfExist", new[] { typeof(string), typeof(int), typeof(string) });
                 ValidateTableExist(tableName1);
                 ValidateTableExist(tableName2);
 
                 void ValidateTableExist(string tableName)
                 {
-                    bool tableExists = (bool)checkIfExistMethod.Invoke(enttityHelper, new object[] { tableName, 0, null });
+                    // bool tableExists = (bool)checkIfExistMethod.Invoke(enttityHelper, new object[] { tableName, 0, null });
+                    bool tableExists = Features.CheckIfExist(tableName, 0, null);
                     if (!tableExists) { throw new Exception($"Table '{tableName}' doesn't exist!"); }
                 }
 
@@ -256,22 +263,37 @@ namespace EH.Connection
                 string idName1 = pk1.Name; // Ex: IdUser
                 string idName2 = ToolsProp.GetPK((object)entity2Type).Name;  // Ex: IdGroup
 
-                MethodInfo selectMethod = typeof(EnttityHelper).GetMethod("ExecuteSelectDt");
+                // MethodInfo selectMethod = typeof(EnttityHelper).GetMethod("ExecuteSelectDt");
                 
-                var itemsBd = (DataTable)selectMethod.Invoke(enttityHelper,
-                    new object[]
-                    {
-                        $@"SELECT ID_{tableName2} FROM {tableNameInverseProperty} WHERE ID_{tableName1} = '{pk1.GetValue(entity)}'",
-                        null, 0, null, null, true
-                    });
+                // var itemsBd = (DataTable)selectMethod.Invoke(enttityHelper,
+                //     new object[]
+                //     {
+                //         $@"SELECT ID_{tableName2} FROM {tableNameInverseProperty} WHERE ID_{tableName1} = '{pk1.GetValue(entity)}'",
+                //         null, 0, null, null, true
+                //     });
+                
+                var parametersSelect = new Dictionary<string, Property>
+                {
+                    { $"ID_{tableName1}", new Property(pk1, entity) }
+                };
+
+                QueryCommand queryCommandSelect = new QueryCommand(
+                    $@"SELECT ID_{tableName2} FROM {tableNameInverseProperty} WHERE ID_{tableName1} = '{pk1.GetValue(entity)}'",
+                    parametersSelect,
+                    null
+                    );
+
+                var itemsBd = Features.ExecuteSelectDt(queryCommandSelect, null, 0, null, null, true);
 
                 var getMethod = typeof(EnttityHelper).GetMethod("Get").MakeGenericMethod(entity2Type);
+                // var itemsCollectionBd = new List<dynamic>();
                 List<object>? itemsCollectionBd = new(itemsBd.Rows.Count);
 
                 foreach (DataRow row in itemsBd.Rows)
                 {
                     object idItemEntity2 = row[0];
                     var entity2InCollectionBd = (IEnumerable)getMethod.Invoke(enttityHelper, new object[] { false, $"{pk2.Name} = '{idItemEntity2}'", null, null, 0, null, true });
+                    // var entity2InCollectionBd = Features.Get<object>(false, $"{pk2.Name} = '{idItemEntity2}'", null, null, 0, null, true);
                     foreach (var entity2 in entity2InCollectionBd) { itemsCollectionBd.Add(entity2); }
                 }
 
@@ -311,20 +333,26 @@ namespace EH.Connection
                 {
                     foreach (Property itemInsert in itemsCollectionNew)
                     {
-                        if (!itemsCollectionOld.Contains(itemInsert))
+                        bool itemContains = itemsCollectionNew.Any(p =>
+                            p.Name == itemInsert.Name
+                            && object.Equals(p.Value, itemInsert.Value)
+                        );
+                        
+                        // if (!itemsCollectionOld.Contains(itemInsert))
+                        if (!itemContains)
                         {
                             // queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{itemInsert}')");
 
-                            string sql = $@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ($'{Database.PrefixParameter}{idTb1}', $'{Database.PrefixParameter}{idTb2}')";
+                            string sql = $@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ({Database.PrefixParameter}ID_{idTb1}, {Database.PrefixParameter}ID_{idTb2})";
 
-                            Dictionary<string, Property> parameters = new()
+                            Dictionary<string, Property> parametersInsert = new()
                             {
-                                {$"{Database.PrefixParameter}ID_" + idTb1, itemProp1},
-                                {$"{Database.PrefixParameter}ID_" + idTb2, itemInsert}
+                                {$"ID_" + idTb1, itemProp1},
+                                {$"ID_" + idTb2, itemInsert}
                             };
 
-                            QueryCommand queryCommand = new(sql, parameters);
-                            queries.Add(queryCommand);
+                            QueryCommand queryCommandInsert = new(sql, parametersInsert);
+                            queries.Add(queryCommandInsert);
                         }
                     }
                 }
@@ -333,23 +361,29 @@ namespace EH.Connection
                 {
                     foreach (Property itemDelete in itemsCollectionOld)
                     {
-                        if (!itemsCollectionNew.Contains(itemDelete))
+                        bool itemContains = itemsCollectionNew.Any(p =>
+                            p.Name == itemDelete.Name
+                            && object.Equals(p.Value, itemDelete.Value)
+                        );
+                        
+                        // if (!itemsCollectionNew.Contains(itemDelete))
+                        if (!itemContains)
                         {
                             // queries.Add($@"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = '{idValue1}' AND ID_{idTb2} = '{itemDelete}'");
                             string sql =$"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = {Database.PrefixParameter}ID_{idTb1} AND ID_{idTb2} = {Database.PrefixParameter}ID_{idTb2}";
                             
-                            Dictionary<string, Property> parameters = new()
+                            Dictionary<string, Property> parametersDelete = new()
                             {
                                 {$"{Database.PrefixParameter}ID_" + idTb1, itemProp1},
                                 {$"{Database.PrefixParameter}ID_" + idTb2, itemDelete}
                             };
                             
-                            QueryCommand queryCommand = new(sql, parameters);
+                            QueryCommand queryCommandDelete = new(sql, parametersDelete);
+                            queries.Add(queryCommandDelete);
                         }
                     }
                 }
             }
-
             return queries;
         }
 

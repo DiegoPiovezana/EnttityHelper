@@ -352,16 +352,16 @@ namespace TestEH_UnitTest
             User user1 = new() { Id = 1301, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1301 };
             List<Group> groupsUserAdd = new() { group1, group2 };
             foreach (var group in groupsUserAdd) { user1.Groups.Add(group); }
-            Assert.That(eh.Insert(user1) == 3, Is.EqualTo(true));
+            Assert.That(eh.Insert(user1), Is.EqualTo(3));
 
             // Insert group with user
             User user2 = new() { Id = 1302, Name = "John Victor", GitHub = "@JohnVictor", DtCreation = DateTime.Now, IdCareer = 1302 };
-            Assert.That(eh.Insert(user2) == 1, Is.EqualTo(true));
+            Assert.That(eh.Insert(user2), Is.EqualTo(1));
 
             // Insert new group with user
             Group group3 = new() { Id = 1303, Name = "Operation", Description = "Operation Group" };
             group3.Users.Add(user2);
-            Assert.That(eh.Insert(group3) == 2, Is.EqualTo(true));
+            Assert.That(eh.Insert(group3), Is.EqualTo(2));
 
 
             /////////////////////////////////////////////////// 
@@ -380,7 +380,8 @@ namespace TestEH_UnitTest
             // UPDATE
             //User userUpdate = new() { Id = 1, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
             user1.Groups = new List<Group>() { group1 }; // Remove group2
-            eh.Update(user1);
+            var result = eh.Update(user1);
+            Assert.That(result, Is.EqualTo(2)); // Update user1 (there will always be an update in the entity) + Remove group2 from aux table
 
             List<User>? usersUpdated = eh.Get<User>();
             Assert.That(usersUpdated.Count == 2, Is.EqualTo(true));
