@@ -1351,11 +1351,13 @@ namespace TestEH_UnitTest
             var results = eh.GetQuery.Insert(user);
             var result = results.FirstOrDefault();
 
+            string query = result.ToQuery(eh.DbContext);
+            
             // Assert
-            StringAssert.StartsWith("INSERT INTO TB_USERS (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor) VALUES ('20201', 'John Victor', '@JohnVictor', ", result.Sql);
-            StringAssert.Contains("'20202'", result.Sql);
-            StringAssert.Contains("'20201'", result.Sql);
-            StringAssert.EndsWith("RETURNING Id INTO :Result", result.Sql);
+            StringAssert.StartsWith("INSERT INTO TB_USERS (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor) VALUES (:Id", result.Sql);
+            StringAssert.Contains("'20202'", query);
+            StringAssert.Contains("'20201'", query);
+            StringAssert.EndsWith("RETURNING Id INTO :Result", query);
 
             Debug.WriteLine(result);
         }

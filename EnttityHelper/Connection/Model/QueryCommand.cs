@@ -101,21 +101,22 @@ namespace EH.Connection
         public string ToQuery(Database db)
         {
             var query = Sql;
-            foreach (var parameter in Parameters)
+            
+            foreach (var parameter in Parameters
+                         .OrderByDescending(p => p.Key.Length))
             {
                 var placeholder = $"{db.PrefixParameter}{parameter.Key}";
-                var value = parameter.Value?.ValueSql;
+                var value = parameter.Value?.ValueSql?.ToString() ?? string.Empty;
 
                 // if (value is string)
                 //     query = query.Replace(placeholder, $"'{value}'");
                 // else
                 //     query = query.Replace(placeholder, value.ToString());
-                
+
+                value = value.Replace("'", "''");
                 query = query.Replace(placeholder, $"'{value}'");
             }
-
             return query;
-            
         }
 
         /// <summary>
