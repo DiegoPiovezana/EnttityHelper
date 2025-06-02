@@ -416,7 +416,8 @@ namespace EH.Command
         //     
         //     return (IList)(result ?? Array.Empty<object>());
         // }
-
+        
+        // TODO: adjust filter parameter
         public List<TEntity>? Get<TEntity>(bool includeAll, string? filter, string? tableName, int? pageSize, int pageIndex, string? sortColumn, bool sortAscending) where TEntity : class
         {
             var querySelect = _enttityHelper.GetQuery.Get<TEntity>(filter, _enttityHelper.ReplacesTableName, tableName);

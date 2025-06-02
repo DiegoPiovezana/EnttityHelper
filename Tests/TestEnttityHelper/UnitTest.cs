@@ -888,31 +888,31 @@ namespace TestEH_UnitTest
         }
 
 
-        [Test, Order(201)]
+        [Test, Order(455)]
         public void TestManyUpdates()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
-                Career carrer1 = new(2011, "Developer");
-                Career carrer2 = new(2012, "Management");
-                Career carrer3 = new(2013, "Analyst");
+                Career carrer1 = new(45501, "Developer");
+                Career carrer2 = new(45502, "Management");
+                Career carrer3 = new(45503, "Analyst");
                 long resultCarrer = eh.Insert(new List<Career> { carrer1, carrer2, carrer3 });
                 Assert.That(resultCarrer, Is.EqualTo(3));
 
                 //int deletes = eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE ID IN (1, 2, 3)");
 
                 // Create many entities
-                User user1 = new("Diego Piovezana") { Id = 2011, GitHub = "@DiegoPiovezana18", DtCreation = DateTime.Now, IdCareer = 2013 };
-                User user2 = new("User Test Two") { Id = 2012, GitHub = "@UserTestTwo18", DtCreation = DateTime.Now, IdCareer = 2011 };
-                User user3 = new("User Test Three") { Id = 2013, GitHub = "@UserTestThree18", DtCreation = DateTime.Now, IdCareer = 2011 };
+                User user1 = new("Diego Piovezana") { Id = 45501, GitHub = "@DiegoPiovezana18", DtCreation = DateTime.Now, IdCareer = 45503 };
+                User user2 = new("User Test Two") { Id = 45502, GitHub = "@UserTestTwo18", DtCreation = DateTime.Now, IdCareer = 45501 };
+                User user3 = new("User Test Three") { Id = 45503, GitHub = "@UserTestThree18", DtCreation = DateTime.Now, IdCareer = 45501 };
 
                 List<User>? users = new() { user1, user2, user3 };
                 long result1 = eh.Insert(users);
                 Assert.That(result1 == 3, Is.EqualTo(true));
 
                 // Update entities
-                user1.IdCareer = 2011;
+                user1.IdCareer = 45501;
                 user2.Name = "User Test Two Updt";
                 user3.GitHub = "@UpdtUserTestThree18";
 
@@ -920,7 +920,7 @@ namespace TestEH_UnitTest
                 Assert.That(result2 == 3, Is.EqualTo(true));
 
                 // Update one entity
-                User user4 = new("User Test Four") { Id = 2014, GitHub = "@UserTestFour18", DtCreation = DateTime.Now, IdCareer = 2012 };
+                User user4 = new("User Test Four") { Id = 45504, GitHub = "@UserTestFour18", DtCreation = DateTime.Now, IdCareer = 45502 };
                 long result3 = eh.Insert(user4);
                 Assert.That(result3 == 1, Is.EqualTo(true));
                 user4.GitHub = "@UpdtUserTestFour18";
@@ -1198,8 +1198,8 @@ namespace TestEH_UnitTest
             /////////////////////////////////////////////////// 
             // CREATE TABLE
 
-            eh.CreateTableIfNotExist<Group>(true); // The M:N auxiliary table will not be created here
-            eh.CreateTableIfNotExist<User>(false); // It will be created here
+            eh.CreateTableIfNotExist<Group>(createOnlyPrimaryTable: true); // The M:N auxiliary table will not be created here
+            eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false); // It will be created here
             eh.CreateTableIfNotExist<Career>(false);
 
 
