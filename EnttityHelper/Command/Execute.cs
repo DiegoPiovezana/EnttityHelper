@@ -551,14 +551,23 @@ namespace EH.Commands
             
             // Cases for specific types
             // TODO: Improve this logic to handle more types and providers
-            if (realType.IsEnum && sqlType.ToLower().Contains("char"))
-                switch (dbContext.Provider)
+            if (sqlType.ToLower().Contains("char") && dbParam.DbType != DbType.String)
+            {
+                try
                 {
-                    case Enums.DbProvider.Oracle or Enums.DbProvider.SqlServer:
-                        dbParam.Value = dbParam.Value.ToString(); 
-                        break;
-                };
-            
+                    switch (dbContext.Provider)
+                    {
+                        case Enums.DbProvider.Oracle or Enums.DbProvider.SqlServer:
+                            dbParam.Value = dbParam.Value.ToString();
+                            break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+            }
+
             // Cases for specific database providers
             switch (dbContext.Provider)
             {
