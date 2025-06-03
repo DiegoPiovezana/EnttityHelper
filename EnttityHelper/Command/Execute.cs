@@ -107,7 +107,7 @@ namespace EH.Commands
                     dbParam.Value = param.Value?.Value ?? DBNull.Value;
                     dbParam.Direction = ParameterDirection.Input;
                     
-                    AdjustDbTypeForProvider(dbParam, dbContext);
+                    AdjustDbTypeForProvider(dbParam, dbContext, param.Value?.Type);
                     
                     command.Parameters.Add(dbParam);
                 }
@@ -235,7 +235,7 @@ namespace EH.Commands
                         dbParam.Value = param.Value?.Value ?? DBNull.Value;
                         dbParam.Direction = ParameterDirection.Input;
                         
-                        AdjustDbTypeForProvider(dbParam, dbContext);
+                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value?.Type);
                         
                         command.Parameters.Add(dbParam);
                     }
@@ -247,7 +247,7 @@ namespace EH.Commands
                         dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
                         dbParam.Direction = ParameterDirection.Output;
                         
-                        AdjustDbTypeForProvider(dbParam, dbContext);
+                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value?.Type);
                         
                         command.Parameters.Add(dbParam);
                     }
@@ -426,7 +426,7 @@ namespace EH.Commands
                         // dbParam.DbType = param.Value.DbType;
                         dbParam.Direction = ParameterDirection.Input;
                         
-                        AdjustDbTypeForProvider(dbParam, dbContext);
+                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value?.Type);
                         
                         command.Parameters.Add(dbParam);
                     }
@@ -445,7 +445,7 @@ namespace EH.Commands
                         dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
                         dbParam.Direction = ParameterDirection.Output;
                         
-                        AdjustDbTypeForProvider(dbParam, dbContext);
+                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value?.Type);
 
                         // if (dbParam.DbType == DbType.String || dbParam.DbType == DbType.AnsiString)
                         //     dbParam.Size = 4000;
@@ -545,8 +545,21 @@ namespace EH.Commands
             }
         }
         
-        private static void AdjustDbTypeForProvider(IDbDataParameter dbParam, Database dbContext)
+        private static void AdjustDbTypeForProvider(IDbDataParameter dbParam, Database dbContext, Type? realType)
         {
+            string sqlType = dbContext.TypesDefault?.FirstOrDefault(x => x.Key == realType.Name).Value;
+            
+            // Cases for specific types
+            // TODO: Improve this logic to handle more types and providers
+            if (realType.IsEnum && sqlType.ToLower().Contains("char"))
+                switch (dbContext.Provider)
+                {
+                    case Enums.DbProvider.Oracle or Enums.DbProvider.SqlServer:
+                        dbParam.Value = dbParam.Value.ToString(); 
+                        break;
+                };
+            
+            // Cases for specific database providers
             switch (dbContext.Provider)
             {
                 case Enums.DbProvider.Oracle:
