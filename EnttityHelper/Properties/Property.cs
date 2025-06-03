@@ -175,10 +175,8 @@ namespace EH.Properties
             IsRequired = propertyInfo.GetCustomAttribute<RequiredAttribute>() != null;
             IsCollection = propertyInfo.PropertyType != typeof(string) && typeof(System.Collections.IEnumerable).IsAssignableFrom(propertyInfo.PropertyType);
 
-            MaxLength = propertyInfo.GetCustomAttribute<MaxLengthAttribute>()?.Length;
-            MinLength = propertyInfo.GetCustomAttribute<MinLengthAttribute>()?.Length;
-            MaxLength = propertyInfo.GetCustomAttribute<StringLengthAttribute>()?.MaximumLength;
-            MinLength = propertyInfo.GetCustomAttribute<StringLengthAttribute>()?.MinimumLength;
+            MaxLength = propertyInfo.GetCustomAttribute<MaxLengthAttribute>()?.Length ?? propertyInfo.GetCustomAttribute<StringLengthAttribute>()?.MaximumLength;
+            MinLength = propertyInfo.GetCustomAttribute<MinLengthAttribute>()?.Length ?? propertyInfo.GetCustomAttribute<StringLengthAttribute>()?.MinimumLength;
 
             Type = Nullable.GetUnderlyingType(propertyInfo.PropertyType) ?? propertyInfo.PropertyType;
             // DbType = ToolsProp.MapToDbType(Type);
