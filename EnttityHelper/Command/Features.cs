@@ -441,7 +441,8 @@ namespace EH.Command
                 if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
                 using IDbConnection dbConnection = _enttityHelper.DbContext.CreateOpenConnection();
-                using IDbCommand command = _enttityHelper.DbContext.CreateCommand($"SELECT COUNT(*) FROM {tableName} WHERE {filter ?? "1 = 1"}");
+                var countQuery = _enttityHelper.GetQuery.CheckIfExist(tableName, filter);
+                using IDbCommand command = _enttityHelper.DbContext.CreateCommand(countQuery);
                 object result = command.ExecuteScalar(); // >= 0
 
                 if (result != null && result != DBNull.Value) { return Convert.ToInt32(result) >= minRecords; }
