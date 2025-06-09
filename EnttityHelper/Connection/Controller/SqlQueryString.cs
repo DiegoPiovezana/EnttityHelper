@@ -95,26 +95,29 @@ namespace EH.Connection
             // if (EnttityHelper is null) { throw new ArgumentNullException(nameof(EnttityHelper)); }
 
             dbType ??= Database.Provider;
+            
             replacesTableName ??= EnttityHelper?.ReplacesTableName;
             tableName1 ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
+            string tableName1Escaped = EscapeIdentifier(tableName1);
+            
             var pk = ToolsProp.GetPK(entity);
 
             var queryCommand = dbType switch
             {
                 Enums.DbProvider.Oracle => new QueryCommand(
-                    sql: $"INSERT INTO {tableName1} ({columns}) VALUES ({parametersSql}) RETURNING {pk.Name} INTO :Result",
+                    sql: $"INSERT INTO {tableName1Escaped} ({columns}) VALUES ({parametersSql}) RETURNING {pk.Name} INTO :Result",
                     parameters: filteredProperties,
                     parametersOutput: new Dictionary<string, Property> { { "Result", new Property(pk, entity) } }
                 ),
                 Enums.DbProvider.SqlServer => new QueryCommand
                 (
-                    sql: $"INSERT INTO {tableName1} ({columns}) OUTPUT INSERTED.{pk.Name} VALUES ({parametersSql})",
+                    sql: $"INSERT INTO {tableName1Escaped} ({columns}) OUTPUT INSERTED.{pk.Name} VALUES ({parametersSql})",
                     parameters: filteredProperties,
                     parametersOutput: new Dictionary<string, Property> { { "Result", new Property(pk, entity) } }
                 ),
                 Enums.DbProvider.SqLite => new QueryCommand
                 (
-                    sql: $"INSERT INTO {tableName1} ({columns}) VALUES ({parametersSql}) RETURNING {pk.Name}",
+                    sql: $"INSERT INTO {tableName1Escaped} ({columns}) VALUES ({parametersSql}) RETURNING {pk.Name}",
                     parameters: filteredProperties,
                     parametersOutput: new Dictionary<string, Property> { { "Result", new Property(pk, entity) } }
                 ),
@@ -135,6 +138,7 @@ namespace EH.Connection
                 Type collectionType = invProp.Value.PropertyInfo.PropertyType;
                 Type entity2Type = collectionType.GetGenericArguments()[0];
                 string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(entity.GetType(), invProp.Value.PropertyInfo, replacesTableName);
+                string tableNameInversePropertyEscaped = EscapeIdentifier(tableNameInverseProperty);
 
                 if (invProp.Value.IsCollection != true) { throw new InvalidOperationException("The InverseProperty property must be a collection."); }
 
@@ -164,7 +168,7 @@ namespace EH.Connection
                         {
                             object idValue2 = prop2.GetValue(item);
                             // queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{idValue2}')");
-                            string sql = $@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ({Database.PrefixParameter}ID1, {Database.PrefixParameter}ID_{idTb2})";
+                            string sql = $@"INSERT INTO {tableNameInversePropertyEscaped } (ID_{idTb1}, ID_{idTb2}) VALUES ({Database.PrefixParameter}ID1, {Database.PrefixParameter}ID_{idTb2})";
                             
                             Dictionary<string, Property> parameters = new()
                             {
@@ -200,12 +204,14 @@ namespace EH.Connection
             List<QueryCommand?> queries = new();
 
             tableName ??= ToolsProp.GetTableName<TEntity>(enttityHelper.ReplacesTableName);
+            string tableNameEscaped = EscapeIdentifier(tableName);
+            
             nameId ??= ToolsProp.GetPK(entity)?.Name ?? throw new InvalidOperationException("No primary key found!");
 
             Dictionary<string, Property> properties = ToolsProp.GetProperties(entity, true, false);
             
             StringBuilder queryBuilder = new();
-            queryBuilder.Append($@"UPDATE {tableName} SET ");
+            queryBuilder.Append($@"UPDATE {tableNameEscaped } SET ");
             
             //Dictionary<string, Property> parameters = new();
             
@@ -243,6 +249,7 @@ namespace EH.Connection
                 Type collectionType = invProp.PropertyType;
                 Type entity2Type = collectionType.GetGenericArguments()[0];
                 string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(entity.GetType(), invProp, enttityHelper.ReplacesTableName);
+                string tableNameInversePropertyEscaped = EscapeIdentifier(tableNameInverseProperty);
 
                 var tableName1 = ToolsProp.GetTableName(entity.GetType(), enttityHelper.ReplacesTableName); // Ex.: TB_USER
                 var tableName2 = ToolsProp.GetTableName(entity2Type, enttityHelper.ReplacesTableName);  // Ex.: TB_GROUP_USERS
@@ -278,7 +285,7 @@ namespace EH.Connection
                 };
 
                 QueryCommand queryCommandSelect = new QueryCommand(
-                    $@"SELECT ID_{tableName2} FROM {tableNameInverseProperty} WHERE ID_{tableName1} = '{pk1.GetValue(entity)}'",
+                    $@"SELECT ID_{tableName2} FROM {tableNameInversePropertyEscaped} WHERE ID_{tableName1} = '{pk1.GetValue(entity)}'",
                     parametersSelect,
                     null
                     );
@@ -343,7 +350,7 @@ namespace EH.Connection
                         {
                             // queries.Add($@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ('{idValue1}', '{itemInsert}')");
 
-                            string sql = $@"INSERT INTO {tableNameInverseProperty} (ID_{idTb1}, ID_{idTb2}) VALUES ({Database.PrefixParameter}ID_{idTb1}, {Database.PrefixParameter}ID_{idTb2})";
+                            string sql = $@"INSERT INTO {tableNameInversePropertyEscaped} (ID_{idTb1}, ID_{idTb2}) VALUES ({Database.PrefixParameter}ID_{idTb1}, {Database.PrefixParameter}ID_{idTb2})";
 
                             Dictionary<string, Property> parametersInsert = new()
                             {
@@ -370,7 +377,7 @@ namespace EH.Connection
                         if (!itemContains)
                         {
                             // queries.Add($@"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = '{idValue1}' AND ID_{idTb2} = '{itemDelete}'");
-                            string sql =$"DELETE FROM {tableNameInverseProperty} WHERE ID_{idTb1} = {Database.PrefixParameter}ID_{idTb1} AND ID_{idTb2} = {Database.PrefixParameter}ID_{idTb2}";
+                            string sql =$"DELETE FROM {tableNameInversePropertyEscaped} WHERE ID_{idTb1} = {Database.PrefixParameter}ID_{idTb1} AND ID_{idTb2} = {Database.PrefixParameter}ID_{idTb2}";
                             
                             Dictionary<string, Property> parametersDelete = new()
                             {
@@ -399,8 +406,9 @@ namespace EH.Connection
         {
             filter = string.IsNullOrEmpty(filter?.Trim()) ? "1 = 1" : filter;
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
+            string tableNameEscaped = EscapeIdentifier(tableName);
             // return $@"SELECT * FROM {tableName} WHERE ({filter})";
-            return new QueryCommand($@"SELECT * FROM {tableName} WHERE ({filter})", null);
+            return new QueryCommand($@"SELECT * FROM {tableNameEscaped} WHERE ({filter})", null);
         }
 
         /// <summary>
@@ -417,6 +425,7 @@ namespace EH.Connection
             idPropName ??= ToolsProp.GetPK(entity)?.Name;
             if (idPropName is null) { return null; }
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
+            string tableNameEscaped = EscapeIdentifier(tableName);
             // return $@"SELECT * FROM {tableName} WHERE ({idPropName} = '{typeof(TEntity).GetProperty(idPropName).GetValue(entity, null)}')";
             
            Dictionary<string, Property> parameters = new()
@@ -424,7 +433,7 @@ namespace EH.Connection
                 {idPropName, new Property(typeof(TEntity).GetProperty(idPropName), entity)}
             };
             
-            return new QueryCommand($@"SELECT * FROM {tableName} WHERE ({idPropName} = {Database.PrefixParameter}{idPropName})", parameters);
+            return new QueryCommand($@"SELECT * FROM {tableNameEscaped} WHERE ({idPropName} = {Database.PrefixParameter}{idPropName})", parameters);
         }
 
         /// <summary>
@@ -447,6 +456,7 @@ namespace EH.Connection
             }
 
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
+            string tableNameEscaped = EscapeIdentifier(tableName);
 
             // TODO: typeof(TEntity) vs entity.GetType()
 
@@ -458,7 +468,7 @@ namespace EH.Connection
             };
             
             
-            return new QueryCommand($@"DELETE FROM {tableName} WHERE ({idPropName} = {Database.PrefixParameter}{idPropName})", parameters);
+            return new QueryCommand($@"DELETE FROM {tableNameEscaped} WHERE ({idPropName} = {Database.PrefixParameter}{idPropName})", parameters);
         }
 
         /// <summary>
@@ -481,6 +491,7 @@ namespace EH.Connection
             }
 
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
+            string tableNameScaped = EscapeIdentifier(tableName);
             var idPropValue = entity.GetType().GetProperty(idPropName).GetValue(entity, null);
 
             // string whereClause = $"{idPropName} = '{idPropValue}'";
@@ -488,12 +499,24 @@ namespace EH.Connection
 
             string sql = Database.Provider switch
             {
-                Enums.DbProvider.Oracle => $"SELECT 1 FROM {tableName} WHERE {whereClause} AND ROWNUM = 1",
-                Enums.DbProvider.SqlServer => $"SELECT TOP 1 FROM {tableName} WHERE {whereClause}",
-                _ => $"SELECT 1 FROM {tableName} WHERE {whereClause} LIMIT 1",
+                Enums.DbProvider.Oracle => $"SELECT 1 FROM {tableNameScaped} WHERE {whereClause} AND ROWNUM = 1",
+                Enums.DbProvider.SqlServer => $"SELECT TOP 1 FROM {tableNameScaped} WHERE {whereClause}",
+                _ => $"SELECT 1 FROM {tableNameScaped} WHERE {whereClause} LIMIT 1",
             };
             
            return new(sql, null);
+        }
+
+        /// <summary>
+        /// Generates an SQL query to check if a record exists in the specified table based on the given filter condition.
+        /// </summary>
+        /// <param name="tableName">The name of the database table to query.</param>
+        /// <param name="filter">The SQL filter condition to apply when checking for the record. If null, a default condition "1 = 1" is applied.</param>
+        /// <returns>A string representing the SQL query for checking the existence of a record in the specified table.</returns>
+        public string CheckIfExist(string tableName, string? filter)
+        {
+            string tableNameScaped = EscapeIdentifier(tableName);
+            return $"SELECT COUNT(*) FROM {tableNameScaped} WHERE {filter ?? "1 = 1"}";
         }
 
         /// <summary>
@@ -525,6 +548,7 @@ namespace EH.Connection
             }
 
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
+            string tableNameEscaped = EscapeIdentifier(tableName);
 
             // var idPropValue = entity.GetType().GetProperty(idPropName).GetValue(entity, null);
 
@@ -537,7 +561,7 @@ namespace EH.Connection
                 {idPropName, new Property(entity.GetType().GetProperty(idPropName), entity)}
             };
             
-            return new QueryCommand($@"SELECT COUNT(*) FROM {tableName} WHERE ({idPropName} = {Database.PrefixParameter}{idPropName})", parameters);
+            return new QueryCommand($@"SELECT COUNT(*) FROM {tableNameEscaped} WHERE ({idPropName} = {Database.PrefixParameter}{idPropName})", parameters);
         }
 
         /// <summary>
@@ -558,6 +582,7 @@ namespace EH.Connection
             Dictionary<string, QueryCommand?> queryCreatesTable = new();
             StringBuilder queryBuilderPrincipal = new();
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
+            string tableNameEscaped = EscapeIdentifier(tableName);
 
             Type entityType = typeof(TEntity);
             Type itemType = entityType;
@@ -567,7 +592,7 @@ namespace EH.Connection
             var properties = ToolsProp.GetProperties(entity, false, false);
             var pk = ToolsProp.GetPK(entity);
 
-            queryBuilderPrincipal.Append($@"CREATE TABLE {tableName} (");
+            queryBuilderPrincipal.Append($@"CREATE TABLE {tableNameEscaped} (");
 
             foreach (KeyValuePair<string, Property> prop in properties)
             {
@@ -689,12 +714,13 @@ namespace EH.Connection
             string tableEntity2 = table2Attribute.Name ?? entity2Type.Name;
 
             string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(entity1Type, propEntity2.PropertyInfo, replacesTableName);
+            string tableNameManyToManyEscaped = EscapeIdentifier(tableNameManyToMany);
 
             string idTb1 = tableEntity1.Substring(0, Math.Min(tableEntity1.Length, 27));
             string idTb2 = tableEntity2.Substring(0, Math.Min(tableEntity2.Length, 27));
 
             string queryCollection =
-                $@"CREATE TABLE {tableNameManyToMany} (" +
+                $@"CREATE TABLE {tableNameManyToManyEscaped} (" +
                 $@"ID_{tableEntity1} INT, ID_{tableEntity2} INT, " +
                 $@"PRIMARY KEY (ID_{idTb1}, ID_{idTb2}), " +
                 $@"FOREIGN KEY (ID_{idTb1}) REFERENCES {idTb1}({pkEntity1}), " +
@@ -725,8 +751,9 @@ namespace EH.Connection
 
             StringBuilder queryBuilder = new();
             tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, replacesTableName);
+            string tableNameEscaped = EscapeIdentifier(tableName);
 
-            queryBuilder.Append($@"CREATE TABLE {tableName} (");
+            queryBuilder.Append($@"CREATE TABLE {tableNameEscaped} (");
 
             var columns = dataTable.Columns;
             foreach (DataColumn column in columns)
@@ -765,8 +792,10 @@ namespace EH.Connection
         /// <returns>A SQL query to add the foreign key constraint.</returns>
         public QueryCommand AddForeignKeyConstraint(string tableName, string childKeyColumn, string parentTableName, string parentKeyColumn, string foreignKeyName)
         {
+            string tableNameEscaped = EscapeIdentifier(tableName);
+            
             string sql = $@"
-                ALTER TABLE {tableName}
+                ALTER TABLE {tableNameEscaped}
                 ADD CONSTRAINT {foreignKeyName}
                 FOREIGN KEY ({childKeyColumn})
                 REFERENCES {parentTableName}({parentKeyColumn});";
@@ -953,6 +982,29 @@ namespace EH.Connection
             }
         }
 
+        /// <summary>
+        /// Escapes the provided identifier based on the database provider,
+        /// supporting dot-separated schema/table names.
+        /// </summary>
+        /// <param name="name">The identifier to be escaped (e.g., "dbo.User").</param>
+        /// <returns>The escaped identifier specific to the configured database provider.</returns>
+        private string EscapeIdentifier(string name)
+        {
+            var parts = name.Split('.');
+    
+            return string.Join(".",
+                parts.Select(part =>
+                    Database.Provider switch
+                    {
+                        Enums.DbProvider.Oracle => $"\"{part}\"",
+                        Enums.DbProvider.SqlServer => $"[{part}]",
+                        Enums.DbProvider.SqLite => $"`{part}`",
+                        Enums.DbProvider.PostgreSql => $"\"{part}\"",
+                        Enums.DbProvider.MySql => $"`{part}`",
+                        _ => $"`{part}`"
+                    }
+                ));
+        }
 
 
 
