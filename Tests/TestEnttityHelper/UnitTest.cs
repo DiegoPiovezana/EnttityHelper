@@ -33,16 +33,34 @@ namespace TestEH_UnitTest
         {
 
         }
+        
+        private string ConvertToVarchar(string columnName, EnttityHelper eh)
+        {
+            return eh.DbContext.Provider switch
+            {
+                Enums.DbProvider.Oracle=> $"TO_CHAR({columnName})",
+                Enums.DbProvider.SqlServer => $"CAST({columnName} AS VARCHAR)",
+                _ => $"CAST({columnName} AS VARCHAR)"
+            };
+        }
 
         private void ResetTables(string idTest)
         {
             EnttityHelper eh = new(stringConnectionBd1);
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE TO_CHAR(ID_TB_GROUP_USERS) LIKE '{idTest}__' OR TO_CHAR(ID_TB_USERS) LIKE '{idTest}__'");  // DELETE FROM TB_GROUP_USERStoGROUPS
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '{idTest}__'");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '{idTest}__'");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '{idTest}__'");
-            if (eh.CheckIfExist(eh.GetTableName<Ticket>())) eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Ticket>()} WHERE TO_CHAR({nameof(Ticket.IdLog)}) LIKE '{idTest}__'");
+            string idGroup = ConvertToVarchar("ID_TB_GROUP_USERS", eh);
+            string idUser = ConvertToVarchar("ID_TB_USERS", eh);
+            string userId = ConvertToVarchar(nameof(User.Id), eh);
+            string groupId = ConvertToVarchar(nameof(Group.Id), eh);
+            string careerId = ConvertToVarchar(nameof(Career.IdCareer), eh);
+            string ticketId = ConvertToVarchar(nameof(Ticket.IdLog), eh);
+
+            eh.ExecuteNonQuery($@"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE {idGroup} LIKE '{idTest}__' OR {idUser} LIKE '{idTest}__'");
+            eh.ExecuteNonQuery($@"DELETE FROM {eh.GetTableName<User>()} WHERE {userId} LIKE '{idTest}__'");
+            eh.ExecuteNonQuery($@"DELETE FROM {eh.GetTableName<Group>()} WHERE {groupId} LIKE '{idTest}__'");
+            eh.ExecuteNonQuery($@"DELETE FROM {eh.GetTableName<Career>()} WHERE {careerId} LIKE '{idTest}__'");
+            if (eh.CheckIfExist(eh.GetTableName<Ticket>())) { eh.ExecuteNonQuery($@"DELETE FROM {eh.GetTableName<Ticket>()} WHERE {ticketId} LIKE '{idTest}__'"); }
         }
+
 
         [Test, Order(1)]
         public void TestPass()
@@ -210,7 +228,7 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
-                var result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 90");
+                var result = eh.ExecuteNonQuery("DELETE FROM SYSTEM.TB_ENTITY_TEST WHERE ID = 90");
                 Assert.That(result, Is.EqualTo(1));
             }
             else
@@ -235,7 +253,7 @@ namespace TestEH_UnitTest
 
                 if (entities is not null && entities[0].Name.Equals("Testando 2 entidade 300 atualizando hora via C#"))
                 {
-                    long result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 300");
+                    long result = eh.ExecuteNonQuery("DELETE FROM SYSTEM.TB_ENTITY_TEST WHERE ID = 300");
                     Assert.That(result, Is.EqualTo(1));
                 }
             }
@@ -252,6 +270,8 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
+                eh.ExecuteNonQuery("DELETE FROM SYSTEM.TB_ENTITY_TEST WHERE ID = 300");
+                
                 EntityTest entityTest = new() { Id = 300, Name = "Testando 1 entidade 100 via C#", StartDate = DateTime.Now };
                 eh.Insert(entityTest, true, nameof(entityTest.Id));
 
@@ -262,7 +282,7 @@ namespace TestEH_UnitTest
 
                 if (entities is not null && entities[0].Name.Equals("Testando 2 entidade 300 atualizando hora via C#"))
                 {
-                    long result = eh.ExecuteNonQuery("DELETE FROM TB_ENTITY_TEST WHERE ID = 300");
+                    long result = eh.ExecuteNonQuery("DELETE FROM SYSTEM.TB_ENTITY_TEST WHERE ID = 300");
                     Assert.That(result, Is.EqualTo(1));
                 }
             }
@@ -282,10 +302,10 @@ namespace TestEH_UnitTest
             eh.CreateTableIfNotExist<Career>(createOnlyPrimaryTable: false);
             eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: true);
 
-            var deletesOld = eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR(ID) LIKE '12%'");
+            var deletesOld = eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE {ConvertToVarchar("ID", eh)} LIKE '12%'");
             Assert.IsTrue(deletesOld >= 0 && deletesOld <= 2);
 
-            deletesOld = eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR(IDCAREER) LIKE '12%'");
+            deletesOld = eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE {ConvertToVarchar("IDCAREER", eh)} LIKE '12%'");
             Assert.IsTrue(deletesOld >= 0 && deletesOld <= 2);
 
             // Insert a career entity
@@ -360,7 +380,7 @@ namespace TestEH_UnitTest
             long resultGroups = eh.Insert(new List<Group>() { group1, group2 });
             Assert.That(resultGroups == 2, Is.EqualTo(true));
 
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '13__'"); // DELETE FROM TB_USER
+            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '13__'"); // DELETE FROM TB_USER
 
             // Insert user with group
             User user1 = new() { Id = 1301, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1301 };
@@ -424,7 +444,10 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 // Empty columns will automatically have the Object type. In the database, the Object type will be NVARCHAR2(100)
-                eh.TypesDefault.Add("Object", "NVARCHAR2(100)");
+                if (eh.DbContext.Provider == Enums.DbProvider.Oracle)
+                    eh.TypesDefault.Add("Object", "NVARCHAR2(100)");
+                else if (eh.DbContext.Provider == Enums.DbProvider.SqlServer)
+                    eh.TypesDefault.Add("Object", "NVARCHAR(100)");
 
                 // Reads the first tab of the DataTable
                 var dt = SheetHelper.GetDataTable(@"C:\Users\diego\Desktop\Tests\Converter\ColunasExcel.xlsx", "1");
@@ -540,7 +563,7 @@ namespace TestEH_UnitTest
                 eh.Insert(userD);
 
                 // Modify entity
-                userD.Name = "Di�go Piovezana";
+                userD.Name = "Diêgo Piovezana";
 
                 // Update in database
                 eh.Update(userD);
@@ -556,10 +579,11 @@ namespace TestEH_UnitTest
                 // Gets all users registered in the last week
                 List<User>? usersWeek = eh.Get<User>()?.Where(u => u.DtCreation > DateTime.Now.AddDays(-7)).ToList();
 
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE TO_CHAR(ID_TB_GROUP_USERS) LIKE '103%' OR TO_CHAR(ID_TB_USERS) LIKE '103%'");  // DELETE FROM TB_GROUP_USERStoGROUPS
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '103%'");
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '103%'");
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '103%'");
+                // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE {ConvertToVarchar("ID_TB_GROUP_USERS", eh)} LIKE '103%' OR {ConvertToVarchar("ID_TB_USERS", eh)} LIKE '103%'");  // DELETE FROM TB_GROUP_USERStoGROUPS
+                // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '103%'");
+                // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE {ConvertToVarchar(nameof(Group.Id), eh)} LIKE '103%'");
+                // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE {ConvertToVarchar(nameof(Career.IdCareer), eh)} LIKE '103%'");
+                ResetTables("103");
             }
             else
             {
@@ -587,19 +611,19 @@ namespace TestEH_UnitTest
                     Assert.AreEqual(result, 1);
                 }
 
-                var deletesOld = eh.ExecuteNonQuery("DELETE FROM TB_USERS WHERE TO_CHAR(ID) LIKE '104%'");
+                var deletesOld = eh.ExecuteNonQuery($"DELETE FROM TB_USERS WHERE {ConvertToVarchar("ID", eh)} LIKE '104%'");
                 Assert.IsTrue(deletesOld >= 0 && deletesOld <= 4);
 
                 // Test for one entity
-                User entityTest = new("Diego Piovezana One") { Id = 1041, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 10 };
+                User entityTest = new("Diego Piovezana One") { Id = 10401, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 10 };
                 bool result1 = eh.Insert(entityTest, true, nameof(entityTest.GitHub), true) == 1;
                 if (result1) { Assert.AreEqual(eh.Delete(entityTest), 1); }
                 Assert.That(result1, Is.EqualTo(true));
 
                 // Create many entities
-                User user1 = new("Diego Piovezana One Repeat") { Id = 1042, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 10 };
-                User user2 = new("User Test One") { Id = 1043, GitHub = "@UserTestOne", DtCreation = DateTime.Now, IdCareer = 10 };
-                User user3 = new("User Test Two") { Id = 1044, GitHub = "@UserTestTwo", DtCreation = DateTime.Now, IdCareer = 10 };
+                User user1 = new("Diego Piovezana One Repeat") { Id = 10402, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 10 };
+                User user2 = new("User Test One") { Id = 10403, GitHub = "@UserTestOne", DtCreation = DateTime.Now, IdCareer = 10 };
+                User user3 = new("User Test Two") { Id = 10404, GitHub = "@UserTestTwo", DtCreation = DateTime.Now, IdCareer = 10 };
                 List<User>? users = new() { user1, user2, user3 };
 
                 // Inserts the entities                
@@ -607,7 +631,7 @@ namespace TestEH_UnitTest
                 Assert.AreEqual(result2, 3);
 
                 // Test for one entity
-                User entityError = new("John Tester") { Id = 1045, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 100 };
+                User entityError = new("John Tester") { Id = 10405, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 100 };
                 var ex = Assert.Throws<InvalidOperationException>(() => eh.Insert(entityError, true, nameof(entityTest.GitHub), true));
                 Assert.That(ex.Message, Does.Contain("Career with IdCareer '100' or table 'TB_CAREERS' does not exist!"));
 
@@ -626,9 +650,9 @@ namespace TestEH_UnitTest
                 eh.CreateTableIfNotExist<User>(false);
 
                 eh.CreateTableIfNotExist<Career>(true);
-                Career carrer1 = new() { IdCareer = 1, Name = "Junior", CareerLevel = 1, Active = true };
-                Career carrer2 = new() { IdCareer = 2, Name = "Pleno", CareerLevel = 2, Active = true };
-                Career carrer3 = new() { IdCareer = 3, Name = "Senior", CareerLevel = 3, Active = true };
+                Career carrer1 = new() { IdCareer = 10501, Name = "Junior", CareerLevel = 1, Active = true };
+                Career carrer2 = new() { IdCareer = 10502, Name = "Pleno", CareerLevel = 2, Active = true };
+                Career carrer3 = new() { IdCareer = 10503, Name = "Senior", CareerLevel = 3, Active = true };
                 if (eh.CheckIfExist(eh.GetTableName<Career>(), 1, $"{nameof(Career.IdCareer)} = {carrer1.IdCareer}")) eh.Delete(carrer1, nameof(Career.IdCareer));
                 if (eh.CheckIfExist(eh.GetTableName<Career>(), 1, $"{nameof(Career.IdCareer)} = {carrer2.IdCareer}")) eh.Delete(carrer2);
                 if (eh.CheckIfExist(eh.GetTableName<Career>(), 1, $"{nameof(Career.IdCareer)} = {carrer3.IdCareer}")) eh.Delete(carrer3);
@@ -651,12 +675,12 @@ namespace TestEH_UnitTest
 
 
                 // Test for one entity - Without Career
-                User entityTest1 = new("Diego Piovezana One") { Id = 1051, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now };
+                User entityTest1 = new("Diego Piovezana One") { Id = 10501, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now };
                 long result2 = eh.Insert(entityTest1, true, nameof(entityTest1.GitHub), true);
                 Assert.AreEqual(1, result2);
 
                 // Test for one entity - With Career
-                User entityTest2 = new("Diego Piovezana Two") { Id = 1052, GitHub = "@DiegoPiovezanaTwo", DtCreation = DateTime.Now, IdCareer = 3 };
+                User entityTest2 = new("Diego Piovezana Two") { Id = 10502, GitHub = "@DiegoPiovezanaTwo", DtCreation = DateTime.Now, IdCareer = 3 };
                 long result3 = eh.Insert(entityTest2, true, nameof(entityTest2.GitHub), true);
                 Assert.AreEqual(1, result3);
 
@@ -674,14 +698,14 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 // INSERT THE MANY ENTITIES (MXN)
-                Group group4 = new() { Id = 1061, Name = "Masters106-2", Description = "Masters Group" };
-                Group group5 = new() { Id = 1062, Name = "Managers106", Description = "Managers Group" };
+                Group group4 = new() { Id = 10601, Name = "Masters106-2", Description = "Masters Group" };
+                Group group5 = new() { Id = 10602, Name = "Managers106", Description = "Managers Group" };
                 List<Group> groups = new() { group4, group5 };
                 long result3 = eh.Insert(groups, true, nameof(Group.Name), true);
                 Assert.That(result3 == 2, Is.EqualTo(true));
 
                 eh.CreateTableIfNotExist<Career>(true);
-                Career carrer1 = new() { IdCareer = 1061, Name = "Manag", CareerLevel = 5, Active = true };
+                Career carrer1 = new() { IdCareer = 10601, Name = "Manag", CareerLevel = 5, Active = true };
                 long countCarrer1 = eh.CountEntity(carrer1);
                 Assert.IsTrue(countCarrer1 == 0 || countCarrer1 == 1);
                 if (countCarrer1 == 0)
@@ -693,7 +717,7 @@ namespace TestEH_UnitTest
                 // It is necessary to first insert the groups, and then link them to the user
                 // Otherwise, the local ID of groups 4 and 5 will be incorrectly used, instead of the one defined by the database.
 
-                User userM = new("Maria da Silva") { Id = 1061, GitHub = "@MariaSilva", DtCreation = DateTime.Now, IdCareer = 1061 };
+                User userM = new("Maria da Silva") { Id = 10601, GitHub = "@MariaSilva", DtCreation = DateTime.Now, IdCareer = 1061 };
                 userM.Groups.Add(group4);
                 userM.Groups.Add(group5);
                 long result4 = eh.Insert(userM, true, nameof(userM.GitHub), true);
@@ -716,7 +740,7 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
-                Career carrer2 = new() { IdCareer = 1072, Name = "Pleno", CareerLevel = 2, Active = true };
+                Career carrer2 = new() { IdCareer = 10702, Name = "Pleno", CareerLevel = 2, Active = true };
 
                 if (!eh.CheckIfExist(
                     eh.GetTableName<Career>(),
@@ -730,8 +754,8 @@ namespace TestEH_UnitTest
                 }
 
                 // INSERT THE MANY ENTITIES (NXM)
-                User userX = new("Jayme Souza") { Id = 1071, GitHub = "@JSouza", DtCreation = DateTime.Now, IdCareer = 1072 };
-                User userY = new("Bruna Corsa") { Id = 1072, GitHub = "@BrunaCorsa", DtCreation = DateTime.Now };
+                User userX = new("Jayme Souza") { Id = 10701, GitHub = "@JSouza", DtCreation = DateTime.Now, IdCareer = 1072 };
+                User userY = new("Bruna Corsa") { Id = 10702, GitHub = "@BrunaCorsa", DtCreation = DateTime.Now };
                 List<User> users = new() { userX, userY };
                 long result5 = eh.Insert(users, true, nameof(User.Name), false);
                 Assert.AreEqual(result5, 2);
@@ -767,8 +791,8 @@ namespace TestEH_UnitTest
                 eh.CreateTableIfNotExist<Group>(createOnlyPrimaryTable: true);
                 // ATTENTION: The User table depends on the Group to establish the MxN relationship and create the auxiliary table (even if users without group)
 
-                User userX = new("Jayme Souza") { Id = 1081, GitHub = "@JSouza108", DtCreation = DateTime.Now };
-                User userY = new("Bruna Corsa") { Id = 1082, GitHub = "@BrunaCorsa108", DtCreation = DateTime.Now };
+                User userX = new("Jayme Souza") { Id = 10801, GitHub = "@JSouza108", DtCreation = DateTime.Now };
+                User userY = new("Bruna Corsa") { Id = 10802, GitHub = "@BrunaCorsa108", DtCreation = DateTime.Now };
                 List<User> users = new() { userX, userY };
                 long result1 = eh.Insert(entity: users, namePropUnique: nameof(User.GitHub), createTable: true);
                 Assert.That(actual: result1, expression: Is.EqualTo(expected: 2));
@@ -823,9 +847,13 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 eh.CreateTableIfNotExist<Group>(true);
-
-                User userX = new("Jayme Souza") { Id = 1091, GitHub = "@JSouza109", DtCreation = DateTime.Now };
-                User userY = new("Bruna Corsa") { Id = 1092, GitHub = "@BrunaCorsa109", DtCreation = DateTime.Now };
+                eh.CreateTableIfNotExist<Career>(true);
+                eh.CreateTableIfNotExist<User>(false);
+                
+                ResetTables("109");
+                
+                User userX = new("Jayme Souza") { Id = 10901, GitHub = "@JSouza109", DtCreation = DateTime.Now };
+                User userY = new("Bruna Corsa") { Id = 10902, GitHub = "@BrunaCorsa109", DtCreation = DateTime.Now };
                 List<User> users = new() { userX, userY };
 
                 long result1 = eh.Insert(entity: users, namePropUnique: nameof(User.GitHub), createTable: true);
@@ -843,13 +871,47 @@ namespace TestEH_UnitTest
                 }
                 catch (Exception) { } // Ignore if the sequence already exists                    
 
-                var resultTrigger = eh.ExecuteNonQuery(
-                    $"CREATE OR REPLACE TRIGGER TRIGGER_TICKET " +
-                    $"BEFORE INSERT ON TB_TICKET " +
-                    $"FOR EACH ROW " +
-                    $"BEGIN " +
-                    $":NEW.IdLog := SEQUENCE_TICKET.NEXTVAL; " +
-                    $"END;");
+                string queryCreateTriggerOracle = $"CREATE OR REPLACE TRIGGER TRIGGER_TICKET " +
+                                                  $"BEFORE INSERT ON TB_TICKET " +
+                                                  $"FOR EACH ROW " +
+                                                  $"BEGIN " +
+                                                  $":NEW.IdLog := SEQUENCE_TICKET.NEXTVAL; " +
+                                                  $"END;";
+
+                string queryCreateTriggerSqlServer = @"
+                                                    CREATE TRIGGER TRIGGER_TICKET
+                                                    ON TB_TICKET
+                                                    INSTEAD OF INSERT
+                                                    AS
+                                                    BEGIN
+                                                        INSERT INTO TB_TICKET (
+                                                            IdLog,
+                                                            DateCreate,
+                                                            IdUser,
+                                                            Number,
+                                                            Obs,
+                                                            Previous,
+                                                            After
+                                                        )
+                                                        SELECT 
+                                                            NEXT VALUE FOR SEQUENCE_TICKET,
+                                                            DateCreate,
+                                                            IdUser,
+                                                            Number,
+                                                            Obs,
+                                                            Previous,
+                                                            After
+                                                        FROM inserted;
+                                                    END;";
+                
+                if (eh.DbContext.Provider == Enums.DbProvider.Oracle)
+                {
+                    eh.ExecuteNonQuery(queryCreateTriggerOracle);
+                }
+                else if (eh.DbContext.Provider == Enums.DbProvider.SqlServer)
+                {
+                    eh.ExecuteNonQuery(queryCreateTriggerSqlServer);
+                }
 
                 // Ticket with user
                 Ticket ticketUserX = new(userX, "Obs", "Num", "Previous", "After");
@@ -1316,7 +1378,7 @@ namespace TestEH_UnitTest
             user2.Supervisor = user3; // Change supervisor (user1 -> use3) ???
             eh.Update(new List<User>() { user1, user2 });
 
-            List<User>? usersUpdated = eh.Get<User>(true, $"TO_CHAR({nameof(User.Id)}) LIKE '201%'");
+            List<User>? usersUpdated = eh.Get<User>(true, $"{ConvertToVarchar(nameof(User.Id), eh)} LIKE '201%'");
             Assert.That(usersUpdated.Count, Is.EqualTo(3));
 
             var groupsUser1 = usersUpdated.Where(u => u.Id == 20101).FirstOrDefault().Groups;
@@ -1368,10 +1430,19 @@ namespace TestEH_UnitTest
             string query = result.ToQuery(eh.DbContext);
             
             // Assert
-            StringAssert.StartsWith("INSERT INTO TB_USERS (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor) VALUES (:Id", result.Sql);
+            if (eh.DbContext.Provider == Enums.DbProvider.Oracle)
+            {
+                Assert.That(result.Sql, Does.StartWith("INSERT INTO \"TB_USERS\" (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor) VALUES (:Id, "));
+                StringAssert.EndsWith("RETURNING Id INTO :Result", query);
+            }
+            else
+            {
+                Assert.That(result.Sql, Does.StartWith("INSERT INTO [TB_USERS] (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor) OUTPUT INSERTED.Id VALUES (@Id, "));
+                StringAssert.EndsWith(", '20202', '20201')", query);
+            }
+           
             StringAssert.Contains("'20202'", query);
             StringAssert.Contains("'20201'", query);
-            StringAssert.EndsWith("RETURNING Id INTO :Result", query);
 
             Debug.WriteLine(result);
         }
@@ -1477,29 +1548,29 @@ namespace TestEH_UnitTest
 
                 string nameTable = eh.GetTableName<User>();
 
-                var notPaginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTable} WHERE TO_CHAR({nameof(User.Id)}) LIKE '204%'", pageSize: null);
+                var notPaginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTable} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: null);
                 Assert.AreEqual(countUsers, notPaginated1.Rows.Count);
 
-                var notPaginated2 = eh.ExecuteSelect<User>($"SELECT * FROM {nameTable} WHERE TO_CHAR({nameof(User.Id)}) LIKE '204%'", pageSize: null);
+                var notPaginated2 = eh.ExecuteSelect<User>($"SELECT * FROM {nameTable} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: null);
                 Assert.AreEqual(countUsers, notPaginated2.Count);
 
-                var notPaginated3 = eh.Get<User>(includeAll: false, filter: $"TO_CHAR({nameof(User.Id)}) LIKE '204%'", tableName: nameTable, pageSize: null);
+                var notPaginated3 = eh.Get<User>(includeAll: false, filter: $"{ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", tableName: nameTable, pageSize: null);
                 Assert.AreEqual(countUsers, notPaginated3.Count);
 
 
-                var paginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTable} WHERE TO_CHAR({nameof(User.Id)}) LIKE '204%'", pageSize: 10, pageIndex: 0);
+                var paginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTable} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: 10, pageIndex: 0);
                 Assert.AreEqual(10, paginated1.Rows.Count);
 
-                var paginated2 = eh.ExecuteSelect<User>($"SELECT * FROM {nameTable} WHERE TO_CHAR({nameof(User.Id)}) LIKE '204%'", pageSize: 15, pageIndex: 1);
+                var paginated2 = eh.ExecuteSelect<User>($"SELECT * FROM {nameTable} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: 15, pageIndex: 1);
                 Assert.AreEqual(5, paginated2.Count);
 
-                var paginated3 = eh.Get<User>(includeAll: false, filter: $"TO_CHAR({nameof(User.Id)}) LIKE '204%'", tableName: null, pageSize: 15, pageIndex: 1);
+                var paginated3 = eh.Get<User>(includeAll: false, filter: $"{ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", tableName: null, pageSize: 15, pageIndex: 1);
                 Assert.AreEqual(5, paginated3.Count);
             }
             finally
             {
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '204%'");
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '204%'");
+                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'");
+                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE {ConvertToVarchar(nameof(Career.IdCareer), eh)} LIKE '204%'");
             }
         }
 
@@ -1767,7 +1838,7 @@ namespace TestEH_UnitTest
 
 
             // Query com WITH e JOIN - 27 registros
-            string complexQueryWithWithAndJoin = @"
+            string complexQueryWithWithAndJoinOracle = @"
                 WITH UserGroupSummary AS (
                     SELECT 
                         u.Id AS UserId,
@@ -1779,9 +1850,26 @@ namespace TestEH_UnitTest
                     JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
                 )
                 SELECT * FROM UserGroupSummary WHERE TO_CHAR(UserId) LIKE '206%' ORDER BY GroupName, UserName";
+            
+            string complexQueryWithWithAndJoinSqlServer = @"
+                WITH UserGroupSummary AS (
+                    SELECT 
+                        u.Id AS UserId,
+                        u.Name AS UserName,
+                        g.Id AS GroupId,
+                        g.Name AS GroupName
+                    FROM TB_USERS u
+                    JOIN TB_GROUP_USERStoGROUPS ug ON u.Id = ug.ID_TB_USERS
+                    JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+                )
+                SELECT * 
+                FROM UserGroupSummary 
+                WHERE CAST(UserId AS VARCHAR) LIKE '206%' 
+                ORDER BY GroupName, UserName";
+
 
             // Query com UNION - 8 registros
-            string queryWithUnion = @"
+            string queryWithUnionOracle = @"
                 SELECT Id, Name 
                 FROM TB_USERS
                 WHERE Id < 20605 
@@ -1792,9 +1880,23 @@ namespace TestEH_UnitTest
                 WHERE Id < 20605
                 AND TO_CHAR(Id) LIKE '206%'
                 ORDER BY Name";
+            
+            string queryWithUnionSqlServer = @"
+                SELECT Id, Name 
+                FROM TB_USERS
+                WHERE Id < 20605 
+                AND CAST(Id AS VARCHAR) LIKE '206%'
+                UNION ALL
+                SELECT Id, Name 
+                FROM TB_GROUP_USERS
+                WHERE Id < 20605
+                AND CAST(Id AS VARCHAR) LIKE '206%'
+                ORDER BY Name";
 
-            // Query simples sem cl�usulas adicionais - 20 registros
-            string simpleQuery = "SELECT Id, Name FROM TB_USERS WHERE TO_CHAR(Id) LIKE '206%'";
+            // Query simples sem clausulas adicionais - 20 registros
+            string simpleQueryOracle = "SELECT Id, Name FROM TB_USERS WHERE TO_CHAR(Id) LIKE '206%'";
+            
+            string simpleQuerySqlServer = "SELECT Id, Name FROM TB_USERS WHERE CAST(Id AS VARCHAR) LIKE '206%'";
 
             // Query com subquery - 6 registros
             string queryWithSubquery = @"
@@ -1807,15 +1909,15 @@ namespace TestEH_UnitTest
             long totalRecords;
 
             // Teste com complexQueryWithWithAndJoin
-            totalRecords = await eh.GetTotalRecordCountAsync(complexQueryWithWithAndJoin);
+            totalRecords = await eh.GetTotalRecordCountAsync(eh.DbContext.Provider is Enums.DbProvider.Oracle? complexQueryWithWithAndJoinOracle : complexQueryWithWithAndJoinSqlServer);
             Assert.AreEqual(27, totalRecords, "A contagem de registros da query complexa est� incorreta.");
 
             // Teste com queryWithUnion
-            totalRecords = await eh.GetTotalRecordCountAsync(queryWithUnion);
+            totalRecords = await eh.GetTotalRecordCountAsync(eh.DbContext.Provider is Enums.DbProvider.Oracle? queryWithUnionOracle : queryWithUnionSqlServer);
             Assert.AreEqual(8, totalRecords, "A contagem de registros da query com UNION est� incorreta.");
 
             // Teste com simpleQuery
-            totalRecords = await eh.GetTotalRecordCountAsync(simpleQuery);
+            totalRecords = await eh.GetTotalRecordCountAsync(eh.DbContext.Provider is Enums.DbProvider.Oracle? simpleQueryOracle : simpleQuerySqlServer);
             Assert.AreEqual(20, totalRecords, "A contagem de registros da query simples est� incorreta.");
 
             // Teste com queryWithSubquery
@@ -1823,11 +1925,11 @@ namespace TestEH_UnitTest
             Assert.AreEqual(6, totalRecords, "A contagem de registros da query com subquery est� incorreta.");
 
 
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))}");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '206%'");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '206%'");
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '206%'");
-
+            // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))}");
+            // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '206%'");
+            // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '206%'");
+            // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '206%'");
+            ResetTables("206");
         }
 
 

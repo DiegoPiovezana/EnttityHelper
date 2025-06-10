@@ -187,6 +187,7 @@ namespace EH.Commands
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 transaction.Rollback(); // Not applicable to DDL
                 //connection.Close();
 
@@ -276,6 +277,7 @@ namespace EH.Commands
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 transaction.Rollback(); // Not applicable to DDL
 
                 if (ex.Message.Contains("ORA-00942") && !string.IsNullOrEmpty(tableName))
@@ -379,8 +381,9 @@ namespace EH.Commands
 
                 return results;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 transaction.Rollback();
                 throw;
             }
@@ -474,8 +477,9 @@ namespace EH.Commands
 
                 return results;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 transaction.Rollback();
                 throw;
             }
