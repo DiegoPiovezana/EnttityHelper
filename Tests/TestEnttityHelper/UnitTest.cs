@@ -4,6 +4,7 @@ using SH;
 using System.Data;
 using System.Diagnostics;
 using System.Text;
+using EH.Connection;
 using TestEH_UnitTest.Entities;
 using TestEnttityHelper.OthersEntity;
 
@@ -15,9 +16,12 @@ namespace TestEH_UnitTest
 
         private const string stringConnection11g = "Data Source=localhost:1521/xe;User Id=system;Password=oracle";
         private const string stringConnection19c = "Data Source=localhost:49262/orclcdb;User Id=system;Password=oracle";
-
-        private readonly string stringConnectionBd2 = stringConnection19c;
-        private readonly string stringConnectionBd1 = stringConnection11g;
+        // private const string stringConnectionSqlServer = "Server=D1390PC;Database=DbTest;Trusted_Connection=True;TrustServerCertificate=True;";
+        // private const string stringConnectionSqlServer = "Server=(localdb)\\MSSQLLocalDB;Integrated Security=true;Database=master";
+        private const string stringConnectionSqlServer = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=master;Integrated Security=True;";
+        
+        private readonly string stringConnectionBd2 = stringConnection11g;
+        private readonly string stringConnectionBd1 = stringConnectionSqlServer;
 
         public EntityHelperTests()
         {
@@ -75,8 +79,18 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
-                // Oracle.ManagedDataAccess.Client.OracleException : ORA-00955: name is already used by an existing object
-                Assert.Throws<OracleException>(() => { eh.CreateTable<EntityTest>(false); });
+                switch (eh.DbContext.Provider)
+                {
+                    case Enums.DbProvider.Oracle:
+                        // Oracle.ManagedDataAccess.Client.OracleException : ORA-00955: name is already used by an existing object
+                        Assert.Throws<OracleException>(() => { eh.CreateTable<EntityTest>(false); });
+                        break;
+                    case Enums.DbProvider.SqlServer:
+                        // System.Data.SqlClient.SqlException : (0x80131904): There is already an object named 'TB_ENTITY_TEST' in the database.
+                        Assert.Throws<System.Data.SqlClient.SqlException>(() => { eh.CreateTable<EntityTest>(false); });
+                        break;
+                }
+                
             }
             else
             {
@@ -1497,20 +1511,19 @@ namespace TestEH_UnitTest
 
             try
             {
-
-                // Cria��o das tabelas
+                // Criacao das tabelas
                 eh.CreateTableIfNotExist<Group>(createOnlyPrimaryTable: true); // Doesnt create the TB_GROUP_USERStoGROUPS table
                 eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false); // Cretes the TB_GROUP_USERStoGROUPS table
                 eh.CreateTableIfNotExist<Career>(createOnlyPrimaryTable: false);
 
 
-                // Inser��o de carreira
+                // Insercao de carreira
                 Career career1 = new() { IdCareer = 20501, Name = "Junior", CareerLevel = 1, Active = true };
                 Career career2 = new() { IdCareer = 20502, Name = "Pleno", CareerLevel = 2, Active = true };
                 Assert.AreEqual(eh.Insert(new List<Career> { career1, career2 }), 2);
 
 
-                // Inser��o de grupos
+                // Insercao de grupos
                 var groups = Enumerable.Range(20501, 5).Select(i => new Group
                 {
                     Id = i,
@@ -1520,7 +1533,7 @@ namespace TestEH_UnitTest
                 Assert.AreEqual(eh.Insert(groups), groups.Count);
 
 
-                // Inser��o de usu�rios
+                // Insercao de usuarios
                 var users = Enumerable.Range(20501, 20).Select(i =>
                 {
                     var user = new User
@@ -1532,7 +1545,7 @@ namespace TestEH_UnitTest
                         IdCareer = i % 2 == 0 ? 20501 : 20502
                     };
 
-                    // Adiciona os grupos ao usu�rio
+                    // Adiciona os grupos ao usuario
                     user.Groups.Add(groups[i % groups.Count]);
                     if (i % 3 == 0) // Adiciona outro grupo como exemplo
                     {
@@ -1543,61 +1556,116 @@ namespace TestEH_UnitTest
 
                 }).ToList();
 
-                // Insere usu�rios e valida a quantidade de registros inseridos em ambas as tabelas
+                // Insere usuarios e valida a quantidade de registros inseridos em ambas as tabelas
                 int expectedUserCount = users.Count;
                 int expectedAuxiliaryCount = users.Sum(u => u.Groups.Count); // Soma os relacionamentos User-Group
                 int totalExpectedInserts = expectedUserCount + expectedAuxiliaryCount;
 
-                // Realiza a inser��o
+                // Realiza a insercao
                 long actualInsertCount = eh.Insert(users);
 
                 // Valida a quantidade total de inser��es
                 Assert.AreEqual(totalExpectedInserts, actualInsertCount);
 
-
                 // Query complexa com JOIN, UNION, SUM, WITH, etc.
-                string complexQuery = @"
-                WITH UserGroupSummary AS (
+                string complexQueryOracle = @"
+                    WITH UserGroupSummary AS (
+                        SELECT 
+                            u.Id AS UserId,
+                            u.Name AS UserName,
+                            g.Id AS GroupId,
+                            g.Name AS GroupName,
+                            c.Name AS CareerName,
+                            COUNT(ug.ID_TB_USERS) AS UserCountInGroup
+                        FROM {0} u
+                        JOIN {1} ug ON u.Id = ug.ID_TB_USERS
+                        JOIN {2} g ON ug.ID_TB_GROUP_USERS = g.Id
+                        JOIN {3} c ON u.IdCareer = c.IdCareer                    
+                        GROUP BY u.Id, u.Name, g.Id, g.Name, c.Name
+                    )
+
                     SELECT 
-                        u.Id AS UserId,
-                        u.Name AS UserName,
-                        g.Id AS GroupId,
-                        g.Name AS GroupName,
-                        c.Name AS CareerName,
+                        UserId,
+                        UserName,
+                        GroupId,
+                        GroupName,
+                        CareerName,
+                        UserCountInGroup
+                    FROM UserGroupSummary
+                    WHERE TO_CHAR(UserId) LIKE '205%'
+
+                    UNION ALL
+
+                    SELECT 
+                        NULL AS UserId, 
+                        NULL AS UserName, 
+                        g.Id AS GroupId, 
+                        g.Name AS GroupName, 
+                        NULL AS CareerName, 
                         COUNT(ug.ID_TB_USERS) AS UserCountInGroup
-                    FROM {0} u
-                    JOIN {1} ug ON u.Id = ug.ID_TB_USERS
+                    FROM {1} ug
                     JOIN {2} g ON ug.ID_TB_GROUP_USERS = g.Id
-                    JOIN {3} c ON u.IdCareer = c.IdCareer                    
-                    GROUP BY u.Id, u.Name, g.Id, g.Name, c.Name
-                )
+                    WHERE TO_CHAR(g.Id) LIKE '205%'
+                    GROUP BY g.Id, g.Name
 
-                SELECT 
-                    UserId,
-                    UserName,
-                    GroupId,
-                    GroupName,
-                    CareerName,
-                    UserCountInGroup
-                FROM UserGroupSummary
-                WHERE TO_CHAR(UserId) LIKE '205%'
+                    ORDER BY GroupId, UserId NULLS LAST";
+                
+                string complexQuerySqlServer = @"
+                    WITH UserGroupSummary AS (
+                        SELECT 
+                            u.Id AS UserId,
+                            u.Name AS UserName,
+                            g.Id AS GroupId,
+                            g.Name AS GroupName,
+                            c.Name AS CareerName,
+                            COUNT(ug.ID_TB_USERS) AS UserCountInGroup,
+                            SUM(CASE WHEN u.IsActive = 1 THEN 1 ELSE 0 END) AS ActiveUsersInGroup,
+                            MAX(u.CreatedDate) AS LastUserCreated
+                        FROM dbo.Users u
+                        INNER JOIN dbo.UserGroup ug ON u.Id = ug.ID_TB_USERS
+                        INNER JOIN dbo.Groups g ON ug.ID_TB_GROUP_USERS = g.Id
+                        LEFT JOIN dbo.Careers c ON u.IdCareer = c.IdCareer
+                        WHERE u.CreatedDate >= DATEADD(YEAR, -1, GETDATE())
+                        GROUP BY u.Id, u.Name, g.Id, g.Name, c.Name
+                    )
 
-                UNION ALL
+                    SELECT 
+                        UserId,
+                        UserName,
+                        GroupId,
+                        GroupName,
+                        CareerName,
+                        UserCountInGroup,
+                        ActiveUsersInGroup,
+                        CONVERT(VARCHAR, LastUserCreated, 103) AS LastUserCreated
+                    FROM UserGroupSummary
+                    WHERE CAST(UserId AS VARCHAR) LIKE '205%'
 
-                SELECT 
-                    NULL AS UserId, 
-                    NULL AS UserName, 
-                    g.Id AS GroupId, 
-                    g.Name AS GroupName, 
-                    NULL AS CareerName, 
-                    COUNT(ug.ID_TB_USERS) AS UserCountInGroup
-                FROM {1} ug
-                JOIN {2} g ON ug.ID_TB_GROUP_USERS = g.Id
-                WHERE TO_CHAR(g.Id) LIKE '205%'
-                GROUP BY g.Id, g.Name
+                    UNION ALL
 
-                ORDER BY GroupId, UserId NULLS LAST";
+                    SELECT 
+                        NULL AS UserId, 
+                        NULL AS UserName, 
+                        g.Id AS GroupId, 
+                        g.Name AS GroupName, 
+                        NULL AS CareerName, 
+                        COUNT(ug.ID_TB_USERS) AS UserCountInGroup,
+                        SUM(CASE WHEN u.IsActive = 1 THEN 1 ELSE 0 END) AS ActiveUsersInGroup,
+                        NULL AS LastUserCreated
+                    FROM dbo.UserGroup ug
+                    INNER JOIN dbo.Groups g ON ug.ID_TB_GROUP_USERS = g.Id
+                    LEFT JOIN dbo.Users u ON u.Id = ug.ID_TB_USERS
+                    WHERE CAST(g.Id AS VARCHAR) LIKE '205%'
+                    GROUP BY g.Id, g.Name
 
+                    ORDER BY 
+                        GroupId,
+                        CASE WHEN UserId IS NULL THEN 1 ELSE 0 END,
+                        UserId;";
+
+                string complexQuery = eh.DbContext.Provider == Enums.DbProvider.Oracle
+                    ? complexQueryOracle
+                    : complexQuerySqlServer;
 
                 // Substituindo os nomes das tabelas na query
                 complexQuery = string.Format(complexQuery,
@@ -1620,7 +1688,7 @@ namespace TestEH_UnitTest
                 Assert.AreEqual(32, totalRecords); // Deve retornar a quantidade total de registros da query
 
 
-                // Valida��o cruzada
+                // Validacao cruzada
                 long allRecords = eh.ExecuteSelectDt(complexQuery, pageSize: null).Rows.Count;
                 Assert.AreEqual(totalRecords, allRecords);
 
@@ -1646,13 +1714,13 @@ namespace TestEH_UnitTest
 
             ResetTables("206");
 
-            // Inser��o de carreira
+            // Insercao de carreira
             Career career1 = new() { IdCareer = 20601, Name = "Junior", CareerLevel = 1, Active = true };
             Career career2 = new() { IdCareer = 20602, Name = "Pleno", CareerLevel = 2, Active = true };
             Assert.AreEqual(eh.Insert(new List<Career> { career1, career2 }), 2);
 
 
-            // Inser��o de grupos
+            // Insercao de grupos
             var groups = Enumerable.Range(20601, 5).Select(i => new Group
             {
                 Id = i,
@@ -1662,7 +1730,7 @@ namespace TestEH_UnitTest
             Assert.AreEqual(eh.Insert(groups), groups.Count);
 
 
-            // Inser��o de usu�rios
+            // Insercao de usuarios
             var users = Enumerable.Range(20601, 20).Select(i =>
             {
                 var user = new User
@@ -1674,7 +1742,7 @@ namespace TestEH_UnitTest
                     IdCareer = i % 2 == 0 ? 20601 : 20602
                 };
 
-                // Adiciona os grupos ao usu�rio
+                // Adiciona os grupos ao usuario
                 user.Groups.Add(groups[i % groups.Count]);
                 if (i % 3 == 0) // Adiciona outro grupo como exemplo
                 {
@@ -1685,12 +1753,12 @@ namespace TestEH_UnitTest
 
             }).ToList();
 
-            // Insere usu�rios e valida a quantidade de registros inseridos em ambas as tabelas
+            // Insere usuarios e valida a quantidade de registros inseridos em ambas as tabelas
             int expectedUserCount = users.Count;
             int expectedAuxiliaryCount = users.Sum(u => u.Groups.Count); // Soma os relacionamentos User-Group
             int totalExpectedInserts = expectedUserCount + expectedAuxiliaryCount;
 
-            // Realiza a inser��o
+            // Realiza a insercao
             long actualInsertCount = eh.Insert(users);
 
             // Valida a quantidade total de inser��es
