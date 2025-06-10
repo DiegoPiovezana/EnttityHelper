@@ -16,6 +16,8 @@ namespace TestEH_UnitTest.Entities
         [InverseProperty(nameof(Group.Users))] public virtual ICollection<Group> Groups { get; internal set; } = new List<Group>();
         [ForeignKey(nameof(Supervisor))] public long? IdSupervisor { get; internal set; }
         public virtual User? Supervisor { get; internal set; }
+        // [ForeignKey(nameof(Items))] public ICollection<long>? IdItems { get; internal set; }
+        // public virtual ICollection<Item>? Items { get; internal set; } // TODO: Test 1xN
 
 
         //[NotMapped] public Classification? Classification { get; internal set; }
