@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Linq;
 using System.Reflection;
+using EH.Connection;
 
 namespace EH.Properties
 {
@@ -243,6 +244,11 @@ namespace EH.Properties
             if (type.IsEnum) return DbType.Int32;
 
             throw new NotSupportedException($"Type not supported: {type.FullName}");
+        }
+
+        internal static string GetTypeSql(Type realType, Database dbContext)
+        {
+            return dbContext.TypesDefault?.FirstOrDefault(x => x.Key == realType.Name).Value;
         }
 
 

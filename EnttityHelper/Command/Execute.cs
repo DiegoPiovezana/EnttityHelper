@@ -547,7 +547,7 @@ namespace EH.Commands
         
         private static void AdjustDbTypeForProvider(IDbDataParameter dbParam, Database dbContext, Type? realType)
         {
-            string sqlType = dbContext.TypesDefault?.FirstOrDefault(x => x.Key == realType.Name).Value;
+            string sqlType = ToolsProp.GetTypeSql(realType, dbContext);
             
             // Cases for specific types
             // TODO: Improve this logic to handle more types and providers
