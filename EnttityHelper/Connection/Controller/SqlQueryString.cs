@@ -649,9 +649,10 @@ namespace EH.Connection
 
                     Type entity1Type = entity.GetType(); // User
                     Property? propEntity2 = properties[prop.Value.Name]; // Group
-                    string? pkEntity1 = pk.Name;
+                    // string? pkEntity1 = pk.Name;
+                    var propInfoPkEntity1 = pk ?? throw new InvalidOperationException("Primary key not found for the first entity!");
 
-                    var queryCollection = CreateTableFromCollectionProp(entity1Type, propEntity2, pkEntity1, replacesTableName);
+                    var queryCollection = CreateTableFromCollectionProp(entity1Type, propEntity2, propInfoPkEntity1, replacesTableName);
 
                     // Merged Dictionary (prioritizing the value of createsTable)
                     queryCreatesTable =
@@ -697,19 +698,21 @@ namespace EH.Connection
             };
         }
 
-        internal Dictionary<string, QueryCommand?> CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, string? pkEntity1, Dictionary<string, string>? replacesTableName)
+        internal Dictionary<string, QueryCommand?> CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, PropertyInfo propInfoPkEntity1, Dictionary<string, string>? replacesTableName)
         {
             Dictionary<string, QueryCommand?> createsTable = new();
 
             string tableEntity1 = ToolsProp.GetTableName(entity1Type, replacesTableName);
-
+            string pkEntity1Name = propInfoPkEntity1?.Name ?? throw new InvalidOperationException("Primary key not found for the first entity!");
+                
             Type collection2Type = propEntity2.PropertyInfo.PropertyType;
             Type entity2Type = collection2Type.GetGenericArguments()[0];
 
             var propsEntity2 = entity2Type.GetProperties();
-            var propPkEntity2 = propsEntity2.Where(prop => Attribute.IsDefined(prop, typeof(System.ComponentModel.DataAnnotations.KeyAttribute)));
-            var pkEntity2 = propPkEntity2?.FirstOrDefault()?.Name ?? propsEntity2.FirstOrDefault().Name;
-
+            var propsPkEntity2 = propsEntity2.Where(prop => Attribute.IsDefined(prop, typeof(System.ComponentModel.DataAnnotations.KeyAttribute)));
+            var propInfoPkEntity2 = propsPkEntity2?.FirstOrDefault() ?? propsEntity2.FirstOrDefault();
+            var pkEntity2Name = propInfoPkEntity2?.Name;
+           
             TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
             string tableEntity2 = table2Attribute.Name ?? entity2Type.Name;
 
@@ -718,13 +721,16 @@ namespace EH.Connection
 
             string idTb1 = tableEntity1.Substring(0, Math.Min(tableEntity1.Length, 27));
             string idTb2 = tableEntity2.Substring(0, Math.Min(tableEntity2.Length, 27));
+            
+            string typeSqlPk1 = ToolsProp.GetTypeSql(propInfoPkEntity1.PropertyType, Database);
+            string typeSqlPk2 = ToolsProp.GetTypeSql(propInfoPkEntity2.PropertyType, Database);
 
             string queryCollection =
                 $@"CREATE TABLE {tableNameManyToManyEscaped} (" +
-                $@"ID_{tableEntity1} INT, ID_{tableEntity2} INT, " +
+                $@"ID_{tableEntity1} {typeSqlPk1}, ID_{tableEntity2} {typeSqlPk2}, " +
                 $@"PRIMARY KEY (ID_{idTb1}, ID_{idTb2}), " +
-                $@"FOREIGN KEY (ID_{idTb1}) REFERENCES {idTb1}({pkEntity1}), " +
-                $@"FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2}({pkEntity2}) " +
+                $@"FOREIGN KEY (ID_{idTb1}) REFERENCES {idTb1}({pkEntity1Name}), " +
+                $@"FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2}({pkEntity2Name}) " +
                 $")";
 
             QueryCommand queryCommand = new QueryCommand(queryCollection, null);
