@@ -10,7 +10,7 @@ namespace TestEH_UnitTest.Entities
         [Required] public DateTime DateCreate { get; set; }
         [ForeignKey(nameof(User))] public long? IdUser { get; set; }
         public virtual User User { get; set; }
-        string Number { get; set; }
+        public string Number { get; set; }
         [Required] public string Obs { get; set; }
         [Required] public string Previous { get; set; }
         [Required] public string After { get; set; }
