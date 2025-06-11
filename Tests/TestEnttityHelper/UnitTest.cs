@@ -1620,16 +1620,17 @@ namespace TestEH_UnitTest
             try
             {
                 // Criacao das tabelas
+                eh.CreateTableIfNotExist<Ticket>(createOnlyPrimaryTable: true);
                 eh.CreateTableIfNotExist<Group>(createOnlyPrimaryTable: true); // Doesnt create the TB_GROUP_USERStoGROUPS table
                 eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false); // Cretes the TB_GROUP_USERStoGROUPS table
                 eh.CreateTableIfNotExist<Career>(createOnlyPrimaryTable: false);
-
+                
+                ResetTables("205");
 
                 // Insercao de carreira
                 Career career1 = new() { IdCareer = 20501, Name = "Junior", CareerLevel = 1, Active = true };
                 Career career2 = new() { IdCareer = 20502, Name = "Pleno", CareerLevel = 2, Active = true };
                 Assert.AreEqual(eh.Insert(new List<Career> { career1, career2 }), 2);
-
 
                 // Insercao de grupos
                 var groups = Enumerable.Range(20501, 5).Select(i => new Group
@@ -1720,7 +1721,7 @@ namespace TestEH_UnitTest
                 
                 string complexQuerySqlServer = @"
                     WITH UserGroupSummary AS (
-                        SELECT 
+                        SELECT
                             u.Id AS UserId,
                             u.Name AS UserName,
                             g.Id AS GroupId,
@@ -1729,44 +1730,44 @@ namespace TestEH_UnitTest
                             COUNT(ug.ID_TB_USERS) AS UserCountInGroup,
                             SUM(CASE WHEN u.IsActive = 1 THEN 1 ELSE 0 END) AS ActiveUsersInGroup,
                             MAX(u.CreatedDate) AS LastUserCreated
-                        FROM dbo.Users u
-                        INNER JOIN dbo.UserGroup ug ON u.Id = ug.ID_TB_USERS
-                        INNER JOIN dbo.Groups g ON ug.ID_TB_GROUP_USERS = g.Id
-                        LEFT JOIN dbo.Careers c ON u.IdCareer = c.IdCareer
+                        FROM dbo.TB_USERS u
+                                 INNER JOIN dbo.TB_GROUP_USERStoGROUPS ug ON u.Id = ug.ID_TB_USERS
+                                 INNER JOIN dbo.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+                                 LEFT JOIN dbo.TB_CAREERS c ON u.IdCareer = c.IdCareer
                         WHERE u.CreatedDate >= DATEADD(YEAR, -1, GETDATE())
                         GROUP BY u.Id, u.Name, g.Id, g.Name, c.Name
-                    )
+                    ),
+                         CombinedResults AS (
+                             SELECT
+                                 UserId,
+                                 UserName,
+                                 GroupId,
+                                 GroupName,
+                                 CareerName,
+                                 UserCountInGroup,
+                                 ActiveUsersInGroup,
+                                 CONVERT(VARCHAR, LastUserCreated, 103) AS LastUserCreated
+                             FROM UserGroupSummary    
 
-                    SELECT 
-                        UserId,
-                        UserName,
-                        GroupId,
-                        GroupName,
-                        CareerName,
-                        UserCountInGroup,
-                        ActiveUsersInGroup,
-                        CONVERT(VARCHAR, LastUserCreated, 103) AS LastUserCreated
-                    FROM UserGroupSummary
-                    WHERE CAST(UserId AS VARCHAR) LIKE '205%'
+                             UNION ALL
 
-                    UNION ALL
+                             SELECT
+                                 NULL AS UserId,
+                                 NULL AS UserName,
+                                 g.Id AS GroupId,
+                                 g.Name AS GroupName,
+                                 NULL AS CareerName,
+                                 COUNT(ug.ID_TB_USERS) AS UserCountInGroup,
+                                 SUM(CASE WHEN u.IsActive = 1 THEN 1 ELSE 0 END) AS ActiveUsersInGroup,
+                                 NULL AS LastUserCreated
+                             FROM dbo.TB_GROUP_USERStoGROUPS ug
+                                      INNER JOIN dbo.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+                                      LEFT JOIN dbo.TB_USERS u ON u.Id = ug.ID_TB_USERS   
+                             GROUP BY g.Id, g.Name
+                         )
 
-                    SELECT 
-                        NULL AS UserId, 
-                        NULL AS UserName, 
-                        g.Id AS GroupId, 
-                        g.Name AS GroupName, 
-                        NULL AS CareerName, 
-                        COUNT(ug.ID_TB_USERS) AS UserCountInGroup,
-                        SUM(CASE WHEN u.IsActive = 1 THEN 1 ELSE 0 END) AS ActiveUsersInGroup,
-                        NULL AS LastUserCreated
-                    FROM dbo.UserGroup ug
-                    INNER JOIN dbo.Groups g ON ug.ID_TB_GROUP_USERS = g.Id
-                    LEFT JOIN dbo.Users u ON u.Id = ug.ID_TB_USERS
-                    WHERE CAST(g.Id AS VARCHAR) LIKE '205%'
-                    GROUP BY g.Id, g.Name
-
-                    ORDER BY 
+                    SELECT * FROM CombinedResults
+                    ORDER BY
                         GroupId,
                         CASE WHEN UserId IS NULL THEN 1 ELSE 0 END,
                         UserId;";
@@ -1782,13 +1783,12 @@ namespace TestEH_UnitTest
                     eh.GetTableName<Group>(),
                     eh.GetTableName<Career>());
 
-
-                // Teste de pagina��o
+                // Teste de paginacao
                 var paginatedResult = eh.ExecuteSelectDt(complexQuery, pageSize: 10, pageIndex: 0);
                 Assert.AreEqual(10, paginatedResult.Rows.Count);
 
-                var secondPageResult = eh.ExecuteSelectDt(complexQuery, pageSize: 10, pageIndex: 3); // Total: 32 (4 pages)
-                Assert.AreEqual(2, secondPageResult.Rows.Count); // Segunda p�gina deve ter registros (dependendo da quantidade de dados)
+                var secondPageResult = eh.ExecuteSelectDt(complexQuery, pageSize: 2, pageIndex: 3); // Total: 32 (4 pages)
+                Assert.AreEqual(2, secondPageResult.Rows.Count); // Segunda pagina deve ter registros (dependendo da quantidade de dados)
 
 
                 // Teste de contagem total
