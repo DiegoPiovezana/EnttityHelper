@@ -81,6 +81,7 @@ namespace EH.Connection
 
             Dictionary<string, Property>? filteredProperties = properties
                 .Where(p => p.Value.IsVirtual == false)
+                .Where(p => p.Value.Value is not null)
                 .ToDictionary(p => p.Key, p => p.Value);
             
             if (filteredProperties is null || filteredProperties.Count == 0)
@@ -841,9 +842,9 @@ namespace EH.Connection
 
             var offset = pageSize * pageIndex;
             var filterClause = !string.IsNullOrEmpty(filter) ? $"WHERE {filter}" : string.Empty;
-            //var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : "ORDER BY 1";
+            var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : "ORDER BY 1";  // SqlServer
             //var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : string.Empty;
-            var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : null;
+            // var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : null;  // Oracle
 
             string sql = Database.Provider switch
             {
