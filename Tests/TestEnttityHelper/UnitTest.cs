@@ -646,6 +646,8 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
+                ResetTables("105");
+                
                 eh.CreateTableIfNotExist<Group>(true); // Necessary to then create the MxN relationship table
                 eh.CreateTableIfNotExist<User>(false);
 
@@ -680,7 +682,7 @@ namespace TestEH_UnitTest
                 Assert.AreEqual(1, result2);
 
                 // Test for one entity - With Career
-                User entityTest2 = new("Diego Piovezana Two") { Id = 10502, GitHub = "@DiegoPiovezanaTwo", DtCreation = DateTime.Now, IdCareer = 3 };
+                User entityTest2 = new("Diego Piovezana Two") { Id = 10502, GitHub = "@DiegoPiovezanaTwo", DtCreation = DateTime.Now, IdCareer = 10503 };
                 long result3 = eh.Insert(entityTest2, true, nameof(entityTest2.GitHub), true);
                 Assert.AreEqual(1, result3);
 
@@ -697,6 +699,8 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
+                ResetTables("106");
+                
                 // INSERT THE MANY ENTITIES (MXN)
                 Group group4 = new() { Id = 10601, Name = "Masters106-2", Description = "Masters Group" };
                 Group group5 = new() { Id = 10602, Name = "Managers106", Description = "Managers Group" };
@@ -717,16 +721,16 @@ namespace TestEH_UnitTest
                 // It is necessary to first insert the groups, and then link them to the user
                 // Otherwise, the local ID of groups 4 and 5 will be incorrectly used, instead of the one defined by the database.
 
-                User userM = new("Maria da Silva") { Id = 10601, GitHub = "@MariaSilva", DtCreation = DateTime.Now, IdCareer = 1061 };
+                User userM = new("Maria da Silva") { Id = 10601, GitHub = "@MariaSilva", DtCreation = DateTime.Now, IdCareer = 10601 };
                 userM.Groups.Add(group4);
                 userM.Groups.Add(group5);
                 long result4 = eh.Insert(userM, true, nameof(userM.GitHub), true);
                 Assert.That(result4 == 3, Is.EqualTo(true));
 
-                eh.ExecuteNonQuery($"DELETE FROM TB_GROUP_USERSTOGROUPS WHERE ID_TB_USERS = {userM.Id}");
-                eh.Delete(group4);
-                eh.Delete(group5);
-                eh.Delete(userM);
+                // eh.ExecuteNonQuery($"DELETE FROM TB_GROUP_USERSTOGROUPS WHERE ID_TB_USERS = {userM.Id}");
+                // eh.Delete(group4);
+                // eh.Delete(group5);
+                // eh.Delete(userM);
             }
             else
             {
@@ -740,6 +744,8 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
+                ResetTables("107");
+                
                 Career carrer2 = new() { IdCareer = 10702, Name = "Pleno", CareerLevel = 2, Active = true };
 
                 if (!eh.CheckIfExist(
@@ -754,26 +760,26 @@ namespace TestEH_UnitTest
                 }
 
                 // INSERT THE MANY ENTITIES (NXM)
-                User userX = new("Jayme Souza") { Id = 10701, GitHub = "@JSouza", DtCreation = DateTime.Now, IdCareer = 1072 };
+                User userX = new("Jayme Souza") { Id = 10701, GitHub = "@JSouza", DtCreation = DateTime.Now, IdCareer = 10702 };
                 User userY = new("Bruna Corsa") { Id = 10702, GitHub = "@BrunaCorsa", DtCreation = DateTime.Now };
                 List<User> users = new() { userX, userY };
                 long result5 = eh.Insert(users, true, nameof(User.Name), false);
                 Assert.AreEqual(result5, 2);
 
-                User userNameRepeat = new("Jhonny Souza") { Id = 1070, GitHub = "@JSouza", DtCreation = DateTime.Now, IdCareer = 1072 };
+                User userNameRepeat = new("Jhonny Souza") { Id = 10701, GitHub = "@JSouza", DtCreation = DateTime.Now, IdCareer = 10702 };
                 var ex = Assert.Throws<Exception>(() => eh.Insert(userNameRepeat, true, nameof(userNameRepeat.GitHub), true));
                 Assert.That(ex.Message, Does.Contain("EH-101"));
 
-                Group group6 = new() { Id = 1071, Name = "Group Six", Description = "Group Six Test" };
+                Group group6 = new() { Id = 10701, Name = "Group Six", Description = "Group Six Test" };
                 group6.Users.Add(userX);
                 group6.Users.Add(userY);
                 long result6 = eh.Insert(group6, true, nameof(group6.Name), true);
                 Assert.That(result6 == 3, Is.EqualTo(true));
 
-                eh.ExecuteNonQuery($"DELETE FROM TB_GROUP_USERSTOGROUPS WHERE ID_TB_GROUP_USERS  = {group6.Id}");
-                eh.Delete(userX);
-                eh.Delete(userY);
-                eh.Delete(group6);
+                // eh.ExecuteNonQuery($"DELETE FROM TB_GROUP_USERSTOGROUPS WHERE ID_TB_GROUP_USERS  = {group6.Id}");
+                // eh.Delete(userX);
+                // eh.Delete(userY);
+                // eh.Delete(group6);
             }
             else
             {
@@ -788,6 +794,8 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new(connectionString: stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
+                ResetTables("108");
+                
                 eh.CreateTableIfNotExist<Group>(createOnlyPrimaryTable: true);
                 // ATTENTION: The User table depends on the Group to establish the MxN relationship and create the auxiliary table (even if users without group)
 
@@ -808,15 +816,32 @@ namespace TestEH_UnitTest
                     );
                 }
                 catch (Exception) { } // Ignore if the sequence already exists                    
-
-                var resultTrigger = eh.ExecuteNonQuery(
-                    $"CREATE OR REPLACE TRIGGER TRIGGER_TICKET " +
-                    $"BEFORE INSERT ON TB_TICKET " +
-                    $"FOR EACH ROW " +
-                    $"BEGIN " +
-                    $":NEW.IdLog := SEQUENCE_TICKET.NEXTVAL; " +
-                    $"END;"
+                
+                if (eh.DbContext.Provider == Enums.DbProvider.Oracle)
+                {
+                    string queryCreateTriggerOracle = $"CREATE OR REPLACE TRIGGER TRIGGER_TICKET " +
+                                                      $"BEFORE INSERT ON TB_TICKET " +
+                                                      $"FOR EACH ROW " +
+                                                      $"BEGIN " +
+                                                      $":NEW.IdLog := SEQUENCE_TICKET.NEXTVAL; " +
+                                                      $"END;";
+                    
+                    eh.ExecuteNonQuery(queryCreateTriggerOracle);
+                }
+                else if (eh.DbContext.Provider == Enums.DbProvider.SqlServer)
+                {
+                    eh.ExecuteNonQuery(
+                        $"DECLARE @sql NVARCHAR(MAX) = (" +
+                        $"    SELECT 'ALTER TABLE TB_TICKET DROP CONSTRAINT [' + name + ']'" +
+                        $"    FROM sys.key_constraints " +
+                        $"    WHERE type = 'PK' AND parent_object_id = OBJECT_ID('TB_TICKET')" +
+                        $"); " +
+                        $"IF @sql IS NOT NULL EXEC sp_executesql @sql;"
                     );
+                    
+                    eh.ExecuteNonQuery($"ALTER TABLE {eh.GetTableName<Ticket>()} DROP COLUMN IdLog;");
+                    eh.ExecuteNonQuery($"ALTER TABLE {eh.GetTableName<Ticket>()} ADD IdLog INT IDENTITY(1,1) PRIMARY KEY;");
+                }
 
                 // Ticket with user
                 Ticket ticketUserX = new(userX, "Obs", "Num", "Previous", "After");
@@ -869,48 +894,32 @@ namespace TestEH_UnitTest
                         $"INCREMENT BY 1 "
                     );
                 }
-                catch (Exception) { } // Ignore if the sequence already exists                    
-
-                string queryCreateTriggerOracle = $"CREATE OR REPLACE TRIGGER TRIGGER_TICKET " +
-                                                  $"BEFORE INSERT ON TB_TICKET " +
-                                                  $"FOR EACH ROW " +
-                                                  $"BEGIN " +
-                                                  $":NEW.IdLog := SEQUENCE_TICKET.NEXTVAL; " +
-                                                  $"END;";
-
-                string queryCreateTriggerSqlServer = @"
-                                                    CREATE TRIGGER TRIGGER_TICKET
-                                                    ON TB_TICKET
-                                                    INSTEAD OF INSERT
-                                                    AS
-                                                    BEGIN
-                                                        INSERT INTO TB_TICKET (
-                                                            IdLog,
-                                                            DateCreate,
-                                                            IdUser,
-                                                            Number,
-                                                            Obs,
-                                                            Previous,
-                                                            After
-                                                        )
-                                                        SELECT 
-                                                            NEXT VALUE FOR SEQUENCE_TICKET,
-                                                            DateCreate,
-                                                            IdUser,
-                                                            Number,
-                                                            Obs,
-                                                            Previous,
-                                                            After
-                                                        FROM inserted;
-                                                    END;";
+                catch (Exception) { } // Ignore if the sequence already exists     
                 
                 if (eh.DbContext.Provider == Enums.DbProvider.Oracle)
                 {
+                    string queryCreateTriggerOracle = $"CREATE OR REPLACE TRIGGER TRIGGER_TICKET " +
+                                                      $"BEFORE INSERT ON TB_TICKET " +
+                                                      $"FOR EACH ROW " +
+                                                      $"BEGIN " +
+                                                      $":NEW.IdLog := SEQUENCE_TICKET.NEXTVAL; " +
+                                                      $"END;";
+                    
                     eh.ExecuteNonQuery(queryCreateTriggerOracle);
                 }
                 else if (eh.DbContext.Provider == Enums.DbProvider.SqlServer)
                 {
-                    eh.ExecuteNonQuery(queryCreateTriggerSqlServer);
+                    eh.ExecuteNonQuery(
+                        $"DECLARE @sql NVARCHAR(MAX) = (" +
+                        $"    SELECT 'ALTER TABLE TB_TICKET DROP CONSTRAINT [' + name + ']'" +
+                        $"    FROM sys.key_constraints " +
+                        $"    WHERE type = 'PK' AND parent_object_id = OBJECT_ID('TB_TICKET')" +
+                        $"); " +
+                        $"IF @sql IS NOT NULL EXEC sp_executesql @sql;"
+                    );
+                    
+                    eh.ExecuteNonQuery($"ALTER TABLE {eh.GetTableName<Ticket>()} DROP COLUMN IdLog;");
+                    eh.ExecuteNonQuery($"ALTER TABLE {eh.GetTableName<Ticket>()} ADD IdLog INT IDENTITY(1,1) PRIMARY KEY;");
                 }
 
                 // Ticket with user
@@ -941,7 +950,8 @@ namespace TestEH_UnitTest
 
                 // Test: Insert with DateTime as null (should handle null DateTime gracefully if not required)
                 Ticket ticketWithNullDate = new(userX, "Obs", "Num", "Previous", "After");
-                ticketWithNullDate.DateCreate = default(DateTime);  // Check if empty DateTime works or throws
+                // ticketWithNullDate.DateCreate = default(DateTime);  // Check if empty DateTime works or throws
+                ticketWithNullDate.DateCreate = null;  // Check if empty DateTime works or throws
                 Assert.That(eh.Insert(ticketWithNullDate, namePropUnique: null, createTable: false), Is.EqualTo(1));
 
                 // Test: Insert with special characters in fields
@@ -963,6 +973,31 @@ namespace TestEH_UnitTest
             }
         }
 
+        [Test, Order(758)]
+        public void TestInsert_EntityGuidPk()
+        {
+            EnttityHelper eh = new(stringConnectionBd1);
+
+            if (eh.DbContext.ValidateConnection())
+            {
+                eh.CreateTableIfNotExist<Classification>(true);
+
+                // ResetTables("758");
+                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Classification>()} WHERE Id = '{new Guid()}'");
+
+                Classification class1 = new() { Id = Guid.NewGuid(), Name = "Class Test 1", Description = "Test 1" };
+                long result1 = eh.Insert(entity: class1, createTable: true);
+                Assert.That(result1, Is.EqualTo(1));
+                
+                Classification class2 = new() { Id = Guid.NewGuid(), Name = "", Description = "" };
+                long result2 = eh.Insert(entity: class2, createTable: true);
+                Assert.That(result2, Is.EqualTo(1));
+                
+                Classification class3 = new(){ Id = new Guid()};
+                long result3 = eh.Insert(entity: class3, createTable: true);
+                Assert.That(result3, Is.EqualTo(1));
+            }
+        }
 
         [Test, Order(455)]
         public void TestManyUpdates()
@@ -970,13 +1005,15 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
+                ResetTables("455");
+                
                 Career carrer1 = new(45501, "Developer");
                 Career carrer2 = new(45502, "Management");
                 Career carrer3 = new(45503, "Analyst");
                 long resultCarrer = eh.Insert(new List<Career> { carrer1, carrer2, carrer3 });
                 Assert.That(resultCarrer, Is.EqualTo(3));
 
-                //int deletes = eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE ID IN (1, 2, 3)");
+                //int deletes = eh.ExecuteNonQuery($"1FROM {eh.GetTableName<User>()} WHERE ID IN (1, 2, 3)");
 
                 // Create many entities
                 User user1 = new("Diego Piovezana") { Id = 45501, GitHub = "@DiegoPiovezana18", DtCreation = DateTime.Now, IdCareer = 45503 };
