@@ -6,8 +6,8 @@ namespace TestEH_UnitTest.Entities
     [Table("TB_TICKET")]
     public class Ticket
     {
-        [Key] public long IdLog { get; internal set; }
-        [Required] public DateTime DateCreate { get; set; }
+        [Key] public long? IdLog { get; internal set; }
+        [Required] public DateTime? DateCreate { get; set; }
         [ForeignKey(nameof(User))] public long? IdUser { get; set; }
         public virtual User User { get; set; }
         public string Number { get; set; }

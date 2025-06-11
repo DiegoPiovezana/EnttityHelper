@@ -137,7 +137,7 @@ namespace EH.Command
                 {
                     if (!string.IsNullOrEmpty(namePropUnique))
                     {
-                        var properties = ToolsProp.GetProperties(entityItem, true, false);
+                        var properties = ToolsProp.GetProperties(entityItem, true, false); // TODO: ToolsProp.GetProperty
 
                         // Check if ENTITY exists (duplicates)
                         if (CheckIfExist(tableName, 1, $"{namePropUnique} = '{properties[namePropUnique]}'"))
@@ -162,7 +162,10 @@ namespace EH.Command
                     if (id == null || id == DBNull.Value) throw new Exception("EH-000: Insert query does not return an ID!");
 
                     var typePk = pk.PropertyType;
-                    var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id.ToString(), typePk);
+                    // var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id.ToString(), typePk);
+                    
+                    var targetType  = Nullable.GetUnderlyingType(typePk) ?? typePk;
+                    var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id, targetType);
 
                     //object convertedId;
 
