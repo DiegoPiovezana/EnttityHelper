@@ -1469,13 +1469,13 @@ namespace TestEH_UnitTest
             // Assert
             if (eh.DbContext.Provider == Enums.DbProvider.Oracle)
             {
-                Assert.That(result.Sql, Does.StartWith("INSERT INTO \"TB_USERS\" (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor) VALUES (:Id, "));
+                Assert.That(result.Sql, Does.StartWith("INSERT INTO \"TB_USERS\" (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor, IsActive) VALUES (:Id, "));
                 StringAssert.EndsWith("RETURNING Id INTO :Result", query);
             }
             else
             {
-                Assert.That(result.Sql, Does.StartWith("INSERT INTO [TB_USERS] (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor) OUTPUT INSERTED.Id VALUES (@Id, "));
-                StringAssert.EndsWith(", '20202', '20201')", query);
+                Assert.That(result.Sql, Does.StartWith("INSERT INTO [TB_USERS] (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor, IsActive) OUTPUT INSERTED.Id VALUES (@Id, "));
+                StringAssert.EndsWith(", '20202', '20201', '1')", query);
             }
            
             StringAssert.Contains("'20202'", query);
