@@ -180,21 +180,17 @@ namespace EH.Properties
             return type.GetCustomAttributes(typeof(TableAttribute), true).FirstOrDefault() as TableAttribute;
         }
 
-        internal static string GetTableName<TEntity>(Dictionary<string, string>? replacesTableName)
-        {            
-            TableAttribute? ta = GetTableAttribute(typeof(TEntity));
-            string schema = ta?.Schema != null ? $"{ta.Schema}." : "";
-            string tableName = ta?.Name ?? typeof(TEntity).Name;
-            if (replacesTableName is not null) tableName = replacesTableName.Aggregate(tableName, (text, replace) => text.Replace(replace.Key, replace.Value));
-            return $"{schema}{tableName}";
+        internal static string GetTableName<TEntity>(Dictionary<string, string>? replacesTableName, bool includeSchema = true)
+        {
+            return GetTableName(typeof(TEntity), replacesTableName, includeSchema);
         }
 
-        internal static string GetTableName(Type entity, Dictionary<string, string>? replacesTableName)
+        internal static string GetTableName(Type entityType, Dictionary<string, string>? replacesTableName, bool includeSchema = true)
         {
-            if (entity is null) return null;
-            TableAttribute? ta = GetTableAttribute(entity);
-            string schema = ta?.Schema != null ? $"{ta.Schema}." : "";
-            string tableName = ta?.Name ?? entity.Name;
+            if (entityType is null) return null;
+            TableAttribute? ta = GetTableAttribute(entityType);
+            string schema = includeSchema && !string.IsNullOrWhiteSpace(ta?.Schema) ? $"{ta.Schema}." : string.Empty;
+            string tableName = ta?.Name ?? entityType.Name;
             if (replacesTableName is not null) tableName = replacesTableName.Aggregate(tableName, (text, replace) => text.Replace(replace.Key, replace.Value));
             return $"{schema}{tableName}";
         }

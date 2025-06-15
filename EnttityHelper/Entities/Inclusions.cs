@@ -7,6 +7,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using EH.Connection;
 
 namespace EH.Entities
 {
@@ -116,13 +117,17 @@ namespace EH.Entities
 
                     if (entity2Type.IsClass && !entity2Type.IsAbstract)
                     {                        
-                        Features features = new(enttityHelper);              
+                        Features features = new(enttityHelper);
+                        // SqlQueryString sqlQueryString = new SqlQueryString(enttityHelper);
+                        SqlQueryString sqlQueryString = enttityHelper.GetQuery;
+                        
                         // var selectMethod = features.GetType().GetMethod("ExecuteSelectDt");
 
-                        string nameTable = ToolsProp.GetTableNameManyToMany(objectEntity.GetType(), prop, replacesTableName);
+                        string nameTable1 = ToolsProp.GetTableNameManyToMany(objectEntity.GetType(), prop, replacesTableName);
                         string nameTable2 = ToolsProp.GetTableName(entity2Type, replacesTableName);
                         string columnName1 = ToolsProp.GetTableName(objectEntity.GetType(), replacesTableName);
                         string columnName2 = nameTable2;
+                        string nameTable1Escaped = sqlQueryString.EscapeIdentifier(nameTable1);
 
                         string idName1 = ToolsProp.GetPK(objectEntity.GetType()).Name;
                         string idName2 = ToolsProp.GetPK(entity2Type).Name;
@@ -130,7 +135,7 @@ namespace EH.Entities
                         object idValue1 = idProp1.GetValue(objectEntity);
 
                         // var entitiesToAdd = (DataTable)selectMethod.Invoke(features, new object[] { $"SELECT ID_{columnName2} FROM {nameTable} WHERE ID_{columnName1}='{idValue1}'" , null, 0, null, null, true });
-                        var entitiesToAdd = features.ExecuteSelectDt($"SELECT ID_{columnName2} FROM {nameTable} WHERE ID_{columnName1}='{idValue1}'", null, 0, null, null, true);
+                        var entitiesToAdd = features.ExecuteSelectDt($"SELECT ID_{columnName2} FROM {nameTable1Escaped} WHERE ID_{columnName1} = '{idValue1}'", null, 0, null, null, true);
                         
                         var getMethod = typeof(Features).GetMethod("Get").MakeGenericMethod(entity2Type);
                         
@@ -140,7 +145,7 @@ namespace EH.Entities
                         for (int i = 0; i < entitiesToAdd.Rows.Count; i++)
                         {
                             object idValue2 = entitiesToAdd.Rows[i][0];
-                            var entity2ToAddList = (IEnumerable)getMethod.Invoke(features, new object[] { false, $"{idName2}='{idValue2}'", nameTable2, null, 0, null, true });
+                            var entity2ToAddList = (IEnumerable)getMethod.Invoke(features, new object[] { false, $"{idName2} = '{idValue2}'", nameTable2, null, 0, null, true });
                             // var entity2ToAddList = features.Get(entity2Type.GetType(), false, $"{idName2}='{idValue2}'", nameTable2, null, 0, null, true);
                             foreach (var entity in entity2ToAddList) { ((IList)collectionInstance).Add(entity); }
                         }

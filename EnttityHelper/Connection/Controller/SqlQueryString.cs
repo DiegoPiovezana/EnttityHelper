@@ -143,8 +143,8 @@ namespace EH.Connection
 
                 if (invProp.Value.IsCollection != true) { throw new InvalidOperationException("The InverseProperty property must be a collection."); }
 
-                string tableName1 = ToolsProp.GetTableName(entity.GetType(), replacesTableName);
-                string tableName2 = ToolsProp.GetTableName(entity2Type, replacesTableName);
+                string tableName1 = ToolsProp.GetTableName(entity.GetType(), replacesTableName, false);
+                string tableName2 = ToolsProp.GetTableName(entity2Type, replacesTableName, false);
 
                 string idName1 = ToolsProp.GetPK((object)entity).Name; // Ex: User
                 string idName2 = ToolsProp.GetPK((object)entity2Type).Name;  // Ex: Group
@@ -715,23 +715,27 @@ namespace EH.Connection
             var pkEntity2Name = propInfoPkEntity2?.Name;
            
             TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
-            string tableEntity2 = table2Attribute.Name ?? entity2Type.Name;
+            string tableEntity2 = (table2Attribute?.Schema != null ? $"{table2Attribute.Schema}.{table2Attribute.Name}" : table2Attribute?.Name) ?? entity2Type.Name;
 
             string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(entity1Type, propEntity2.PropertyInfo, replacesTableName);
             string tableNameManyToManyEscaped = EscapeIdentifier(tableNameManyToMany);
 
             string idTb1 = tableEntity1.Substring(0, Math.Min(tableEntity1.Length, 27));
             string idTb2 = tableEntity2.Substring(0, Math.Min(tableEntity2.Length, 27));
+            string idTb1Escaped = EscapeIdentifier(idTb1);
+            string idTb2Escaped = EscapeIdentifier(idTb2);
+            idTb1 = idTb1.Contains('.') ? idTb1.Split('.').Last(): idTb1;  // // Ex.: "TEST.TB_USERS" -> "TB_USER"
+            idTb2 = idTb2.Contains('.') ? idTb2.Split('.').Last(): idTb1;
             
             string typeSqlPk1 = ToolsProp.GetTypeSql(propInfoPkEntity1.PropertyType, Database);
             string typeSqlPk2 = ToolsProp.GetTypeSql(propInfoPkEntity2.PropertyType, Database);
 
             string queryCollection =
                 $@"CREATE TABLE {tableNameManyToManyEscaped} (" +
-                $@"ID_{tableEntity1} {typeSqlPk1}, ID_{tableEntity2} {typeSqlPk2}, " +
+                $@"ID_{idTb1} {typeSqlPk1}, ID_{idTb2} {typeSqlPk2}, " +
                 $@"PRIMARY KEY (ID_{idTb1}, ID_{idTb2}), " +
-                $@"FOREIGN KEY (ID_{idTb1}) REFERENCES {idTb1}({pkEntity1Name}), " +
-                $@"FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2}({pkEntity2Name}) " +
+                $@"FOREIGN KEY (ID_{idTb1}) REFERENCES {idTb1Escaped}({pkEntity1Name}), " +
+                $@"FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2Escaped}({pkEntity2Name}) " +
                 $")";
 
             QueryCommand queryCommand = new QueryCommand(queryCollection, null);
@@ -809,6 +813,8 @@ namespace EH.Connection
             
             return new QueryCommand(sql, null);
         }
+        
+        // private static readonly Regex OrderByRegex = new(@"ORDER\s+BY\s+[\w\W]+?$", RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
         /// <summary>
         /// Builds a paginated SQL query by applying optional filtering, sorting, and pagination parameters to a base query.
@@ -842,9 +848,19 @@ namespace EH.Connection
 
             var offset = pageSize * pageIndex;
             var filterClause = !string.IsNullOrEmpty(filter) ? $"WHERE {filter}" : string.Empty;
-            var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : "ORDER BY 1";  // SqlServer
+            
+            // var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : "ORDER BY 1";
             //var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : string.Empty;
-            // var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : null;  // Oracle
+            var orderClause = !string.IsNullOrEmpty(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : null;
+            // var orderClause = $"ORDER BY {(string.IsNullOrWhiteSpace(sortColumn) ? "1" : sortColumn)} {(sortAscending ? "ASC" : "DESC")}";
+            
+            // var cleanBaseQuery = OrderByRegex.Replace(baseQuery.Trim(), "");
+            
+            // var lastOrderByIndex = baseQuery.ToUpper().LastIndexOf("ORDER BY");
+            // if (lastOrderByIndex > 0)
+            // {
+            //     baseQuery = baseQuery.Substring(0, lastOrderByIndex).TrimEnd().TrimEnd(';');
+            // }
 
             string sql = Database.Provider switch
             {
@@ -853,12 +869,18 @@ namespace EH.Connection
                     >= 12 => $@"{baseQuery} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
                     <= 11 => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM (SELECT a.*, ROW_NUMBER() OVER ({orderClause ?? "ORDER BY 1"}) AS rnum FROM ({baseQuery} {filterClause}) a) WHERE rnum > {offset} AND rnum <= {offset + pageSize}"
                     //<= 11 => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM ( SELECT inner_query.*, ROWNUM AS rnum FROM ( {baseQuery} {filterClause} {orderClause} ) inner_query WHERE ROWNUM <= {offset + pageSize} ) WHERE rnum > {offset}",
+                    
+                    // >= 12 => $@"SELECT * FROM ({baseQuery}) {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                    // _   => $@"SELECT * FROM (SELECT a.*, ROWNUM AS rnum FROM ({baseQuery}) a {filterClause} {orderClause}) WHERE rnum > {offset} AND rnum <= {offset + pageSize}"
                 },
                 Enums.DbProvider.SqlServer or Enums.DbProvider.PostgreSql =>
-                    $@"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                    $@"{baseQuery} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                    // $@"SELECT * FROM ({baseQuery}) AS paged {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
                 Enums.DbProvider.MySql =>
-                    $@"{baseQuery} {filterClause} {orderClause} LIMIT {pageSize} OFFSET {offset}",
-                _ => $@"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                    $@"{baseQuery} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                    // $@"SELECT * FROM ({baseQuery}) AS paged {filterClause} {orderClause} LIMIT {pageSize} OFFSET {offset}",
+                _ => $@"{baseQuery} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY"
+                // _ => $@"SELECT * FROM ({baseQuery}) AS paged {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
             };
 
             return sql;
@@ -995,7 +1017,7 @@ namespace EH.Connection
         /// </summary>
         /// <param name="name">The identifier to be escaped (e.g., "dbo.User").</param>
         /// <returns>The escaped identifier specific to the configured database provider.</returns>
-        private string EscapeIdentifier(string name)
+        internal string EscapeIdentifier(string name)
         {
             var parts = name.Split('.');
     

@@ -20,8 +20,8 @@ namespace TestEH_UnitTest
         // private const string stringConnectionSqlServer = "Server=(localdb)\\MSSQLLocalDB;Integrated Security=true;Database=master";
         private const string stringConnectionSqlServer = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=master;Integrated Security=True;";
         
-        private readonly string stringConnectionBd2 = stringConnection11g;
-        private readonly string stringConnectionBd1 = stringConnectionSqlServer;
+        private readonly string stringConnectionBd1 = stringConnection11g;
+        private readonly string stringConnectionBd2 = stringConnectionSqlServer;
 
         public EntityHelperTests()
         {
@@ -54,7 +54,12 @@ namespace TestEH_UnitTest
             string careerId = ConvertToVarchar(nameof(Career.IdCareer), eh);
             string ticketId = ConvertToVarchar(nameof(Ticket.IdLog), eh);
 
-            eh.ExecuteNonQuery($@"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE {idGroup} LIKE '{idTest}__' OR {idUser} LIKE '{idTest}__'");
+            try
+            {
+                eh.ExecuteNonQuery($@"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE {idGroup} LIKE '{idTest}__' OR {idUser} LIKE '{idTest}__'");
+            }
+            catch (Exception) { }
+            
             eh.ExecuteNonQuery($@"DELETE FROM {eh.GetTableName<User>()} WHERE {userId} LIKE '{idTest}__'");
             eh.ExecuteNonQuery($@"DELETE FROM {eh.GetTableName<Group>()} WHERE {groupId} LIKE '{idTest}__'");
             eh.ExecuteNonQuery($@"DELETE FROM {eh.GetTableName<Career>()} WHERE {careerId} LIKE '{idTest}__'");
@@ -97,6 +102,8 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
+                eh.CreateTableIfNotExist<EntityTest>(false);
+                
                 switch (eh.DbContext.Provider)
                 {
                     case Enums.DbProvider.Oracle:
@@ -309,17 +316,17 @@ namespace TestEH_UnitTest
             Assert.IsTrue(deletesOld >= 0 && deletesOld <= 2);
 
             // Insert a career entity
-            Career career = new Career(121, "Developer");
+            Career career = new Career(1201, "Developer");
             long careerInsertResult = eh.Insert(career, true);
             Assert.AreEqual(1, careerInsertResult, "Career insertion failed.");
 
             // Insert a user entity linked to the created career
             User user = new User("Diego Piovezana")
             {
-                Id = 121,
+                Id = 1201,
                 GitHub = "@DiegoPiovezana",
                 DtCreation = DateTime.Now,
-                IdCareer = 121
+                IdCareer = 1201
             };
             
             long userInsertResult = eh.Insert(user, true);
@@ -549,6 +556,8 @@ namespace TestEH_UnitTest
 
             if (eh.DbContext.ValidateConnection())
             {
+                ResetTables("103");
+                
                 // Create table - Object User     
                 eh.CreateTableIfNotExist<Career>(true);
                 eh.CreateTableIfNotExist<Group>(true); // Necessary to then create the MxN relationship table (Group X User)
@@ -611,7 +620,7 @@ namespace TestEH_UnitTest
                     Assert.AreEqual(result, 1);
                 }
 
-                var deletesOld = eh.ExecuteNonQuery($"DELETE FROM TB_USERS WHERE {ConvertToVarchar("ID", eh)} LIKE '104%'");
+                var deletesOld = eh.ExecuteNonQuery($"DELETE FROM TEST.TB_USERS WHERE {ConvertToVarchar("ID", eh)} LIKE '104%'");
                 Assert.IsTrue(deletesOld >= 0 && deletesOld <= 4);
 
                 // Test for one entity
@@ -1730,10 +1739,10 @@ namespace TestEH_UnitTest
                             COUNT(ug.ID_TB_USERS) AS UserCountInGroup,
                             SUM(CASE WHEN u.IsActive = 1 THEN 1 ELSE 0 END) AS ActiveUsersInGroup,
                             MAX(u.CreatedDate) AS LastUserCreated
-                        FROM dbo.TB_USERS u
-                                 INNER JOIN dbo.TB_GROUP_USERStoGROUPS ug ON u.Id = ug.ID_TB_USERS
-                                 INNER JOIN dbo.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
-                                 LEFT JOIN dbo.TB_CAREERS c ON u.IdCareer = c.IdCareer
+                        FROM TEST.TB_USERS u
+                                 INNER JOIN TEST.[TB_GROUP_USERStoGROUPS] ug ON u.Id = ug.ID_TB_USERS
+                                 INNER JOIN TEST.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+                                 LEFT JOIN TEST.TB_CAREERS c ON u.IdCareer = c.IdCareer
                         WHERE u.CreatedDate >= DATEADD(YEAR, -1, GETDATE())
                         GROUP BY u.Id, u.Name, g.Id, g.Name, c.Name
                     ),
@@ -1760,9 +1769,9 @@ namespace TestEH_UnitTest
                                  COUNT(ug.ID_TB_USERS) AS UserCountInGroup,
                                  SUM(CASE WHEN u.IsActive = 1 THEN 1 ELSE 0 END) AS ActiveUsersInGroup,
                                  NULL AS LastUserCreated
-                             FROM dbo.TB_GROUP_USERStoGROUPS ug
-                                      INNER JOIN dbo.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
-                                      LEFT JOIN dbo.TB_USERS u ON u.Id = ug.ID_TB_USERS   
+                             FROM TEST.[TB_GROUP_USERStoGROUPS] ug
+                                      INNER JOIN TEST.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+                                      LEFT JOIN TEST.TB_USERS u ON u.Id = ug.ID_TB_USERS   
                              GROUP BY g.Id, g.Name
                          )
 
@@ -1835,6 +1844,7 @@ namespace TestEH_UnitTest
                 Name = $"Group {i}",
                 Description = $"Description for Group {i}"
             }).ToList();
+            
             Assert.AreEqual(eh.Insert(groups), groups.Count);
 
 
@@ -1869,7 +1879,7 @@ namespace TestEH_UnitTest
             // Realiza a insercao
             long actualInsertCount = eh.Insert(users);
 
-            // Valida a quantidade total de inser��es
+            // Valida a quantidade total de insercoes
             Assert.AreEqual(totalExpectedInserts, actualInsertCount);
 
 
@@ -1882,9 +1892,9 @@ namespace TestEH_UnitTest
                         u.Name AS UserName,
                         g.Id AS GroupId,
                         g.Name AS GroupName
-                    FROM TB_USERS u
-                    JOIN TB_GROUP_USERStoGROUPS ug ON u.Id = ug.ID_TB_USERS
-                    JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+                    FROM TEST.TB_USERS u
+                    JOIN TEST.""TB_GROUP_USERStoGROUPS"" ug ON u.Id = ug.ID_TB_USERS
+                    JOIN TEST.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
                 )
                 SELECT * FROM UserGroupSummary WHERE TO_CHAR(UserId) LIKE '206%' ORDER BY GroupName, UserName";
             
@@ -1895,9 +1905,9 @@ namespace TestEH_UnitTest
                         u.Name AS UserName,
                         g.Id AS GroupId,
                         g.Name AS GroupName
-                    FROM TB_USERS u
-                    JOIN TB_GROUP_USERStoGROUPS ug ON u.Id = ug.ID_TB_USERS
-                    JOIN TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
+                    FROM TEST.TB_USERS u
+                    JOIN TEST.[TB_GROUP_USERStoGROUPS] ug ON u.Id = ug.ID_TB_USERS
+                    JOIN TEST.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
                 )
                 SELECT * 
                 FROM UserGroupSummary 
@@ -1908,38 +1918,38 @@ namespace TestEH_UnitTest
             // Query com UNION - 8 registros
             string queryWithUnionOracle = @"
                 SELECT Id, Name 
-                FROM TB_USERS
+                FROM TEST.TB_USERS
                 WHERE Id < 20605 
                 AND TO_CHAR(Id) LIKE '206%'
                 UNION ALL
                 SELECT Id, Name 
-                FROM TB_GROUP_USERS
+                FROM TEST.TB_GROUP_USERS
                 WHERE Id < 20605
                 AND TO_CHAR(Id) LIKE '206%'
                 ORDER BY Name";
             
             string queryWithUnionSqlServer = @"
                 SELECT Id, Name 
-                FROM TB_USERS
+                FROM TEST.TB_USERS
                 WHERE Id < 20605 
                 AND CAST(Id AS VARCHAR) LIKE '206%'
                 UNION ALL
                 SELECT Id, Name 
-                FROM TB_GROUP_USERS
+                FROM TEST.TB_GROUP_USERS
                 WHERE Id < 20605
                 AND CAST(Id AS VARCHAR) LIKE '206%'
                 ORDER BY Name";
 
             // Query simples sem clausulas adicionais - 20 registros
-            string simpleQueryOracle = "SELECT Id, Name FROM TB_USERS WHERE TO_CHAR(Id) LIKE '206%'";
+            string simpleQueryOracle = "SELECT Id, Name FROM TEST.TB_USERS WHERE TO_CHAR(Id) LIKE '206%'";
             
-            string simpleQuerySqlServer = "SELECT Id, Name FROM TB_USERS WHERE CAST(Id AS VARCHAR) LIKE '206%'";
+            string simpleQuerySqlServer = "SELECT Id, Name FROM TEST.TB_USERS WHERE CAST(Id AS VARCHAR) LIKE '206%'";
 
             // Query com subquery - 6 registros
             string queryWithSubquery = @"
                 SELECT u.Id, u.Name
-                FROM TB_USERS u
-                WHERE u.Id IN (SELECT ug.ID_TB_USERS FROM TB_GROUP_USERStoGROUPS ug WHERE ug.ID_TB_GROUP_USERS = 20601)";
+                FROM TEST.TB_USERS u
+                WHERE u.Id IN (SELECT ug.ID_TB_USERS FROM TEST.""TB_GROUP_USERStoGROUPS"" ug WHERE ug.ID_TB_GROUP_USERS = 20601)";
 
             // Teste para cada query
             // Act & Assert
@@ -1966,7 +1976,7 @@ namespace TestEH_UnitTest
             // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '206%'");
             // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '206%'");
             // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '206%'");
-            ResetTables("206");
+            //ResetTables("206");
         }
 
 
