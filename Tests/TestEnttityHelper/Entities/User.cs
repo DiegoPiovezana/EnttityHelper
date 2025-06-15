@@ -4,7 +4,7 @@ using TestEH_UnitTest.Entities;
 
 namespace TestEH_UnitTest.Entities
 {
-    [Table("TB_USERS")]
+    [Table("TB_USERS", Schema = "TEST")]
     public class User
     {
         [Key()] public long Id { get; internal set; }

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TestEH_UnitTest.Entities
 {
-    [Table("TB_GROUP_USERS")]
+    [Table("TB_GROUP_USERS", Schema = "TEST")]
     public class Group
     {
         [Key()] public int Id { get; internal set; }

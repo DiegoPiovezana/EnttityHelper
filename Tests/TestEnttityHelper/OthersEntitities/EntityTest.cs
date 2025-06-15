@@ -2,7 +2,7 @@
 
 namespace TestEnttityHelper.OthersEntity
 {
-    [Table("TB_ENTITY_TEST", Schema = "SYSTEM")]
+    [Table("TB_ENTITY_TEST", Schema = "TEST")]
     public class EntityTest
     {
         public long Id { get; set; }

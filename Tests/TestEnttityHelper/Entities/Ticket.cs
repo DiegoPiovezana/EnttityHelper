@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TestEH_UnitTest.Entities
 {
-    [Table("TB_TICKET")]
+    [Table("TB_TICKET", Schema = "TEST")]
     public class Ticket
     {
         [Key] public long? IdLog { get; internal set; }
