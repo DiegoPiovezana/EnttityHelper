@@ -567,7 +567,7 @@ namespace TestEH_UnitTest
 
             if (eh.DbContext.ValidateConnection())
             {
-                ResetTables("103");
+                try{ResetTables("103");} catch{}
                 
                 // Create table - Object User     
                 eh.CreateTableIfNotExist<Career>(true);
@@ -579,9 +579,9 @@ namespace TestEH_UnitTest
                 User userD = new("Diego Piovezana") { Id = 10321, GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 10301 };
 
                 // Insert in database
-                eh.Insert(career);
-                eh.Insert(userD);
-
+                Assert.That(eh.Insert(career), Is.EqualTo(1));
+                Assert.That(eh.Insert(userD), Is.EqualTo(1));
+                
                 // Modify entity
                 userD.Name = "Diêgo Piovezana";
 
@@ -817,6 +817,7 @@ namespace TestEH_UnitTest
                 ResetTables("108");
                 
                 eh.CreateTableIfNotExist<Group>(createOnlyPrimaryTable: true);
+                eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false);
                 // ATTENTION: The User table depends on the Group to establish the MxN relationship and create the auxiliary table (even if users without group)
 
                 User userX = new("Jayme Souza") { Id = 10801, GitHub = "@JSouza108", DtCreation = DateTime.Now };
@@ -835,12 +836,14 @@ namespace TestEH_UnitTest
                     $"INCREMENT BY 1 "
                     );
                 }
-                catch (Exception) { } // Ignore if the sequence already exists                    
+                catch (Exception) { } // Ignore if the sequence already exists   
+                
+                string idTbTicket = eh.GetTableName<Ticket>();
                 
                 if (eh.DbContext.Provider == Enums.DbProvider.Oracle)
                 {
                     string queryCreateTriggerOracle = $"CREATE OR REPLACE TRIGGER TRIGGER_TICKET " +
-                                                      $"BEFORE INSERT ON TB_TICKET " +
+                                                      $"BEFORE INSERT ON {idTbTicket} " +
                                                       $"FOR EACH ROW " +
                                                       $"BEGIN " +
                                                       $":NEW.IdLog := SEQUENCE_TICKET.NEXTVAL; " +
@@ -852,15 +855,15 @@ namespace TestEH_UnitTest
                 {
                     eh.ExecuteNonQuery(
                         $"DECLARE @sql NVARCHAR(MAX) = (" +
-                        $"    SELECT 'ALTER TABLE TB_TICKET DROP CONSTRAINT [' + name + ']'" +
+                        $"    SELECT 'ALTER TABLE {idTbTicket} DROP CONSTRAINT [' + name + ']'" +
                         $"    FROM sys.key_constraints " +
                         $"    WHERE type = 'PK' AND parent_object_id = OBJECT_ID('TB_TICKET')" +
                         $"); " +
                         $"IF @sql IS NOT NULL EXEC sp_executesql @sql;"
                     );
                     
-                    eh.ExecuteNonQuery($"ALTER TABLE {eh.GetTableName<Ticket>()} DROP COLUMN IdLog;");
-                    eh.ExecuteNonQuery($"ALTER TABLE {eh.GetTableName<Ticket>()} ADD IdLog INT IDENTITY(1,1) PRIMARY KEY;");
+                    eh.ExecuteNonQuery($"ALTER TABLE {idTbTicket} DROP COLUMN IdLog;");
+                    eh.ExecuteNonQuery($"ALTER TABLE {idTbTicket} ADD IdLog INT IDENTITY(1,1) PRIMARY KEY;");
                 }
 
                 // Ticket with user
