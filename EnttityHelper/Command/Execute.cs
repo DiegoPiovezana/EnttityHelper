@@ -107,7 +107,7 @@ namespace EH.Commands
                     dbParam.Value = param.Value?.Value ?? DBNull.Value;
                     dbParam.Direction = ParameterDirection.Input;
                     
-                    AdjustDbTypeForProvider(dbParam, dbContext, param.Value?.Type);
+                    AdjustDbTypeForProvider(dbParam, dbContext, param.Value);
                     
                     command.Parameters.Add(dbParam);
                 }
@@ -232,11 +232,11 @@ namespace EH.Commands
                     foreach (var param in queryCommand.Parameters)
                     {
                         var dbParam = command.CreateParameter();
-                        dbParam.ParameterName = param.Key;
-                        dbParam.Value = param.Value?.Value ?? DBNull.Value;
                         dbParam.Direction = ParameterDirection.Input;
+                        dbParam.ParameterName = param.Key;
+                        // dbParam.Value = param.Value?.Value ?? DBNull.Value;
                         
-                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value?.Type);
+                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value);
                         
                         command.Parameters.Add(dbParam);
                     }
@@ -248,7 +248,7 @@ namespace EH.Commands
                         dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
                         dbParam.Direction = ParameterDirection.Output;
                         
-                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value?.Type);
+                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value);
                         
                         command.Parameters.Add(dbParam);
                     }
@@ -424,12 +424,13 @@ namespace EH.Commands
                             throw new ArgumentNullException(param.Key, "Property cannot be null.");
                         
                         var dbParam = command.CreateParameter();
-                        dbParam.ParameterName = param.Key;
-                        dbParam.Value = param.Value.Value ?? DBNull.Value;
-                        // dbParam.DbType = param.Value.DbType;
                         dbParam.Direction = ParameterDirection.Input;
+                        dbParam.ParameterName = param.Key;
                         
-                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value?.Type);
+                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value);
+                        
+                        // dbParam.Value = param.Value.Value ?? DBNull.Value;
+                        // dbParam.DbType = param.Value.DbType;
                         
                         command.Parameters.Add(dbParam);
                     }
@@ -445,10 +446,10 @@ namespace EH.Commands
                     {
                         var dbParam = command.CreateParameter();
                         dbParam.ParameterName = param.Key;
-                        dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
                         dbParam.Direction = ParameterDirection.Output;
+                        dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
                         
-                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value?.Type);
+                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value);
 
                         // if (dbParam.DbType == DbType.String || dbParam.DbType == DbType.AnsiString)
                         //     dbParam.Size = 4000;
@@ -564,74 +565,84 @@ namespace EH.Commands
                 throw;
             }
         }
-        
-        private static void AdjustDbTypeForProvider(IDbDataParameter dbParam, Database dbContext, Type? realType)
+
+        private static void AdjustDbTypeForProvider(IDbDataParameter dbParam, Database dbContext, Property? property)
         {
-            string sqlType = ToolsProp.GetTypeSql(realType, dbContext);
-            
-            // Cases for specific types
-            // TODO: Improve this logic to handle more types and providers
-            if (sqlType.ToLower().Contains("char") && dbParam.DbType != DbType.String)
+            // 1) Null
+            if (property?.Value is null)
             {
-                try
+                dbParam.Value = DBNull.Value;
+                return;
+            }
+
+            Type? realType = property?.Type;
+            object rawValue = property?.Value!; // Not null because we check for null above
+            string sqlType = ToolsProp.GetTypeSql(realType, dbContext).ToLowerInvariant();
+
+            try
+            {
+                // 2) STRINGS (varchar, nvarchar, char, nchar)
+                if (sqlType.Contains("char")) // && dbParam.DbType != DbType.String
                 {
                     switch (dbContext.Provider)
                     {
-                        case Enums.DbProvider.Oracle or Enums.DbProvider.SqlServer:
+                        default: // All providers
                             dbParam.Value = dbParam.Value.ToString();
-                            break;
+                            return;
                     }
                 }
-                catch (Exception e)
+
+                // 3) Boolean
+                if (realType == typeof(bool)) //  || dbParam.DbType == DbType.Boolean
                 {
-                    Console.WriteLine(e);
-                }
-            }
-
-            // Cases for specific database providers
-            switch (dbContext.Provider)
-            {
-                case Enums.DbProvider.Oracle:
-                    
-                    // Booleano → NUMBER(1)
-                    if (dbParam.DbType == DbType.Boolean)
+                    switch (dbContext.Provider)
                     {
-                        dbParam.DbType = DbType.Int16;
-                        if (dbParam.Value is bool boolValue)
-                        {
-                            dbParam.Value = boolValue ? 1 : 0;
-                        }
+                        case Enums.DbProvider.Oracle:
+                            dbParam.DbType = DbType.Int16;
+                            bool v = (bool)rawValue;
+                            dbParam.Value = v ? (short)1 : (short)0;
+                            return;
+                        default:
+                            dbParam.DbType = DbType.Boolean;
+                            dbParam.Value = rawValue;
+                            return;
                     }
-                    // else if (dbParam.DbType == DbType.String || dbParam.DbType == DbType.AnsiString)
-                    // {
-                    //     dbParam.Size = 4000; // Oracle VARCHAR2 default size
-                    // }
-                    // else if (dbParam.DbType == DbType.DateTime)
-                    // {
-                    //     dbParam.DbType = DbType.Date; // Oracle uses DATE for date and time
-                    // }
-                    break;
+                }
 
-                // case Enums.DbProvider.MySql:
-                //     
-                //     // Booleano → TINYINT(1)
-                //     if (dbParam.DbType == DbType.Boolean)
-                //     {
-                //         dbParam.DbType = DbType.Byte; // MySQL uses TINYINT(1) for boolean
-                //         if (dbParam.Value is bool boolValue)
-                //         {
-                //             dbParam.Value = boolValue ? (byte)1 : (byte)0;
-                //         }
-                //     }
-                //     break;
+                // 4) Guid
+                if (realType == typeof(Guid))
+                {
+                    switch (dbContext.Provider)
+                    {
+                        case Enums.DbProvider.Oracle:
+                            dbParam.DbType = DbType.Binary;
+                            dbParam.Size = 16;
+                            dbParam.Value = ((Guid)rawValue).ToByteArray();
+                            return;
+                        case Enums.DbProvider.SqlServer:
+                            dbParam.DbType = DbType.String;
+                            dbParam.Size = 36;
+                            dbParam.Value = rawValue.ToString();
+                            return;
+                        default:
+                            // Provider support native GUID type
+                            dbParam.DbType = DbType.Guid;
+                            dbParam.Value = rawValue;
+                            return;
+                    }
+                }
 
-                default:
-                    // No adjustment needed for other providers
-                    break;
+                // 5) Other types without adjustment required
+                dbParam.Value = rawValue;
             }
-           
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
+        
+        
 
     }
-    
 }

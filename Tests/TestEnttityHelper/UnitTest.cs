@@ -917,12 +917,14 @@ namespace TestEH_UnitTest
                         $"INCREMENT BY 1 "
                     );
                 }
-                catch (Exception) { } // Ignore if the sequence already exists     
+                catch (Exception) { } // Ignore if the sequence already exists   
+                
+                string idTbTicket = eh.GetTableName<Ticket>();
                 
                 if (eh.DbContext.Provider == Enums.DbProvider.Oracle)
                 {
                     string queryCreateTriggerOracle = $"CREATE OR REPLACE TRIGGER TRIGGER_TICKET " +
-                                                      $"BEFORE INSERT ON TB_TICKET " +
+                                                      $"BEFORE INSERT ON {idTbTicket} " +
                                                       $"FOR EACH ROW " +
                                                       $"BEGIN " +
                                                       $":NEW.IdLog := SEQUENCE_TICKET.NEXTVAL; " +
@@ -934,15 +936,15 @@ namespace TestEH_UnitTest
                 {
                     eh.ExecuteNonQuery(
                         $"DECLARE @sql NVARCHAR(MAX) = (" +
-                        $"    SELECT 'ALTER TABLE TB_TICKET DROP CONSTRAINT [' + name + ']'" +
+                        $"    SELECT 'ALTER TABLE {idTbTicket} DROP CONSTRAINT [' + name + ']'" +
                         $"    FROM sys.key_constraints " +
-                        $"    WHERE type = 'PK' AND parent_object_id = OBJECT_ID('TB_TICKET')" +
+                        $"    WHERE type = 'PK' AND parent_object_id = OBJECT_ID('{idTbTicket}')" +
                         $"); " +
                         $"IF @sql IS NOT NULL EXEC sp_executesql @sql;"
                     );
                     
-                    eh.ExecuteNonQuery($"ALTER TABLE {eh.GetTableName<Ticket>()} DROP COLUMN IdLog;");
-                    eh.ExecuteNonQuery($"ALTER TABLE {eh.GetTableName<Ticket>()} ADD IdLog INT IDENTITY(1,1) PRIMARY KEY;");
+                    eh.ExecuteNonQuery($"ALTER TABLE {idTbTicket} DROP COLUMN IdLog;");
+                    eh.ExecuteNonQuery($"ALTER TABLE {idTbTicket} ADD IdLog INT IDENTITY(1,1) PRIMARY KEY;");
                 }
 
                 // Ticket with user
