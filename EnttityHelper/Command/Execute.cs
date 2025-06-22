@@ -85,51 +85,61 @@ namespace EH.Commands
         
         internal static object? ExecuteReader<TEntity>(this Database dbContext, QueryCommand? query, bool getDataReader, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
         {
-            if (dbContext?.IDbConnection is null)
-                throw new InvalidOperationException("Connection does not exist.");
-            if (query is null)
-                throw new InvalidOperationException("Query does not exist.");
-
-            if (pageSize is not null)
+            try
             {
-                query = new SqlQueryString(dbContext).PaginatedQuery(query, pageSize.Value, pageIndex, filterPage, sortColumnPage, sortAscendingPage);
-            }
 
-            IDbConnection connection = dbContext.CreateOpenConnection();
-            using IDbCommand command = dbContext.CreateCommand(query.Sql);
-    
-            if (query.Parameters?.Count > 0)
-            {
-                foreach (var param in query.Parameters)
+                if (dbContext?.IDbConnection is null)
+                    throw new InvalidOperationException("Connection does not exist.");
+                if (query is null)
+                    throw new InvalidOperationException("Query does not exist.");
+
+                if (pageSize is not null)
                 {
-                    var dbParam = command.CreateParameter();
-                    dbParam.ParameterName = param.Key;
-                    dbParam.Value = param.Value?.Value ?? DBNull.Value;
-                    dbParam.Direction = ParameterDirection.Input;
-                    
-                    DefineDbTypeValueForProvider(dbParam, dbContext, param.Value);
-                    
-                    command.Parameters.Add(dbParam);
+                    query = new SqlQueryString(dbContext).PaginatedQuery(query, pageSize.Value, pageIndex, filterPage,
+                        sortColumnPage, sortAscendingPage);
                 }
+
+                IDbConnection connection = dbContext.CreateOpenConnection();
+                using IDbCommand command = dbContext.CreateCommand(query.Sql);
+
+                if (query.Parameters?.Count > 0)
+                {
+                    foreach (var param in query.Parameters)
+                    {
+                        var dbParam = command.CreateParameter();
+                        dbParam.ParameterName = param.Key;
+                        dbParam.Value = param.Value?.Value ?? DBNull.Value;
+                        dbParam.Direction = ParameterDirection.Input;
+
+                        DefineDbTypeValueForProvider(dbParam, dbContext, param.Value);
+
+                        command.Parameters.Add(dbParam);
+                    }
+                }
+
+                IDataReader? reader = command.ExecuteReader();
+
+                if (getDataReader)
+                {
+                    return reader;
+                }
+
+                if (reader != null)
+                {
+                    List<TEntity> entities = Tools.ToListEntity<TEntity>(reader);
+                    reader.Close();
+                    connection.Close();
+                    Debug.WriteLine($"{entities?.Count ?? 0} entities mapped!");
+                    return entities;
+                }
+
+                return null;
             }
-
-            IDataReader? reader = command.ExecuteReader();
-
-            if (getDataReader)
+            catch(Exception ex)
             {
-                return reader;
-            }
-
-            if (reader != null)
-            {
-                List<TEntity> entities = Tools.ToListEntity<TEntity>(reader);
-                reader.Close();
-                connection.Close();
-                Debug.WriteLine($"{entities?.Count ?? 0} entities mapped!");
-                return entities;
-            }
-
-            return null;
+                Console.WriteLine(ex.Message);
+                throw;
+            }     
         }
 
         /// <summary>
@@ -447,9 +457,9 @@ namespace EH.Commands
                         var dbParam = command.CreateParameter();
                         dbParam.ParameterName = param.Key;
                         dbParam.Direction = ParameterDirection.Output;
-                        // dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
                         
                         DefineDbTypeValueForProvider(dbParam, dbContext, param.Value);
+                        // dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
 
                         // if (dbParam.DbType == DbType.String || dbParam.DbType == DbType.AnsiString)
                         //     dbParam.Size = 4000;
