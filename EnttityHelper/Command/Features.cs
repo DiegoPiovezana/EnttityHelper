@@ -171,6 +171,7 @@ namespace EH.Command
                     {
                         if (id is byte[] bytes && bytes.Length == 16) { convertedId = new Guid(bytes); }
                         else if (id is string s) { convertedId = Guid.Parse(s); }
+                        else if (id is Guid guid) { convertedId = guid; }
                         else { throw new InvalidCastException($"Could not convert type '{id?.GetType()}' to Guid."); }
                     }
                     else
