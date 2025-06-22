@@ -6,7 +6,10 @@ namespace TestEH_UnitTest.Entities;
 [Table("TB_ITEM", Schema = "TEST")]
 public class Item
 {
-    [Key] public long Id { get; set; }
-    [Required] public string Name { get; set; }
-    public string? Description { get; set; }
+    public long Id { get; set; }
+    public string Name { get; set; }
+    public decimal UnitPrice { get; set; }
+    public int Quantity { get; set; }
+    public long OrderId { get; set; } // Foreign key to Order
+    public Order Order { get; set; } // N:1 relationship
 }

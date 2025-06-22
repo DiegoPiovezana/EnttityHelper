@@ -307,7 +307,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(12)]
-        public void TestManyToOne()
+        public void TestManyToOne()  // Many Users in One Career
         {
             EnttityHelper eh = new(stringConnectionBd1);
             Assert.That(eh.DbContext.ValidateConnection(), Is.True);
@@ -857,7 +857,7 @@ namespace TestEH_UnitTest
                         $"DECLARE @sql NVARCHAR(MAX) = (" +
                         $"    SELECT 'ALTER TABLE {idTbTicket} DROP CONSTRAINT [' + name + ']'" +
                         $"    FROM sys.key_constraints " +
-                        $"    WHERE type = 'PK' AND parent_object_id = OBJECT_ID('TB_TICKET')" +
+                        $"    WHERE type = 'PK' AND parent_object_id = OBJECT_ID('{idTbTicket}')" +
                         $"); " +
                         $"IF @sql IS NOT NULL EXEC sp_executesql @sql;"
                     );
@@ -877,7 +877,7 @@ namespace TestEH_UnitTest
                 ticketEmpty.User = userY; // Will be ignored because IdUser is null
                 Assert.That(eh.Insert(ticketEmpty, true, null, true), Is.EqualTo(1));
 
-                eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Ticket>()}");
+                eh.ExecuteNonQuery($"DROP TABLE {idTbTicket}");
                 eh.Delete(userX);
                 eh.Delete(userY);
             }
@@ -2001,7 +2001,51 @@ namespace TestEH_UnitTest
             //ResetTables("206");
         }
 
+        [Test, Order(250)]
+        public void TestOneToMany() // One Order with Many Items
+        {
+            try
+            {
+                EnttityHelper eh = new(stringConnectionBd1);
+                Assert.That(eh.DbContext.ValidateConnection(), Is.True, "Database connection validation failed.");
+                
+                eh.CreateTableIfNotExist<Item>(createOnlyPrimaryTable: false);
+                eh.CreateTableIfNotExist<Order>(createOnlyPrimaryTable: false);
+                
+                Order order = new()
+                {
+                    OrderDate = DateTime.Now,
+                    CustomerName = "Cliente Teste",
+                    Items = new List<Item>
+                    {
+                        new() { Name = "Item 1", Quantity = 2, UnitPrice = 10.5m },
+                        new() { Name = "Item 2", Quantity = 1, UnitPrice = 25.0m },
+                        new() { Name = "Item 3", Quantity = 5, UnitPrice = 7.0m }
+                    }
+                };
+               
+                long inserted = eh.Insert(order);
+                Assert.That(inserted, Is.EqualTo(1), "Order insertion failed.");
+               
+                bool exists = eh.CheckIfExist(order);
+                Assert.That(exists, Is.True, "Order does not exist after insertion.");
+               
+                var items = eh.Get<Item>(filter: $"OrderId = '{order.Id}'");
+                Assert.That(items, Is.Not.Null.And.Not.Empty, "No Item were retrieved for the Order.");
+                Assert.That(items!.Count, Is.EqualTo(order.Items.Count), "Quantity of items does not match.");
 
+                foreach (var item in items)
+                {
+                    Assert.That(item.OrderId, Is.EqualTo(order.Id), "Item not correctly associated with order.");
+                    Assert.That(item.Name, Is.Not.Null.And.Not.Empty, "Item Name cannot be null.");
+                }
+            }
+            finally
+            {
+                ResetTables("250");
+            }
+        }
+        
 
 
     }
