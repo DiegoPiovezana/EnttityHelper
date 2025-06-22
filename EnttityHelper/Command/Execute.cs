@@ -255,10 +255,13 @@ namespace EH.Commands
                     {
                         var dbParam = command.CreateParameter();
                         dbParam.ParameterName = param.Key;
-                        dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
                         dbParam.Direction = ParameterDirection.Output;
                         
                         DefineDbTypeValueForProvider(dbParam, dbContext, param.Value);
+                        // dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
+                        
+                        Type typeReturn = dbParam.Value is not DBNull ? dbParam.Value?.GetType() : param.Value.Type ?? typeof(object);
+                        dbParam.DbType = ToolsProp.MapToDbType(typeReturn);
                         
                         command.Parameters.Add(dbParam);
                     }
@@ -460,6 +463,9 @@ namespace EH.Commands
                         
                         DefineDbTypeValueForProvider(dbParam, dbContext, param.Value);
                         // dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
+                        
+                        Type typeReturn = dbParam.Value is not DBNull ? dbParam.Value?.GetType() : param.Value.Type ?? typeof(object);
+                        dbParam.DbType = ToolsProp.MapToDbType(typeReturn);
 
                         // if (dbParam.DbType == DbType.String || dbParam.DbType == DbType.AnsiString)
                         //     dbParam.Size = 4000;
