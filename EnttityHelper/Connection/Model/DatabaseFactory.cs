@@ -76,6 +76,29 @@ namespace EH.Connection
         public string PrefixParameter { get; set; }
 
         /// <summary>
+        /// Gets or sets a collection of reserved words specific to the database context.
+        /// </summary>
+        /// <remarks>
+        /// This collection contains a set of reserved keywords that cannot be used as identifiers (e.g., table or column names)
+        /// in database operations due to conflicts with the database's SQL syntax. The comparison is case-insensitive.
+        /// </remarks>
+        public HashSet<string> ReservedWords { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "ADD", "ALL", "ALTER", "AND", "ANY", "AS", "ASC", "AUTHORIZATION", "BACKUP",
+            "SELECT", "FROM", "WHERE", "USER", "ORDER", "GROUP",
+            "BEGIN", "BETWEEN", "BREAK", "BROWSE", "BULK", "BY", "CASCADE", "CASE",
+            "CHECK", "CHECKPOINT", "CLOSE", "CLUSTERED", "COALESCE", "COLLATE",
+            "COLUMN", "COMMIT", "COMPUTE", "CONSTRAINT", "CONTAINS",
+            "CONTAINSTABLE", "CONTINUE", "CONVERT", "CREATE", "CROSS", "CURRENT",
+            "CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP", "CURRENT_USER",
+            "CURSOR", "DATABASE", "DBCC", "DEALLOCATE", "DECLARE", "DEFAULT",
+            "DELETE", "DENY", "DESC", "DISK", "DISTINCT", "DISTRIBUTED", "DOUBLE",
+            "DROP", "DUMMY", "ELSE", "END", "ERRLVL", "ESCAPE", "EXCEPT", "EXEC",
+            "EXECUTE", "EXISTS", "EXIT", "EXTERNAL", "FETCH", "FILE", "FILLFACTOR",
+            "USE", "FOR", "FOREIGN", "FREETEXT", "FREETEXTTABLE"
+        };
+
+        /// <summary>
         /// Gets or sets the database name.
         /// </summary>
         public string? Name { get; set; }
