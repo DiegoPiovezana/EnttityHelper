@@ -54,16 +54,23 @@ namespace TestEH_UnitTest
             string careerId = ConvertToVarchar(nameof(Career.IdCareer), eh);
             string ticketId = ConvertToVarchar(nameof(Ticket.IdLog), eh);
 
+            string tbManyToManyScaped = eh.GetQuery.EscapeIdentifier(eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups)));
+            string tbCareerScaped = eh.GetQuery.EscapeIdentifier(eh.GetTableName<Career>());
+            string tbUserScaped = eh.GetQuery.EscapeIdentifier(eh.GetTableName<User>());
+            string tbGroupScaped = eh.GetQuery.EscapeIdentifier(eh.GetTableName<Group>());
+            string tbTicketScaped = eh.GetQuery.EscapeIdentifier(eh.GetTableName<Ticket>());
+            string tbTicket = eh.GetTableName<Ticket>();
+
             try
             {
-                eh.ExecuteNonQuery($@"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE {idGroup} LIKE '{idTest}__' OR {idUser} LIKE '{idTest}__'");
+                eh.ExecuteNonQuery($@"DELETE FROM {tbManyToManyScaped} WHERE {idGroup} LIKE '{idTest}__' OR {idUser} LIKE '{idTest}__'");
             }
             catch (Exception) { }
             
-            eh.ExecuteNonQuery($@"DELETE FROM {eh.GetTableName<User>()} WHERE {userId} LIKE '{idTest}__'");
-            eh.ExecuteNonQuery($@"DELETE FROM {eh.GetTableName<Group>()} WHERE {groupId} LIKE '{idTest}__'");
-            eh.ExecuteNonQuery($@"DELETE FROM {eh.GetTableName<Career>()} WHERE {careerId} LIKE '{idTest}__'");
-            if (eh.CheckIfExist(eh.GetTableName<Ticket>())) { eh.ExecuteNonQuery($@"DELETE FROM {eh.GetTableName<Ticket>()} WHERE {ticketId} LIKE '{idTest}__'"); }
+            eh.ExecuteNonQuery($@"DELETE FROM {tbUserScaped} WHERE {userId} LIKE '{idTest}__'");
+            eh.ExecuteNonQuery($@"DELETE FROM {tbGroupScaped} WHERE {groupId} LIKE '{idTest}__'");
+            eh.ExecuteNonQuery($@"DELETE FROM {tbCareerScaped} WHERE {careerId} LIKE '{idTest}__'");
+            if (eh.CheckIfExist(tbTicket)) { eh.ExecuteNonQuery($@"DELETE FROM {tbTicketScaped} WHERE {ticketId} LIKE '{idTest}__'"); }
         }
 
 
@@ -497,7 +504,8 @@ namespace TestEH_UnitTest
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ExcelCsvGerado_1000000x10.csv";
 
             bool createTable = true;
-            string tableName = "TestTable50K_Csv"; //TestTable1M_Csv
+            string tableName = "TEST.TestTable50K_Csv"; //TestTable1M_Csv
+            string tableNameEscaped = eh1.GetQuery.EscapeIdentifier(tableName);
             int batchSize = 10_000; // 200_000
             int timeOutSeconds = 50; // Timeout in seconds to insert 1 batch (max)
             char delimiter = ';';
@@ -507,10 +515,13 @@ namespace TestEH_UnitTest
             var insertCount = 50_000; // 1_000_000
             if (hasHeader) insertCount--;
 
-            string tableNameDestiny = "TEST_LINKSELECT_CSV";
+            string tableNameDestiny = "TEST.TEST_LINKSELECT_CSV";
+            string tableNameDestinyEscaped = eh2.GetQuery.EscapeIdentifier(tableNameDestiny);
 
             try
             {
+                try { eh1.ExecuteNonQuery($"DROP TABLE {tableNameEscaped}"); } catch {}
+                
                 long result1 = 0;
                 if (!eh1.CheckIfExist(tableName))
                 {
@@ -527,7 +538,7 @@ namespace TestEH_UnitTest
                 Debug.WriteLine($"Start Link Select: {startTime}");
 
                 // Select from database table from database 1
-                string query = $"SELECT * FROM {tableName}";
+                string query = $"SELECT * FROM {tableNameEscaped}";
 
                 // Insert the result of the select into the database table of database 2
                 var result2 = eh1.InsertLinkSelect(query, eh2, tableNameDestiny);
@@ -537,14 +548,14 @@ namespace TestEH_UnitTest
                 Debug.WriteLine($"End Link Select: {endTime}");
                 Debug.WriteLine($"Elapsed Link Select: {endTime - startTime}");
 
-                var countDb1 = eh1.ExecuteScalar($"SELECT COUNT(*) FROM {tableName}");
-                var countDb2 = eh2.ExecuteScalar($"SELECT COUNT(*) FROM {tableNameDestiny}");
+                var countDb1 = eh1.ExecuteScalar($"SELECT COUNT(*) FROM {tableNameEscaped}");
+                var countDb2 = eh2.ExecuteScalar($"SELECT COUNT(*) FROM {tableNameDestinyEscaped}");
                 Assert.That(countDb1, Is.EqualTo(insertCount));
             }
             finally
             {
-                eh1.ExecuteNonQuery($"DROP TABLE {tableName}");
-                eh2.ExecuteNonQuery($"DROP TABLE {tableNameDestiny}");
+                try { eh1.ExecuteNonQuery($"DROP TABLE {tableNameEscaped}"); } catch {}
+                try { eh2.ExecuteNonQuery($"DROP TABLE {tableNameDestinyEscaped}"); } catch {}
             }
         }
 
@@ -1316,6 +1327,8 @@ namespace TestEH_UnitTest
         {
             EnttityHelper eh = new(stringConnectionBd1);
             Assert.That(eh.DbContext.ValidateConnection(), Is.EqualTo(true));
+            
+            ResetTables("201");
 
             /////////////////////////////////////////////////// 
             // CREATE TABLE
@@ -1449,7 +1462,6 @@ namespace TestEH_UnitTest
             //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '201%'");
             //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '201%'");
             //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '201%'");
-            ResetTables("201");
         }
 
         [Test, Order(202)]
@@ -1957,19 +1969,19 @@ namespace TestEH_UnitTest
 
             // Teste com complexQueryWithWithAndJoin
             totalRecords = await eh.GetTotalRecordCountAsync(eh.DbContext.Provider is Enums.DbProvider.Oracle? complexQueryWithWithAndJoinOracle : complexQueryWithWithAndJoinSqlServer);
-            Assert.AreEqual(27, totalRecords, "A contagem de registros da query complexa est� incorreta.");
+            Assert.AreEqual(27, totalRecords, "A contagem de registros da query complexa esta incorreta.");
 
             // Teste com queryWithUnion
             totalRecords = await eh.GetTotalRecordCountAsync(eh.DbContext.Provider is Enums.DbProvider.Oracle? queryWithUnionOracle : queryWithUnionSqlServer);
-            Assert.AreEqual(8, totalRecords, "A contagem de registros da query com UNION est� incorreta.");
+            Assert.AreEqual(8, totalRecords, "A contagem de registros da query com UNION esta incorreta.");
 
             // Teste com simpleQuery
             totalRecords = await eh.GetTotalRecordCountAsync(eh.DbContext.Provider is Enums.DbProvider.Oracle? simpleQueryOracle : simpleQuerySqlServer);
-            Assert.AreEqual(20, totalRecords, "A contagem de registros da query simples est� incorreta.");
+            Assert.AreEqual(20, totalRecords, "A contagem de registros da query simples esta incorreta.");
 
             // Teste com queryWithSubquery
             totalRecords = await eh.GetTotalRecordCountAsync(queryWithSubquery);
-            Assert.AreEqual(6, totalRecords, "A contagem de registros da query com subquery est� incorreta.");
+            Assert.AreEqual(6, totalRecords, "A contagem de registros da query com subquery esta incorreta.");
 
 
             // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))}");

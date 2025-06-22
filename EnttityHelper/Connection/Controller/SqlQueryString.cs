@@ -1029,10 +1029,6 @@ namespace EH.Connection
                     && Database.ReservedWords.Contains(part))
                     return true;
               
-                if (Database.Provider == Enums.DbProvider.Oracle
-                    && part.Any(char.IsLower))
-                    return true;
-
                 return false;
             }
 
