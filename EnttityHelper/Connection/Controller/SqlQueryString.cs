@@ -266,6 +266,9 @@ namespace EH.Connection
                     if (!tableExists) { throw new Exception($"Table '{tableName}' doesn't exist!"); }
                 }
 
+                string idTableName1 = tableName1.Split('.').Last();
+                string idTableName2 = tableName2.Split('.').Last();
+
                 var pk1 = ToolsProp.GetPK((object)entity);
                 var pk2 = ToolsProp.GetPK((object)entity2Type);
                 string idName1 = pk1.Name; // Ex: IdUser
@@ -282,11 +285,12 @@ namespace EH.Connection
                 
                 var parametersSelect = new Dictionary<string, Property>
                 {
-                    { $"ID_{tableName1}", new Property(pk1, entity) }
+                    { $"ID_{idTableName1}", new Property(pk1, entity) }
                 };
 
                 QueryCommand queryCommandSelect = new QueryCommand(
-                    $@"SELECT ID_{tableName2} FROM {tableNameInversePropertyEscaped} WHERE ID_{tableName1} = '{pk1.GetValue(entity)}'",
+                    // $@"SELECT ID_{tableName2} FROM {tableNameInversePropertyEscaped} WHERE ID_{tableName1} = '{pk1.GetValue(entity)}'",
+                    $@"SELECT ID_{idTableName2} FROM {tableNameInversePropertyEscaped} WHERE ID_{idTableName1} = {enttityHelper.DbContext.PrefixParameter}ID_{idTableName1}",
                     parametersSelect,
                     null
                     );
@@ -300,8 +304,8 @@ namespace EH.Connection
                 foreach (DataRow row in itemsBd.Rows)
                 {
                     object idItemEntity2 = row[0];
-                    var entity2InCollectionBd = (IEnumerable)getMethod.Invoke(enttityHelper, new object[] { false, $"{pk2.Name} = '{idItemEntity2}'", null, null, 0, null, true });
                     // var entity2InCollectionBd = Features.Get<object>(false, $"{pk2.Name} = '{idItemEntity2}'", null, null, 0, null, true);
+                    var entity2InCollectionBd = (IEnumerable)getMethod.Invoke(enttityHelper, new object[] { false, $"{pk2.Name} = '{idItemEntity2}'", null, null, 0, null, true });
                     foreach (var entity2 in entity2InCollectionBd) { itemsCollectionBd.Add(entity2); }
                 }
 
@@ -331,8 +335,8 @@ namespace EH.Connection
                 }
 
                 PropertyInfo prop1 = entity.GetType().GetProperty(idName1);
-                string idTb1 = tableName1.Substring(0, Math.Min(tableName1.Length, 27));
-                string idTb2 = tableName2.Substring(0, Math.Min(tableName2.Length, 27));
+                string idTb1 = idTableName1.Substring(0, Math.Min(idTableName1.Length, 27));
+                string idTb2 = idTableName2.Substring(0, Math.Min(idTableName2.Length, 27));
                 // object idValue1 = prop1.GetValue(entity);
                 
                 var itemProp1 = new Property(prop1, entity);
