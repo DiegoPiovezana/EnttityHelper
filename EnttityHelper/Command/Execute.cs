@@ -518,11 +518,27 @@ namespace EH.Commands
                 connection.Open();
 
                 var bulkCopyObject = dbContext.CreateBulkCopy();
+                string tableNameEscaped = new SqlQueryString(dbContext).EscapeIdentifier(tableName);
+                string[] inputNameTable = tableNameEscaped.Split('.');
+                
+                string schemaName = string.Empty;
+                string tableOnlyName = string.Empty;
+                if (inputNameTable.Length > 1)
+                {
+                    schemaName = inputNameTable[0];
+                    tableOnlyName = inputNameTable[1];
+                    if (string.IsNullOrEmpty(schemaName)) { throw new ArgumentNullException(nameof(schemaName), "Schema name cannot be null or empty."); }
+                }
+                else
+                {
+                    tableOnlyName = inputNameTable[0];
+                }
 
                 switch (bulkCopyObject)
                 {
                     case OracleBulkCopy oracleBulkCopy:
-                        oracleBulkCopy.DestinationTableName = tableName;
+                        oracleBulkCopy.DestinationSchemaName = schemaName;
+                        oracleBulkCopy.DestinationTableName = tableOnlyName;
                         oracleBulkCopy.BulkCopyTimeout = bulkCopyTimeout;
                         if (inputDataToCopy is DataRow[] dataRowsOracle) { oracleBulkCopy.WriteToServer(dataRowsOracle); return dataRowsOracle.Length; }
                         else if (inputDataToCopy is DataTable dataTable) { oracleBulkCopy.WriteToServer(dataTable); return dataTable.Rows.Count; }
@@ -530,7 +546,7 @@ namespace EH.Commands
                         else { throw new NotSupportedException("Bulk Copy operation is not yet supported for this data type."); }
 
                     case SqlBulkCopy sqlBulkCopy:
-                        sqlBulkCopy.DestinationTableName = tableName;
+                        sqlBulkCopy.DestinationTableName = schemaName != null ? $"{schemaName}.{tableOnlyName}" : tableOnlyName;
                         sqlBulkCopy.BulkCopyTimeout = bulkCopyTimeout;
                         if (inputDataToCopy is DataRow[] dataRowsSql) { sqlBulkCopy.WriteToServer(dataRowsSql); return dataRowsSql.Length; }
                         else if (inputDataToCopy is DataTable dataTable) { sqlBulkCopy.WriteToServer(dataTable); return dataTable.Rows.Count; }
