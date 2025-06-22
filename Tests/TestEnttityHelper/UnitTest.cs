@@ -48,7 +48,7 @@ namespace TestEH_UnitTest
         {
             EnttityHelper eh = new(stringConnectionBd1);
             string idGroup = ConvertToVarchar("ID_TB_GROUP_USERS", eh);
-            string idUser = ConvertToVarchar("ID_TB_USERS", eh);
+            string idUser = ConvertToVarchar("ID_USER", eh);
             string userId = ConvertToVarchar(nameof(User.Id), eh);
             string groupId = ConvertToVarchar(nameof(Group.Id), eh);
             string careerId = ConvertToVarchar(nameof(Career.IdCareer), eh);
@@ -242,7 +242,7 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
-                var result = eh.ExecuteNonQuery("DELETE FROM SYSTEM.TB_ENTITY_TEST WHERE ID = 90");
+                var result = eh.ExecuteNonQuery("DELETE FROM TEST.TB_ENTITY_TEST WHERE ID = 90");
                 Assert.That(result, Is.EqualTo(1));
             }
             else
@@ -267,7 +267,7 @@ namespace TestEH_UnitTest
 
                 if (entities is not null && entities[0].Name.Equals("Testando 2 entidade 300 atualizando hora via C#"))
                 {
-                    long result = eh.ExecuteNonQuery("DELETE FROM SYSTEM.TB_ENTITY_TEST WHERE ID = 300");
+                    long result = eh.ExecuteNonQuery("DELETE FROM TEST.TB_ENTITY_TEST WHERE ID = 300");
                     Assert.That(result, Is.EqualTo(1));
                 }
             }
@@ -284,7 +284,7 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
-                eh.ExecuteNonQuery("DELETE FROM SYSTEM.TB_ENTITY_TEST WHERE ID = 300");
+                eh.ExecuteNonQuery("DELETE FROM TEST.TB_ENTITY_TEST WHERE ID = 300");
                 
                 EntityTest entityTest = new() { Id = 300, Name = "Testando 1 entidade 100 via C#", StartDate = DateTime.Now };
                 eh.Insert(entityTest, true, nameof(entityTest.Id));
@@ -296,7 +296,7 @@ namespace TestEH_UnitTest
 
                 if (entities is not null && entities[0].Name.Equals("Testando 2 entidade 300 atualizando hora via C#"))
                 {
-                    long result = eh.ExecuteNonQuery("DELETE FROM SYSTEM.TB_ENTITY_TEST WHERE ID = 300");
+                    long result = eh.ExecuteNonQuery("DELETE FROM TEST.TB_ENTITY_TEST WHERE ID = 300");
                     Assert.That(result, Is.EqualTo(1));
                 }
             }
@@ -316,7 +316,7 @@ namespace TestEH_UnitTest
             eh.CreateTableIfNotExist<Career>(createOnlyPrimaryTable: false);
             eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: true);
 
-            var deletesOld = eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE {ConvertToVarchar("ID", eh)} LIKE '12%'");
+            var deletesOld = eh.ExecuteNonQuery($"DELETE FROM {eh.GetQuery.EscapeIdentifier(eh.GetTableName<User>())} WHERE {ConvertToVarchar("ID", eh)} LIKE '12%'");
             Assert.IsTrue(deletesOld >= 0 && deletesOld <= 2);
 
             deletesOld = eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE {ConvertToVarchar("IDCAREER", eh)} LIKE '12%'");
@@ -361,7 +361,7 @@ namespace TestEH_UnitTest
 
             if (eh.CheckIfExist(eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups)))) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))}");
             if (eh.CheckIfExist(eh.GetTableName<Group>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Group>()}");
-            if (eh.CheckIfExist(eh.GetTableName<User>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<User>()}");
+            if (eh.CheckIfExist(eh.GetTableName<User>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetQuery.EscapeIdentifier(eh.GetTableName<User>())}");
             if (eh.CheckIfExist(eh.GetTableName<Career>())) eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<Career>()}");
 
             //eh.CreateTableIfNotExist<Group>(true);
@@ -394,7 +394,7 @@ namespace TestEH_UnitTest
             long resultGroups = eh.Insert(new List<Group>() { group1, group2 });
             Assert.That(resultGroups == 2, Is.EqualTo(true));
 
-            eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '13__'"); // DELETE FROM TB_USER
+            eh.ExecuteNonQuery($"DELETE FROM {eh.GetQuery.EscapeIdentifier(eh.GetTableName<User>())} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '13__'"); // DELETE FROM TB_USER
 
             // Insert user with group
             User user1 = new() { Id = 1301, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1301 };
@@ -599,7 +599,7 @@ namespace TestEH_UnitTest
                 // Gets all users registered in the last week
                 List<User>? usersWeek = eh.Get<User>()?.Where(u => u.DtCreation > DateTime.Now.AddDays(-7)).ToList();
 
-                // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE {ConvertToVarchar("ID_TB_GROUP_USERS", eh)} LIKE '103%' OR {ConvertToVarchar("ID_TB_USERS", eh)} LIKE '103%'");  // DELETE FROM TB_GROUP_USERStoGROUPS
+                // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE {ConvertToVarchar("ID_TB_GROUP_USERS", eh)} LIKE '103%' OR {ConvertToVarchar("ID_USER", eh)} LIKE '103%'");  // DELETE FROM TB_GROUP_USERStoGROUPS
                 // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '103%'");
                 // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE {ConvertToVarchar(nameof(Group.Id), eh)} LIKE '103%'");
                 // eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE {ConvertToVarchar(nameof(Career.IdCareer), eh)} LIKE '103%'");
@@ -631,7 +631,7 @@ namespace TestEH_UnitTest
                     Assert.AreEqual(result, 1);
                 }
 
-                var deletesOld = eh.ExecuteNonQuery($"DELETE FROM TEST.TB_USERS WHERE {ConvertToVarchar("ID", eh)} LIKE '104%'");
+                var deletesOld = eh.ExecuteNonQuery($"DELETE FROM TEST.\"USER\" WHERE {ConvertToVarchar("ID", eh)} LIKE '104%'");
                 Assert.IsTrue(deletesOld >= 0 && deletesOld <= 4);
 
                 // Test for one entity
@@ -653,7 +653,7 @@ namespace TestEH_UnitTest
                 // Test for one entity
                 User entityError = new("John Tester") { Id = 10405, GitHub = "@DiegoPiovezanaOne", DtCreation = DateTime.Now, IdCareer = 100 };
                 var ex = Assert.Throws<InvalidOperationException>(() => eh.Insert(entityError, true, nameof(entityTest.GitHub), true));
-                Assert.That(ex.Message, Does.Contain("Career with IdCareer '100' or table 'TB_CAREERS' does not exist!"));
+                Assert.That(ex.Message, Does.Contain("Career with IdCareer '100' or table 'TEST.TB_CAREERS' does not exist!"));
 
                 Assert.AreEqual(eh.Delete(carrer1), 1);
                 Assert.AreEqual(eh.Delete(users), 3);
@@ -747,7 +747,7 @@ namespace TestEH_UnitTest
                 long result4 = eh.Insert(userM, true, nameof(userM.GitHub), true);
                 Assert.That(result4 == 3, Is.EqualTo(true));
 
-                // eh.ExecuteNonQuery($"DELETE FROM TB_GROUP_USERSTOGROUPS WHERE ID_TB_USERS = {userM.Id}");
+                // eh.ExecuteNonQuery($"DELETE FROM TB_GROUP_USERSTOGROUPS WHERE ID_USER = {userM.Id}");
                 // eh.Delete(group4);
                 // eh.Delete(group5);
                 // eh.Delete(userM);
@@ -947,7 +947,7 @@ namespace TestEH_UnitTest
                     eh.ExecuteNonQuery($"ALTER TABLE {idTbTicket} ADD IdLog INT IDENTITY(1,1) PRIMARY KEY;");
                 }
 
-                // Ticket with user
+                // Ticket with user - no id
                 Ticket ticketUserX = new(userX, "Obs", "Num", "Previous", "After");
                 Assert.That(eh.Insert(ticketUserX, namePropUnique: null, createTable: false), Is.EqualTo(1));
 
@@ -1021,6 +1021,10 @@ namespace TestEH_UnitTest
                 Classification class3 = new(){ Id = new Guid()};
                 long result3 = eh.Insert(entity: class3, createTable: true);
                 Assert.That(result3, Is.EqualTo(1));
+
+                eh.Delete(class1);
+                eh.Delete(class2);
+                eh.Delete(class3);
             }
         }
 
@@ -1346,7 +1350,7 @@ namespace TestEH_UnitTest
             /////////////////////////////////////////////////// 
             // DELETE
 
-            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE TO_CHAR(ID_TB_GROUP_USERS) LIKE '201%' OR TO_CHAR(ID_TB_USERS) LIKE '201%'");
+            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE TO_CHAR(ID_TB_GROUP_USERS) LIKE '201%' OR TO_CHAR(ID_USER) LIKE '201%'");
             //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '201%'");
             //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '201%'");
             //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '201%'");
@@ -1463,7 +1467,7 @@ namespace TestEH_UnitTest
             /////////////////////////////////////////////////// 
             // DELETE
 
-            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE TO_CHAR(ID_TB_GROUP_USERS) LIKE '201%' OR TO_CHAR(ID_TB_USERS) LIKE '201%'");
+            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE TO_CHAR(ID_TB_GROUP_USERS) LIKE '201%' OR TO_CHAR(ID_USER) LIKE '201%'");
             //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '201%'");
             //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '201%'");
             //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '201%'");
@@ -1495,12 +1499,12 @@ namespace TestEH_UnitTest
             // Assert
             if (eh.DbContext.Provider == Enums.DbProvider.Oracle)
             {
-                Assert.That(result.Sql, Does.StartWith("INSERT INTO \"TB_USERS\" (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor, IsActive) VALUES (:Id, "));
+                Assert.That(result.Sql, Does.StartWith("INSERT INTO TEST.\"USER\" (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor, IsActive) VALUES (:Id, "));
                 StringAssert.EndsWith("RETURNING Id INTO :Result", query);
             }
             else
             {
-                Assert.That(result.Sql, Does.StartWith("INSERT INTO [TB_USERS] (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor, IsActive) OUTPUT INSERTED.Id VALUES (@Id, "));
+                Assert.That(result.Sql, Does.StartWith("INSERT INTO TEST.[USER] (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor, IsActive) OUTPUT INSERTED.Id VALUES (@Id, "));
                 StringAssert.EndsWith(", '20202', '20201', '1')", query);
             }
            
@@ -1594,37 +1598,37 @@ namespace TestEH_UnitTest
                     new() { Id = 20407, Name = "Pedro Santos", GitHub = "@PedroSantos", DtCreation = DateTime.Now, IdCareer = 20401 },
                     new() { Id = 20408, Name = "Fernanda Lima", GitHub = "@FernandaLima", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20405 },
                     new() { Id = 20409, Name = "Lucas Pereira", GitHub = "@LucasPereira", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20410, Name = "J�lia Alves", GitHub = "@JuliaAlves", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20407 },
+                    new() { Id = 20410, Name = "Julia Alves", GitHub = "@JuliaAlves", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20407 },
                     new() { Id = 20411, Name = "Gustavo Rocha", GitHub = "@GustavoRocha", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20412, Name = "Let�cia Costa", GitHub = "@LeticiaCosta", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20406 },
+                    new() { Id = 20412, Name = "Leticia Costa", GitHub = "@LeticiaCosta", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20406 },
                     new() { Id = 20413, Name = "Thiago Martins", GitHub = "@ThiagoMartins", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20414, Name = "Nat�lia Souza", GitHub = "@NataliaSouza", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20410 },
-                    new() { Id = 20415, Name = "Vin�cius Oliveira", GitHub = "@ViniciusOliveira", DtCreation = DateTime.Now, IdCareer = 20401 },
+                    new() { Id = 20414, Name = "Natalia Souza", GitHub = "@NataliaSouza", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20410 },
+                    new() { Id = 20415, Name = "Vinicius Oliveira", GitHub = "@ViniciusOliveira", DtCreation = DateTime.Now, IdCareer = 20401 },
                     new() { Id = 20416, Name = "Amanda Ribeiro", GitHub = "@AmandaRibeiro", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20411 },
                     new() { Id = 20417, Name = "Renato Almeida", GitHub = "@RenatoAlmeida", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20418, Name = "Patr�cia Silva", GitHub = "@PatriciaSilva", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20413 },
-                    new() { Id = 20419, Name = "F�bio Gomes", GitHub = "@FabioGomes", DtCreation = DateTime.Now, IdCareer = 20401 },
+                    new() { Id = 20418, Name = "Patricia Silva", GitHub = "@PatriciaSilva", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20413 },
+                    new() { Id = 20419, Name = "Fabio Gomes", GitHub = "@FabioGomes", DtCreation = DateTime.Now, IdCareer = 20401 },
                     new() { Id = 20420, Name = "Gabriela Santos", GitHub = "@GabrielaSantos", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20404 }
                 };
 
                 Assert.AreEqual(eh.Insert(users), countUsers);
 
-                string nameTable = eh.GetTableName<User>();
+                string nameTableEscaped = eh.GetQuery.EscapeIdentifier(eh.GetTableName<User>());
 
-                var notPaginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTable} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: null);
+                var notPaginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTableEscaped} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: null);
                 Assert.AreEqual(countUsers, notPaginated1.Rows.Count);
 
-                var notPaginated2 = eh.ExecuteSelect<User>($"SELECT * FROM {nameTable} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: null);
+                var notPaginated2 = eh.ExecuteSelect<User>($"SELECT * FROM {nameTableEscaped} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: null);
                 Assert.AreEqual(countUsers, notPaginated2.Count);
 
-                var notPaginated3 = eh.Get<User>(includeAll: false, filter: $"{ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", tableName: nameTable, pageSize: null);
+                var notPaginated3 = eh.Get<User>(includeAll: false, filter: $"{ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", tableName: eh.GetTableName<User>(), pageSize: null);
                 Assert.AreEqual(countUsers, notPaginated3.Count);
 
 
-                var paginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTable} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: 10, pageIndex: 0);
+                var paginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTableEscaped} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: 10, pageIndex: 0);
                 Assert.AreEqual(10, paginated1.Rows.Count);
 
-                var paginated2 = eh.ExecuteSelect<User>($"SELECT * FROM {nameTable} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: 15, pageIndex: 1);
+                var paginated2 = eh.ExecuteSelect<User>($"SELECT * FROM {nameTableEscaped} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: 15, pageIndex: 1);
                 Assert.AreEqual(5, paginated2.Count);
 
                 var paginated3 = eh.Get<User>(includeAll: false, filter: $"{ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", tableName: null, pageSize: 15, pageIndex: 1);
@@ -1632,8 +1636,7 @@ namespace TestEH_UnitTest
             }
             finally
             {
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'");
-                eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE {ConvertToVarchar(nameof(Career.IdCareer), eh)} LIKE '204%'");
+                ResetTables("204");
             }
         }
 
@@ -1711,9 +1714,9 @@ namespace TestEH_UnitTest
                             g.Id AS GroupId,
                             g.Name AS GroupName,
                             c.Name AS CareerName,
-                            COUNT(ug.ID_TB_USERS) AS UserCountInGroup
+                            COUNT(ug.ID_USER) AS UserCountInGroup
                         FROM {0} u
-                        JOIN {1} ug ON u.Id = ug.ID_TB_USERS
+                        JOIN {1} ug ON u.Id = ug.ID_USER
                         JOIN {2} g ON ug.ID_TB_GROUP_USERS = g.Id
                         JOIN {3} c ON u.IdCareer = c.IdCareer                    
                         GROUP BY u.Id, u.Name, g.Id, g.Name, c.Name
@@ -1737,7 +1740,7 @@ namespace TestEH_UnitTest
                         g.Id AS GroupId, 
                         g.Name AS GroupName, 
                         NULL AS CareerName, 
-                        COUNT(ug.ID_TB_USERS) AS UserCountInGroup
+                        COUNT(ug.ID_USER) AS UserCountInGroup
                     FROM {1} ug
                     JOIN {2} g ON ug.ID_TB_GROUP_USERS = g.Id
                     WHERE TO_CHAR(g.Id) LIKE '205%'
@@ -1753,11 +1756,11 @@ namespace TestEH_UnitTest
                             g.Id AS GroupId,
                             g.Name AS GroupName,
                             c.Name AS CareerName,
-                            COUNT(ug.ID_TB_USERS) AS UserCountInGroup,
+                            COUNT(ug.ID_USER) AS UserCountInGroup,
                             SUM(CASE WHEN u.IsActive = 1 THEN 1 ELSE 0 END) AS ActiveUsersInGroup,
                             MAX(u.CreatedDate) AS LastUserCreated
-                        FROM TEST.TB_USERS u
-                                 INNER JOIN TEST.[TB_GROUP_USERStoGROUPS] ug ON u.Id = ug.ID_TB_USERS
+                        FROM TEST.USER u
+                                 INNER JOIN TEST.[TB_GROUP_USERStoGROUPS] ug ON u.Id = ug.ID_USER
                                  INNER JOIN TEST.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
                                  LEFT JOIN TEST.TB_CAREERS c ON u.IdCareer = c.IdCareer
                         WHERE u.CreatedDate >= DATEADD(YEAR, -1, GETDATE())
@@ -1783,12 +1786,12 @@ namespace TestEH_UnitTest
                                  g.Id AS GroupId,
                                  g.Name AS GroupName,
                                  NULL AS CareerName,
-                                 COUNT(ug.ID_TB_USERS) AS UserCountInGroup,
+                                 COUNT(ug.ID_USER) AS UserCountInGroup,
                                  SUM(CASE WHEN u.IsActive = 1 THEN 1 ELSE 0 END) AS ActiveUsersInGroup,
                                  NULL AS LastUserCreated
                              FROM TEST.[TB_GROUP_USERStoGROUPS] ug
                                       INNER JOIN TEST.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
-                                      LEFT JOIN TEST.TB_USERS u ON u.Id = ug.ID_TB_USERS   
+                                      LEFT JOIN TEST.USER u ON u.Id = ug.ID_USER   
                              GROUP BY g.Id, g.Name
                          )
 
@@ -1804,7 +1807,7 @@ namespace TestEH_UnitTest
 
                 // Substituindo os nomes das tabelas na query
                 complexQuery = string.Format(complexQuery,
-                    eh.GetTableName<User>(),
+                    eh.GetQuery.EscapeIdentifier(eh.GetTableName<User>()),
                     eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups)),
                     eh.GetTableName<Group>(),
                     eh.GetTableName<Career>());
@@ -1853,7 +1856,6 @@ namespace TestEH_UnitTest
             Career career2 = new() { IdCareer = 20602, Name = "Pleno", CareerLevel = 2, Active = true };
             Assert.AreEqual(eh.Insert(new List<Career> { career1, career2 }), 2);
 
-
             // Insercao de grupos
             var groups = Enumerable.Range(20601, 5).Select(i => new Group
             {
@@ -1899,8 +1901,6 @@ namespace TestEH_UnitTest
             // Valida a quantidade total de insercoes
             Assert.AreEqual(totalExpectedInserts, actualInsertCount);
 
-
-
             // Query com WITH e JOIN - 27 registros
             string complexQueryWithWithAndJoinOracle = @"
                 WITH UserGroupSummary AS (
@@ -1909,8 +1909,8 @@ namespace TestEH_UnitTest
                         u.Name AS UserName,
                         g.Id AS GroupId,
                         g.Name AS GroupName
-                    FROM TEST.TB_USERS u
-                    JOIN TEST.""TB_GROUP_USERStoGROUPS"" ug ON u.Id = ug.ID_TB_USERS
+                    FROM TEST.""USER"" u
+                    JOIN TEST.TB_GROUP_USERStoGROUPS ug ON u.Id = ug.ID_USER
                     JOIN TEST.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
                 )
                 SELECT * FROM UserGroupSummary WHERE TO_CHAR(UserId) LIKE '206%' ORDER BY GroupName, UserName";
@@ -1922,8 +1922,8 @@ namespace TestEH_UnitTest
                         u.Name AS UserName,
                         g.Id AS GroupId,
                         g.Name AS GroupName
-                    FROM TEST.TB_USERS u
-                    JOIN TEST.[TB_GROUP_USERStoGROUPS] ug ON u.Id = ug.ID_TB_USERS
+                    FROM TEST.[USER] u
+                    JOIN TEST.TB_GROUP_USERStoGROUPS ug ON u.Id = ug.ID_USER
                     JOIN TEST.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
                 )
                 SELECT * 
@@ -1931,11 +1931,10 @@ namespace TestEH_UnitTest
                 WHERE CAST(UserId AS VARCHAR) LIKE '206%' 
                 ORDER BY GroupName, UserName";
 
-
             // Query com UNION - 8 registros
             string queryWithUnionOracle = @"
                 SELECT Id, Name 
-                FROM TEST.TB_USERS
+                FROM TEST.""USER""
                 WHERE Id < 20605 
                 AND TO_CHAR(Id) LIKE '206%'
                 UNION ALL
@@ -1947,7 +1946,7 @@ namespace TestEH_UnitTest
             
             string queryWithUnionSqlServer = @"
                 SELECT Id, Name 
-                FROM TEST.TB_USERS
+                FROM TEST.[USER]
                 WHERE Id < 20605 
                 AND CAST(Id AS VARCHAR) LIKE '206%'
                 UNION ALL
@@ -1958,15 +1957,21 @@ namespace TestEH_UnitTest
                 ORDER BY Name";
 
             // Query simples sem clausulas adicionais - 20 registros
-            string simpleQueryOracle = "SELECT Id, Name FROM TEST.TB_USERS WHERE TO_CHAR(Id) LIKE '206%'";
+            string simpleQueryOracle = "SELECT Id, Name FROM TEST.\"USER\" WHERE TO_CHAR(Id) LIKE '206%'";
             
-            string simpleQuerySqlServer = "SELECT Id, Name FROM TEST.TB_USERS WHERE CAST(Id AS VARCHAR) LIKE '206%'";
+            string simpleQuerySqlServer = "SELECT Id, Name FROM TEST.[USER] WHERE CAST(Id AS VARCHAR) LIKE '206%'";
 
             // Query com subquery - 6 registros
-            string queryWithSubquery = @"
+            string queryWithSubqueryOracle = @"
                 SELECT u.Id, u.Name
-                FROM TEST.TB_USERS u
-                WHERE u.Id IN (SELECT ug.ID_TB_USERS FROM TEST.""TB_GROUP_USERStoGROUPS"" ug WHERE ug.ID_TB_GROUP_USERS = 20601)";
+                FROM TEST.""USER"" u
+                WHERE u.Id IN (SELECT ug.ID_USER FROM TEST.TB_GROUP_USERStoGROUPS ug WHERE ug.ID_TB_GROUP_USERS = 20601)";
+            
+            string queryWithSubquerySqlServer = @"
+                SELECT u.Id, u.Name
+                FROM TEST.[USER] u
+                WHERE u.Id IN (SELECT ug.ID_USER FROM TEST.TB_GROUP_USERStoGROUPS ug WHERE ug.ID_TB_GROUP_USERS = 20601)";
+            
 
             // Teste para cada query
             // Act & Assert
@@ -1985,7 +1990,7 @@ namespace TestEH_UnitTest
             Assert.AreEqual(20, totalRecords, "A contagem de registros da query simples esta incorreta.");
 
             // Teste com queryWithSubquery
-            totalRecords = await eh.GetTotalRecordCountAsync(queryWithSubquery);
+            totalRecords = await eh.GetTotalRecordCountAsync(eh.DbContext.Provider is Enums.DbProvider.Oracle? queryWithSubqueryOracle : queryWithSubquerySqlServer);
             Assert.AreEqual(6, totalRecords, "A contagem de registros da query com subquery esta incorreta.");
 
 
