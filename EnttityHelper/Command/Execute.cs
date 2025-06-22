@@ -107,7 +107,7 @@ namespace EH.Commands
                     dbParam.Value = param.Value?.Value ?? DBNull.Value;
                     dbParam.Direction = ParameterDirection.Input;
                     
-                    AdjustDbTypeForProvider(dbParam, dbContext, param.Value);
+                    DefineDbTypeValueForProvider(dbParam, dbContext, param.Value);
                     
                     command.Parameters.Add(dbParam);
                 }
@@ -236,7 +236,7 @@ namespace EH.Commands
                         dbParam.ParameterName = param.Key;
                         // dbParam.Value = param.Value?.Value ?? DBNull.Value;
                         
-                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value);
+                        DefineDbTypeValueForProvider(dbParam, dbContext, param.Value);
                         
                         command.Parameters.Add(dbParam);
                     }
@@ -248,7 +248,7 @@ namespace EH.Commands
                         dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
                         dbParam.Direction = ParameterDirection.Output;
                         
-                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value);
+                        DefineDbTypeValueForProvider(dbParam, dbContext, param.Value);
                         
                         command.Parameters.Add(dbParam);
                     }
@@ -427,7 +427,7 @@ namespace EH.Commands
                         dbParam.Direction = ParameterDirection.Input;
                         dbParam.ParameterName = param.Key;
                         
-                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value);
+                        DefineDbTypeValueForProvider(dbParam, dbContext, param.Value);
                         
                         // dbParam.Value = param.Value.Value ?? DBNull.Value;
                         // dbParam.DbType = param.Value.DbType;
@@ -447,9 +447,9 @@ namespace EH.Commands
                         var dbParam = command.CreateParameter();
                         dbParam.ParameterName = param.Key;
                         dbParam.Direction = ParameterDirection.Output;
-                        dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
+                        // dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
                         
-                        AdjustDbTypeForProvider(dbParam, dbContext, param.Value);
+                        DefineDbTypeValueForProvider(dbParam, dbContext, param.Value);
 
                         // if (dbParam.DbType == DbType.String || dbParam.DbType == DbType.AnsiString)
                         //     dbParam.Size = 4000;
@@ -566,18 +566,18 @@ namespace EH.Commands
             }
         }
 
-        private static void AdjustDbTypeForProvider(IDbDataParameter dbParam, Database dbContext, Property? property)
+        private static void DefineDbTypeValueForProvider(IDbDataParameter dbParam, Database dbContext, Property property)
         {
             // 1) Null
-            if (property?.Value is null)
+            if (property.Value is null)
             {
                 dbParam.Value = DBNull.Value;
                 return;
             }
 
-            Type? realType = property?.Type;
-            object rawValue = property?.Value!; // Not null because we check for null above
+            Type? realType = property.Type;
             string sqlType = ToolsProp.GetTypeSql(realType, dbContext).ToLowerInvariant();
+            object rawValue = property.Value!; // Not null because we check for null above
 
             try
             {
@@ -587,13 +587,13 @@ namespace EH.Commands
                     switch (dbContext.Provider)
                     {
                         default: // All providers
-                            dbParam.Value = dbParam.Value.ToString();
+                            dbParam.Value = rawValue.ToString();
                             return;
                     }
                 }
 
                 // 3) Boolean
-                if (realType == typeof(bool)) //  || dbParam.DbType == DbType.Boolean
+                if (realType == typeof(bool) || dbParam.DbType == DbType.Boolean) 
                 {
                     switch (dbContext.Provider)
                     {
