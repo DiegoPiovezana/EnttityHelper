@@ -1010,29 +1010,54 @@ namespace EH.Connection
                 throw new InvalidOperationException("Error retrieving the database version.", ex);
             }
         }
-
+       
         /// <summary>
         /// Escapes the provided identifier based on the database provider,
-        /// supporting dot-separated schema/table names.
+        /// supporting dot-separated schema/table names, but only if necessary.
         /// </summary>
         /// <param name="name">The identifier to be escaped (e.g., "dbo.User").</param>
         /// <returns>The escaped identifier specific to the configured database provider.</returns>
-        internal string EscapeIdentifier(string name)
+        public string EscapeIdentifier(string name)
         {
+            bool NeedsQuoting(string part)
+            {
+                // if (!Regex.IsMatch(part, @"^[A-Za-z0-9_]+$"))
+                if (!part.All(c => char.IsLetterOrDigit(c) || c == '_'))
+                    return true;
+
+                if (Database.Provider == Enums.DbProvider.Oracle
+                    && Database.ReservedWords.Contains(part))
+                    return true;
+              
+                if (Database.Provider == Enums.DbProvider.Oracle
+                    && part.Any(char.IsLower))
+                    return true;
+
+                return false;
+            }
+
+            string Quote(string part) => Database.Provider switch
+            {
+                Enums.DbProvider.Oracle     => $"\"{part.Replace("\"", "\"\"")}\"",
+                Enums.DbProvider.SqlServer  => $"[{part}]",
+                Enums.DbProvider.SqLite     => $"`{part}`",
+                Enums.DbProvider.PostgreSql => $"\"{part.Replace("\"", "\"\"")}\"",
+                Enums.DbProvider.MySql      => $"`{part}`",
+                _                           => part
+            };
+
             var parts = name.Split('.');
-    
-            return string.Join(".",
-                parts.Select(part =>
-                    Database.Provider switch
-                    {
-                        Enums.DbProvider.Oracle => $"\"{part}\"",
-                        Enums.DbProvider.SqlServer => $"[{part}]",
-                        Enums.DbProvider.SqLite => $"`{part}`",
-                        Enums.DbProvider.PostgreSql => $"\"{part}\"",
-                        Enums.DbProvider.MySql => $"`{part}`",
-                        _ => $"`{part}`"
-                    }
-                ));
+            var escaped = parts.Select(part =>
+            {
+                if (NeedsQuoting(part))
+                    return Quote(part);
+                // se não precisa, normaliza para o case padrão (Oracle sem quotes vira maiúsculo)
+                return Database.Provider == Enums.DbProvider.Oracle
+                    ? part.ToUpperInvariant()
+                    : part;
+            });
+
+            return string.Join(".", escaped);
         }
 
 
