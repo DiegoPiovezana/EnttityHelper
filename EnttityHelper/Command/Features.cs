@@ -162,26 +162,21 @@ namespace EH.Command
                     if (id == null || id == DBNull.Value) throw new Exception("EH-000: Insert query does not return an ID!");
 
                     var typePk = pk.PropertyType;
-                    // var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id.ToString(), typePk);
-                    
                     var targetType  = Nullable.GetUnderlyingType(typePk) ?? typePk;
-                    var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id, targetType);
+                    // var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id.ToString(), typePk);
+                    // var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id, targetType);
 
-                    //object convertedId;
-
-                    //if (typePk == typeof(Guid) || typePk == typeof(Guid?))
-                    //{
-                    //    if (id is Guid guidValue)
-                    //        convertedId = guidValue;
-                    //    else if (Guid.TryParse(id?.ToString(), out var parsedGuid))
-                    //        convertedId = parsedGuid;
-                    //    else
-                    //        throw new FormatException($"Invalid GUID format: '{id}'");
-                    //}
-                    //else
-                    //{
-                    //    convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id, typePk);
-                    //}
+                    object convertedId;
+                    if (targetType == typeof(Guid))
+                    {
+                        if (id is byte[] bytes && bytes.Length == 16) { convertedId = new Guid(bytes); }
+                        else if (id is string s) { convertedId = Guid.Parse(s); }
+                        else { throw new InvalidCastException($"Could not convert type '{id?.GetType()}' to Guid."); }
+                    }
+                    else
+                    {
+                        convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id, targetType);
+                    }
 
                     //if (setPrimaryKeyAfterInsert)
                     //{
