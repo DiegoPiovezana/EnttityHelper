@@ -233,13 +233,14 @@ namespace EH.Properties
             if (type == typeof(int)) return DbType.Int32;
             if (type == typeof(long)) return DbType.Int64;
             if (type == typeof(Guid)) return DbType.Guid;
+            if (type == typeof(Byte[])) return DbType.Binary;
             if (type == typeof(DateTime)) return DbType.DateTime;
             if (type == typeof(bool)) return DbType.Boolean;
             if (type == typeof(double)) return DbType.Double;
             if (type == typeof(float)) return DbType.Single;
             if (type.IsEnum) return DbType.Int32;
 
-            throw new NotSupportedException($"Type not supported: {type.FullName}");
+            throw new NotSupportedException($"Type not supported for map with DbType: {type.FullName}");
         }
 
         internal static string GetTypeSql(Type realType, Database dbContext)
