@@ -1029,8 +1029,7 @@ namespace EH.Connection
                 if (!part.All(c => char.IsLetterOrDigit(c) || c == '_'))
                     return true;
 
-                if (Database.Provider == Enums.DbProvider.Oracle
-                    && Database.ReservedWords.Contains(part))
+                if (Database.ReservedWords.Contains(part))
                     return true;
               
                 return false;
