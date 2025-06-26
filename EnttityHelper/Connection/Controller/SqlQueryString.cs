@@ -80,7 +80,7 @@ namespace EH.Connection
             Dictionary<string, Property>? properties = ToolsProp.GetProperties(entity, false, false);
 
             Dictionary<string, Property>? filteredProperties = properties
-                .Where(p => p.Value.IsVirtual == false)
+                .Where(p => p.Value.IsFkEntity == false)
                 .Where(p => p.Value.Value is not null)
                 .ToDictionary(p => p.Key, p => p.Value);
             
@@ -607,7 +607,7 @@ namespace EH.Connection
 
                 if (prop.Value.IsCollection.HasValue && !prop.Value.IsCollection.Value) // Not IsCollection
                 {
-                    if (prop.Value.IsVirtual.HasValue && prop.Value.IsVirtual.Value) { continue; }
+                    if (prop.Value.IsFkEntity.HasValue && prop.Value.IsFkEntity.Value) { continue; }
 
                     typesSql.TryGetValue(prop.Value.Type.Name.Trim(), out string value);
 
@@ -656,29 +656,34 @@ namespace EH.Connection
                     Property? propEntity2 = properties[prop.Value.Name]; // Group
                     // string? pkEntity1 = pk.Name;
                     var propInfoPkEntity1 = pk ?? throw new InvalidOperationException("Primary key not found for the first entity!");
+                    
+                    // var queryCollection = CreateTableFromCollectionProp(entity1Type, propEntity2, propInfoPkEntity1, replacesTableName);
+                    var (tableNameManyToMany, queryCollection) = RelationshipValidator.CreateManyToManyTable(entity1Type, propEntity2, replacesTableName);
+                    if (queryCollection is not null)
+                    {
+                        // Merged Dictionary (prioritizing the value of createsTable)
+                        // queryCreatesTable =
+                        //     queryCollection
+                        //         .Concat(queryCreatesTable)
+                        //         .GroupBy(pair => pair.Key)
+                        //         .ToDictionary(group => group.Key, group => group.Last().Value);
+                        
+                        queryCreatesTable[tableNameManyToMany] = queryCollection;
 
-                    var queryCollection = CreateTableFromCollectionProp(entity1Type, propEntity2, propInfoPkEntity1, replacesTableName);
-
-                    // Merged Dictionary (prioritizing the value of createsTable)
-                    queryCreatesTable =
-                        queryCollection
-                        .Concat(queryCreatesTable)
-                        .GroupBy(pair => pair.Key)
-                        .ToDictionary(group => group.Key, group => group.Last().Value);
-
-                    // var entity2Collection = queryCreatesTable.FirstOrDefault(pair => pair.Value == "???");
-                    // if (entity2Collection.Key is not null && entity2Collection.Key != tableName)
-                    // {
-                    //     //Type collection2Type = propEntity2.PropertyInfo.PropertyType;
-                    //     //Type entity2Type = collection2Type.GetGenericArguments()[0];
-                    //
-                    //     //// Use reflection to call CreateTable<T> with the dynamic type entity2Type
-                    //     //var methodCreateTable = typeof(EnttityHelper).GetMethod("CreateTable").MakeGenericMethod(entity2Type);
-                    //
-                    //     //// Call the method using reflection, passing the required parameters
-                    //     //var queryCreateTableEntity2 = (Dictionary<string, string?>?)methodCreateTable.Invoke(this, new object[] { typesSql, true, ignoreProps, replacesTableName, entity2Collection.Key });
-                    //     //queryCreatesTable[entity2Collection.Key] = queryCreateTableEntity2[entity2Collection.Key];
-                    // }
+                        // var entity2Collection = queryCreatesTable.FirstOrDefault(pair => pair.Value == "???");
+                        // if (entity2Collection.Key is not null && entity2Collection.Key != tableName)
+                        // {
+                        //     //Type collection2Type = propEntity2.PropertyInfo.PropertyType;
+                        //     //Type entity2Type = collection2Type.GetGenericArguments()[0];
+                        //
+                        //     //// Use reflection to call CreateTable<T> with the dynamic type entity2Type
+                        //     //var methodCreateTable = typeof(EnttityHelper).GetMethod("CreateTable").MakeGenericMethod(entity2Type);
+                        //
+                        //     //// Call the method using reflection, passing the required parameters
+                        //     //var queryCreateTableEntity2 = (Dictionary<string, string?>?)methodCreateTable.Invoke(this, new object[] { typesSql, true, ignoreProps, replacesTableName, entity2Collection.Key });
+                        //     //queryCreatesTable[entity2Collection.Key] = queryCreateTableEntity2[entity2Collection.Key];
+                        // }
+                    }
                 }
             }
 
@@ -703,52 +708,62 @@ namespace EH.Connection
             };
         }
 
-        internal Dictionary<string, QueryCommand?> CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, PropertyInfo propInfoPkEntity1, Dictionary<string, string>? replacesTableName)
-        {
-            Dictionary<string, QueryCommand?> createsTable = new();
-
-            string tableEntity1 = ToolsProp.GetTableName(entity1Type, replacesTableName);
-            string pkEntity1Name = propInfoPkEntity1?.Name ?? throw new InvalidOperationException("Primary key not found for the first entity!");
-                
-            Type collection2Type = propEntity2.PropertyInfo.PropertyType;
-            Type entity2Type = collection2Type.GetGenericArguments()[0];
-
-            var propsEntity2 = entity2Type.GetProperties();
-            var propsPkEntity2 = propsEntity2.Where(prop => Attribute.IsDefined(prop, typeof(System.ComponentModel.DataAnnotations.KeyAttribute)));
-            var propInfoPkEntity2 = propsPkEntity2?.FirstOrDefault() ?? propsEntity2.FirstOrDefault();
-            var pkEntity2Name = propInfoPkEntity2?.Name;
-           
-            TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
-            string tableEntity2 = (table2Attribute?.Schema != null ? $"{table2Attribute.Schema}.{table2Attribute.Name}" : table2Attribute?.Name) ?? entity2Type.Name;
-
-            string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(entity1Type, propEntity2.PropertyInfo, replacesTableName);
-            string tableNameManyToManyEscaped = EscapeIdentifier(tableNameManyToMany);
-
-            string idTb1 = tableEntity1.Substring(0, Math.Min(tableEntity1.Length, 27));
-            string idTb2 = tableEntity2.Substring(0, Math.Min(tableEntity2.Length, 27));
-            string idTb1Escaped = EscapeIdentifier(idTb1);
-            string idTb2Escaped = EscapeIdentifier(idTb2);
-            idTb1 = idTb1.Contains('.') ? idTb1.Split('.').Last(): idTb1;  // // Ex.: "TEST.TB_USERS" -> "TB_USER"
-            idTb2 = idTb2.Contains('.') ? idTb2.Split('.').Last(): idTb1;
-            
-            string typeSqlPk1 = ToolsProp.GetTypeSql(propInfoPkEntity1.PropertyType, Database);
-            string typeSqlPk2 = ToolsProp.GetTypeSql(propInfoPkEntity2.PropertyType, Database);
-
-            string queryCollection =
-                $@"CREATE TABLE {tableNameManyToManyEscaped} (" +
-                $@"ID_{idTb1} {typeSqlPk1}, ID_{idTb2} {typeSqlPk2}, " +
-                $@"PRIMARY KEY (ID_{idTb1}, ID_{idTb2}), " +
-                $@"FOREIGN KEY (ID_{idTb1}) REFERENCES {idTb1Escaped}({pkEntity1Name}), " +
-                $@"FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2Escaped}({pkEntity2Name}) " +
-                $")";
-
-            QueryCommand queryCommand = new QueryCommand(queryCollection, null);
-
-            // createsTable[tableNameManyToMany] = queryCollection;
-            createsTable[tableNameManyToMany] = queryCommand;
-            //createsTable[tableEntity2] = "???";
-            return createsTable;
-        }
+        // internal Dictionary<string, QueryCommand?> CreateTableFromCollectionProp(Type entity1Type, Property? propEntity2, PropertyInfo propInfoPkEntity1, Dictionary<string, string>? replacesTableName)
+        // {
+        //     Dictionary<string, QueryCommand?> createsTable = new();
+        //
+        //     string tableEntity1 = ToolsProp.GetTableName(entity1Type, replacesTableName);
+        //     string pkEntity1Name = propInfoPkEntity1?.Name ?? throw new InvalidOperationException("Primary key not found for the first entity!");
+        //         
+        //     Type collection2Type = propEntity2.PropertyInfo.PropertyType;
+        //     Type entity2Type = collection2Type.GetGenericArguments()[0];
+        //
+        //     var propsEntity2 = entity2Type.GetProperties();
+        //     var propsPkEntity2 = propsEntity2.Where(prop => Attribute.IsDefined(prop, typeof(System.ComponentModel.DataAnnotations.KeyAttribute)));
+        //     var propInfoPkEntity2 = propsPkEntity2?.FirstOrDefault() ?? propsEntity2.FirstOrDefault();
+        //     var pkEntity2Name = propInfoPkEntity2?.Name;
+        //    
+        //     TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
+        //     string tableEntity2 = (table2Attribute?.Schema != null ? $"{table2Attribute.Schema}.{table2Attribute.Name}" : table2Attribute?.Name) ?? entity2Type.Name;
+        //
+        //     // TODO: Validate if M:N or 1:N relationship
+        //     
+        //     string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(entity1Type, propEntity2.PropertyInfo, replacesTableName);
+        //     var queryCommand = CreateCommandManyToMany(propInfoPkEntity1, tableNameManyToMany, tableEntity1, tableEntity2, propInfoPkEntity2, pkEntity1Name, pkEntity2Name);
+        //
+        //     // createsTable[tableNameManyToMany] = queryCollection;
+        //     createsTable[tableNameManyToMany] = queryCommand;
+        //     //createsTable[tableEntity2] = "???";
+        //     return createsTable;
+        // }
+        //
+        // private QueryCommand CreateCommandManyToMany(PropertyInfo propInfoPkEntity1, string tableNameManyToMany,
+        //     string tableEntity1, string tableEntity2, PropertyInfo? propInfoPkEntity2, string pkEntity1Name,
+        //     string? pkEntity2Name)
+        // {
+        //     string tableNameManyToManyEscaped = EscapeIdentifier(tableNameManyToMany);
+        //
+        //     string idTb1 = tableEntity1.Substring(0, Math.Min(tableEntity1.Length, 27));
+        //     string idTb2 = tableEntity2.Substring(0, Math.Min(tableEntity2.Length, 27));
+        //     string idTb1Escaped = EscapeIdentifier(idTb1);
+        //     string idTb2Escaped = EscapeIdentifier(idTb2);
+        //     idTb1 = idTb1.Contains('.') ? idTb1.Split('.').Last(): idTb1;  // // Ex.: "TEST.TB_USERS" -> "TB_USER"
+        //     idTb2 = idTb2.Contains('.') ? idTb2.Split('.').Last(): idTb1;
+        //     
+        //     string typeSqlPk1 = ToolsProp.GetTypeSql(propInfoPkEntity1.PropertyType, Database);
+        //     string typeSqlPk2 = ToolsProp.GetTypeSql(propInfoPkEntity2.PropertyType, Database);
+        //
+        //     string queryCollection =
+        //         $@"CREATE TABLE {tableNameManyToManyEscaped} (" +
+        //         $@"ID_{idTb1} {typeSqlPk1}, ID_{idTb2} {typeSqlPk2}, " +
+        //         $@"PRIMARY KEY (ID_{idTb1}, ID_{idTb2}), " +
+        //         $@"FOREIGN KEY (ID_{idTb1}) REFERENCES {idTb1Escaped}({pkEntity1Name}), " +
+        //         $@"FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2Escaped}({pkEntity2Name}) " +
+        //         $")";
+        //
+        //     QueryCommand queryCommand = new QueryCommand(queryCollection, null);
+        //     return queryCommand;
+        // }
 
         /// <summary>
         /// Retrieves the SQL query for creating a table based on the structure of a DataTable.
