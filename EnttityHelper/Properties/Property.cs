@@ -55,6 +55,16 @@ namespace EH.Properties
         public bool? IsRequired { get; set; }
 
         /// <summary>
+        /// Indicates whether the property is a foreign key entity.
+        /// </summary>
+        public bool? IsFkEntity { get; set; }
+        
+        /// <summary>
+        /// Indicates whether the property is a foreign key ID.
+        /// </summary>
+        public bool? IsFkId { get; set; }
+        
+        /// <summary>
         /// Indicates whether the property is virtual.
         /// </summary>
         public bool? IsVirtual { get; set; }
@@ -184,6 +194,9 @@ namespace EH.Properties
 
             Value = objectEntity != null ? propertyInfo.GetValue(objectEntity) : null;
             ValueSql = ConvertValueToSqlTextFormat(Value, propertyInfo.PropertyType);
+
+            IsFkEntity = propertyInfo.Name.Equals(propertyInfo.PropertyType.Name) || IsVirtual == true; // TODO: Remove virtual
+            IsFkId = Name.EndsWith("Id") && Name.Length > 2;
             
             static object? ConvertValueToSqlTextFormat(object? value, Type propertyType)
             {
