@@ -20,8 +20,8 @@ namespace TestEH_UnitTest
         // private const string stringConnectionSqlServer = "Server=(localdb)\\MSSQLLocalDB;Integrated Security=true;Database=master";
         private const string stringConnectionSqlServer = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=master;Integrated Security=True;";
         
-        private readonly string stringConnectionBd1 = stringConnection11g;
-        private readonly string stringConnectionBd2 = stringConnectionSqlServer;
+        private readonly string stringConnectionBd1 = stringConnectionSqlServer;
+        private readonly string stringConnectionBd2 = stringConnection11g;
 
         public EntityHelperTests()
         {

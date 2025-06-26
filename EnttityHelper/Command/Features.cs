@@ -86,13 +86,13 @@ namespace EH.Command
 
                 // Check FK table
                 // Dictionary<object, object>? fkProperties = ToolsProp.GetFKProperties(entityFirst);
-                Dictionary<string, object>? fkProperties = ToolsProp.GetForeignKeyEntities(entityFirst);
+                Dictionary<string, object>? fkProperties = ToolsProp.GetFKEntities(entityFirst);
                 if (fkProperties != null)
                 {
                     foreach (var fkProp in fkProperties)
                     {
                         string tableNamefkProp = ToolsProp.GetTableName(fkProp.Value.GetType(), _enttityHelper.ReplacesTableName);
-                        var pkFk = fkProp.Value.GetPrimaryKey();
+                        var pkFk = fkProp.Value.GetPK();
 
                         string pkNameFk = pkFk.Name;
                         string pkValueFk = pkFk.GetValue(fkProp.Value, null).ToString();
@@ -158,7 +158,7 @@ namespace EH.Command
                 {
                     if (insertQueriesEntity.Value == null) throw new Exception("EH-000: Insert query does not exist!");
 
-                    var pk = ToolsProp.GetPrimaryKey(insertQueriesEntity.Key) ?? throw new Exception("EH-000: Entity does not have a primary key!");
+                    var pk = ToolsProp.GetPK(insertQueriesEntity.Key) ?? throw new Exception("EH-000: Entity does not have a primary key!");
                     var id = Execute.ExecuteScalar(_enttityHelper.DbContext,new List<QueryCommand?> { insertQueriesEntity.Value.First() }).First(); // Inserts the main entity
                     if (id == null || id == DBNull.Value) throw new Exception("EH-000: Insert query does not return an ID!");
 
@@ -481,7 +481,7 @@ namespace EH.Command
                     : typeof(TEntity);
 
                 tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
-                nameId ??= ToolsProp.GetPrimaryKey(entity).Name;
+                nameId ??= ToolsProp.GetPK(entity).Name;
 
                 var query = _enttityHelper.GetQuery.CheckIfExist(entity, nameId);
 
@@ -515,7 +515,7 @@ namespace EH.Command
                     : typeof(TEntity);
 
                 tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
-                nameId ??= ToolsProp.GetPrimaryKey(entity).Name;
+                nameId ??= ToolsProp.GetPK(entity).Name;
 
                 foreach (var entityItem in entities)
                 {
@@ -894,7 +894,7 @@ namespace EH.Command
             return ToolsProp.GetTableNameManyToMany(entity1, propCollection, _enttityHelper.ReplacesTableName);
         }
 
-        public string? GetPKName<TEntity>(TEntity entity) where TEntity : class => entity.GetPrimaryKey()?.Name;
+        public string? GetPKName<TEntity>(TEntity entity) where TEntity : class => entity.GetPK()?.Name;
 
 
         public string NormalizeText(string? text, char replaceSpace, bool toLower)
