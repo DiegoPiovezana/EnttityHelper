@@ -223,7 +223,7 @@ namespace EH
 
 
         /// <inheritdoc/>
-        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps = null, string? tableName = null)
+        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps = null, string? tableName = null) where TEntity : class
         {
             try
             {
@@ -236,7 +236,7 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps = null, string? tableName = null)
+        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps = null, string? tableName = null) where TEntity : class
         {
             try
             {
@@ -301,7 +301,7 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public List<TEntity>? ExecuteSelect<TEntity>(string? query, int? pageSize = null, int pageIndex = 0, string? filterPage = null, string? sortColumnPage = null, bool sortAscendingPage = true)
+        public List<TEntity>? ExecuteSelect<TEntity>(string? query, int? pageSize = null, int pageIndex = 0, string? filterPage = null, string? sortColumnPage = null, bool sortAscendingPage = true) where TEntity : class
         {
             try
             {
@@ -340,7 +340,7 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public bool IncludeAll<TEntity>(TEntity entity)
+        public bool IncludeAll<TEntity>(TEntity entity) where TEntity : class
         {
             try
             {
@@ -353,7 +353,7 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public bool IncludeAllRange<TEntity>(IEnumerable<TEntity>? entities)
+        public bool IncludeAllRange<TEntity>(IEnumerable<TEntity>? entities) where TEntity : class
         {
             try
             {
@@ -366,7 +366,7 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public bool IncludeEntityFK<TEntity>(TEntity entity, string fkName)
+        public bool IncludeEntityFK<TEntity>(TEntity entity, string fkName) where TEntity : class
         {
             try
             {
@@ -379,7 +379,7 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyName)
+        public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyName) where TEntity : class
         {
             try
             {
@@ -392,7 +392,7 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public string GetTableName<TEntity>()
+        public string GetTableName<TEntity>() where TEntity : class
         {
             try
             {

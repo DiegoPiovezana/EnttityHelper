@@ -208,7 +208,7 @@ namespace EH.Command
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>True, if table was created and false, if not created.</returns>
         /// <exception cref="InvalidOperationException">Occurs if the table should have been created but was not.</exception>      
-        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps = null, string? tableName = null);
+        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps = null, string? tableName = null) where TEntity : class;
 
         /// <summary>
         /// Creates a table for the specified entity if it does not already exist in the database.
@@ -218,7 +218,7 @@ namespace EH.Command
         /// <param name="ignoreProps">A collection of property names to ignore when creating the table.</param>
         /// <param name="tableName">The name of the table. If not provided, the name will be inferred from the entity type.</param>
         /// <returns>True if the table was created or already exists, otherwise false.</returns>
-        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps = null, string? tableName = null);
+        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps = null, string? tableName = null) where TEntity : class;
 
         /// <summary>
         /// Creates a table in the database based on the structure specified in a DataTable object.
@@ -288,7 +288,7 @@ namespace EH.Command
         /// - The method uses the specified filtering and sorting options only if <paramref name="pageSize"/> is provided.
         /// - Ensure that <paramref name="query"/> is a valid SQL SELECT statement.
         /// </remarks>
-        public List<TEntity>? ExecuteSelect<TEntity>(string? query, int? pageSize = null, int pageIndex = 0, string? filterPage = null, string? sortColumnPage = null, bool sortAscendingPage = true);
+        public List<TEntity>? ExecuteSelect<TEntity>(string? query, int? pageSize = null, int pageIndex = 0, string? filterPage = null, string? sortColumnPage = null, bool sortAscendingPage = true) where TEntity : class;
 
         /// <summary>
         /// Executes a SELECT query and retrieves the results as a <see cref="DataTable"/>, with optional support for pagination.
@@ -346,7 +346,7 @@ namespace EH.Command
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entity">Entity that will have its FK entities included.</param>
         /// <returns>True, if it's ok.</returns>
-        public bool IncludeAll<TEntity>(TEntity entity);
+        public bool IncludeAll<TEntity>(TEntity entity) where TEntity : class;
 
         /// <summary>
         /// Include all FK entities.
@@ -354,7 +354,7 @@ namespace EH.Command
         /// <typeparam name="TEntity">Type of entity to be manipulated.</typeparam>
         /// <param name="entities">Entities that will have their FK entities included.</param>
         /// <returns>True, if it's ok.</returns>
-        public bool IncludeAllRange<TEntity>(IEnumerable<TEntity>? entities);
+        public bool IncludeAllRange<TEntity>(IEnumerable<TEntity>? entities) where TEntity : class;
 
         /// <summary>
         /// Includes a specific FK entity only.
@@ -363,7 +363,7 @@ namespace EH.Command
         /// <param name="entity">Entity that will have their FK entity included.</param>
         /// <param name="fkName">Name on the FK entity that will be included.</param>
         /// <returns>True if success.</returns>
-        public bool IncludeEntityFK<TEntity>(TEntity entity, string fkName);
+        public bool IncludeEntityFK<TEntity>(TEntity entity, string fkName) where TEntity : class;
 
         /// <summary>
         /// Includes the inverse entity specified by the inverse property name for the given entity.
@@ -372,14 +372,14 @@ namespace EH.Command
         /// <param name="entity">The entity to include the inverse entity for.</param>
         /// <param name="inversePropertyName">The name of the inverse property to include.</param>
         /// <returns>True if the inverse entity was successfully included; otherwise, false.</returns>
-        public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyName);
+        public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyName) where TEntity : class;
 
         /// <summary>
         /// Gets the table name associated with the specified entity.
         /// </summary>
         /// <typeparam name="TEntity">The type of the entity.</typeparam>
         /// <returns>The name of the table associated with the entity.</returns>
-        public string? GetTableName<TEntity>();
+        public string? GetTableName<TEntity>() where TEntity : class;
 
         /// <summary>
         /// Gets the name of the table representing a many-to-many relationship between two entities.

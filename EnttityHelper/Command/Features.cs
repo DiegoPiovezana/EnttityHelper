@@ -85,13 +85,14 @@ namespace EH.Command
                 // TODO: If >100, use bulk insert - test performance
 
                 // Check FK table
-                Dictionary<object, object>? fkProperties = ToolsProp.GetFKProperties(entityFirst);
+                // Dictionary<object, object>? fkProperties = ToolsProp.GetFKProperties(entityFirst);
+                Dictionary<string, object>? fkProperties = ToolsProp.GetForeignKeyEntities(entityFirst);
                 if (fkProperties != null)
                 {
                     foreach (var fkProp in fkProperties)
                     {
                         string tableNamefkProp = ToolsProp.GetTableName(fkProp.Value.GetType(), _enttityHelper.ReplacesTableName);
-                        var pkFk = fkProp.Value.GetPK();
+                        var pkFk = fkProp.Value.GetPrimaryKey();
 
                         string pkNameFk = pkFk.Name;
                         string pkValueFk = pkFk.GetValue(fkProp.Value, null).ToString();
@@ -157,7 +158,7 @@ namespace EH.Command
                 {
                     if (insertQueriesEntity.Value == null) throw new Exception("EH-000: Insert query does not exist!");
 
-                    var pk = ToolsProp.GetPK(insertQueriesEntity.Key) ?? throw new Exception("EH-000: Entity does not have a primary key!");
+                    var pk = ToolsProp.GetPrimaryKey(insertQueriesEntity.Key) ?? throw new Exception("EH-000: Entity does not have a primary key!");
                     var id = Execute.ExecuteScalar(_enttityHelper.DbContext,new List<QueryCommand?> { insertQueriesEntity.Value.First() }).First(); // Inserts the main entity
                     if (id == null || id == DBNull.Value) throw new Exception("EH-000: Insert query does not return an ID!");
 
@@ -480,7 +481,7 @@ namespace EH.Command
                     : typeof(TEntity);
 
                 tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
-                nameId ??= ToolsProp.GetPK(entity).Name;
+                nameId ??= ToolsProp.GetPrimaryKey(entity).Name;
 
                 var query = _enttityHelper.GetQuery.CheckIfExist(entity, nameId);
 
@@ -514,7 +515,7 @@ namespace EH.Command
                     : typeof(TEntity);
 
                 tableName ??= ToolsProp.GetTableName(itemType, _enttityHelper.ReplacesTableName);
-                nameId ??= ToolsProp.GetPK(entity).Name;
+                nameId ??= ToolsProp.GetPrimaryKey(entity).Name;
 
                 foreach (var entityItem in entities)
                 {
@@ -634,7 +635,7 @@ namespace EH.Command
             }
         }
 
-        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps, string? tableName)
+        public bool CreateTable<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps, string? tableName) where TEntity : class
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
             var createsTableQuery = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, createOnlyPrimaryTable, ignoreProps, _enttityHelper.ReplacesTableName, tableName);
@@ -643,7 +644,7 @@ namespace EH.Command
             return createsTableQuery.Count == creates.Count;
         }
 
-        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps, string? tableName)
+        public bool CreateTableIfNotExist<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps, string? tableName) where TEntity : class
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
             tableName ??= ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
@@ -767,12 +768,12 @@ namespace EH.Command
             return Execute.ExecuteNonQuery(_enttityHelper.DbContext, queries, expectedChanges);
         }
 
-        public List<TEntity>? ExecuteSelect<TEntity>(string? query, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
+        public List<TEntity>? ExecuteSelect<TEntity>(string? query, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage) where TEntity : class
         {
             return (List<TEntity>?)Execute.ExecuteReader<TEntity>(_enttityHelper.DbContext, query, false, pageSize, pageIndex, filterPage, sortColumnPage, sortAscendingPage);
         }
         
-        public List<TEntity>? ExecuteSelect<TEntity>(QueryCommand? query, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
+        public List<TEntity>? ExecuteSelect<TEntity>(QueryCommand? query, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage) where TEntity : class
         {
             return (List<TEntity>?)Execute.ExecuteReader<TEntity>(_enttityHelper.DbContext, query, false, pageSize, pageIndex, filterPage, sortColumnPage, sortAscendingPage);
         }
@@ -851,14 +852,14 @@ namespace EH.Command
             return Execute.ExecuteScalar(_enttityHelper.DbContext, queries);
         }
 
-        public bool IncludeAll<TEntity>(TEntity entity)
+        public bool IncludeAll<TEntity>(TEntity entity) where TEntity : class
         {
             // Check if the entity is an IEnumerable and not a string (to avoid treating strings as collections)
             if (entity is IEnumerable<object> entityList && entity is not string) { return IncludeAllRange(entityList); }
             return IncludeAllRange(new List<TEntity> { entity });
         }
 
-        public bool IncludeAllRange<TEntity>(IEnumerable<TEntity>? entities)
+        public bool IncludeAllRange<TEntity>(IEnumerable<TEntity>? entities) where TEntity : class
         {
             if (entities?.Any() != true) return false;
             Entities.Inclusions? inclusions = new(_enttityHelper);
@@ -870,21 +871,21 @@ namespace EH.Command
             return true;
         }
 
-        public bool IncludeEntityFK<TEntity>(TEntity entity, string fkName)
+        public bool IncludeEntityFK<TEntity>(TEntity entity, string fkName) where TEntity : class
         {
             if (entity == null) return false;
             new Entities.Inclusions(_enttityHelper).IncludeForeignKeyEntities(entity, fkName);
             return true;
         }
 
-        public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyName)
+        public bool IncludeInverseEntity<TEntity>(TEntity entity, string inversePropertyName) where TEntity : class
         {
             if (entity == null) return false;
             new Entities.Inclusions(_enttityHelper).IncludeInverseProperties(entity, _enttityHelper.ReplacesTableName, _enttityHelper, inversePropertyName);
             return true;
         }
 
-        public string GetTableName<TEntity>() => ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
+        public string GetTableName<TEntity>() where TEntity : class => ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
 
         public string? GetTableNameManyToMany(Type entity1, string namePropCollection)
         {
@@ -893,7 +894,7 @@ namespace EH.Command
             return ToolsProp.GetTableNameManyToMany(entity1, propCollection, _enttityHelper.ReplacesTableName);
         }
 
-        public string? GetPKName<TEntity>(TEntity entity) where TEntity : class => entity.GetPK()?.Name;
+        public string? GetPKName<TEntity>(TEntity entity) where TEntity : class => entity.GetPrimaryKey()?.Name;
 
 
         public string NormalizeText(string? text, char replaceSpace, bool toLower)
