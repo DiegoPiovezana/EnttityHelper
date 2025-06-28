@@ -77,41 +77,54 @@ namespace EH.Properties
             if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
 
             PropertyInfo[] properties = objectEntity.GetType().GetProperties();
-            Dictionary<object, object> propertiesFk = new();
-            Dictionary<object, object> propertiesVirtual = new();
+            Dictionary<object, object> propertiesIdFk = new();
+            Dictionary<object, object> propertiesEntityFk = new();
             Dictionary<object, object> propertiesObj = new();
 
             foreach (PropertyInfo prop in properties)
             {
-                if (prop.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
-
-                if (prop.GetCustomAttribute<InversePropertyAttribute>() != null) { continue; }
-
-                if (prop.GetCustomAttribute<ForeignKeyAttribute>() != null)
+                if (prop.GetCustomAttribute<NotMappedAttribute>() != null)
                 {
-                    var entityNameFk = prop.GetCustomAttribute<ForeignKeyAttribute>().Name;
-                    var idFk = prop.GetValue(objectEntity, null);
-                    propertiesFk.Add(entityNameFk, idFk);
+                    continue;
                 }
 
-                if (prop.GetGetMethod().IsVirtual)
+                if (prop.GetCustomAttribute<InversePropertyAttribute>() != null)
                 {
-                    var obj = Activator.CreateInstance(prop.PropertyType);
-                    if (obj != null) propertiesVirtual.Add(prop.Name, obj);
+                    continue;
+                }
+
+                if (prop.PropertyType != typeof(string)
+                    && typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType))
+                {
+                    continue; // If is collection, skip
+                }
+
+                // If is FK Id
+                string? entityNameFk = prop.GetFkEntityNameById();
+                if (entityNameFk is not null)
+                {
+                    object? idFk = prop.GetValue(objectEntity, null);
+                    propertiesIdFk.Add(entityNameFk, idFk);
+                }
+
+                if (prop.IsFkEntity())
+                {
+                    object? obj = Activator.CreateInstance(prop.PropertyType);
+                    if (obj != null) propertiesEntityFk.Add(prop.Name, obj);
                 }
             }
 
-            foreach (var propFkKey in propertiesFk.Keys.ToList())
+            foreach (var propFkKey in propertiesIdFk.Keys.ToList())
             {
-                if(propertiesFk[propFkKey] == null) { continue; } // If PropFk not assigned
-                var propFk = propertiesVirtual[propFkKey];
-                propFk.GetType().GetProperty(GetPK(propFk).Name).SetValue(propFk, propertiesFk[propFkKey]);
+                if(propertiesIdFk[propFkKey] == null) { continue; } // If PropFk not assigned
+                var propFk = propertiesEntityFk[propFkKey];
+                propFk.GetType().GetProperty(GetPK(propFk).Name).SetValue(propFk, propertiesIdFk[propFkKey]);
                 propertiesObj.Add(propFkKey, propFk);
             }
 
             return propertiesObj;
         }
-
+        
         /// <summary>
         /// Gets InverseProperty entities.
         /// </summary>   
@@ -136,10 +149,39 @@ namespace EH.Properties
             }
             catch (Exception)
             {
-                //throw;
-                return null; // TODO: throw new InvalidOperationException("Error getting InverseProperty entities.");
+                throw new InvalidOperationException("Error getting InverseProperty entities.");
             }
         }
+        
+        internal static List<PropertyInfo>? GetCollecionProperties<T>(this T objectEntity)
+        {
+            try
+            {
+                if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
+
+                PropertyInfo[] properties = objectEntity.GetType().GetProperties();
+                List<PropertyInfo> propertiesCollection = new();
+
+                foreach (PropertyInfo prop in properties)
+                {
+                    // If is a collection property
+                    if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(ICollection<>))
+                    {
+                        Type entityType = prop.PropertyType.GetGenericArguments()[0];
+                        if (entityType.IsClass && !entityType.IsAbstract) // If is a class and not abstract
+                        {
+                            propertiesCollection.Add(prop);
+                        }
+                    }
+                }
+
+                return propertiesCollection;
+            }
+            catch (Exception)
+            {
+                 throw new InvalidOperationException("Error getting Collection entities.");
+            }
+        } 
 
         /// <summary>
         /// Gets the primary key of an entity (class or object).
@@ -153,14 +195,7 @@ namespace EH.Properties
 
                 if (propPk is null)
                 {
-                    if (false) // TODO: Custom Exception List
-                    {
-                        throw new InvalidOperationException($"No primary key found in '{objType.Name}'!");
-                    }
-                    else
-                    {
-                        propPk = objType.GetProperties().FirstOrDefault();
-                    }
+                    propPk = objType.GetProperties().FirstOrDefault();
                 }
 
                 return propPk;
@@ -224,7 +259,38 @@ namespace EH.Properties
             if (replacesTableName is not null) tableNameResult = replacesTableName.Aggregate(tableNameResult, (text, replace) => text.Replace(replace.Key, replace.Value));
             return tableNameResult.Substring(0, Math.Min(tableNameResult.Length, 30));
         }
+        
+        internal static string GetTypeSql(Type realType, Database dbContext)
+        {
+            return dbContext.TypesDefault?.FirstOrDefault(x => x.Key == realType.Name).Value;
+        }
 
+        /// <summary>
+        /// If is a foreign key property, returns the name of the entity it refers to.
+        /// </summary>
+        internal static string? GetFkEntityNameById(this PropertyInfo propertyInfo)
+        {
+            if (propertyInfo.GetCustomAttribute<ForeignKeyAttribute>() != null)
+                return propertyInfo.GetCustomAttribute<ForeignKeyAttribute>().Name;
+
+            if (propertyInfo.Name.Length > 2)
+            {
+                if (propertyInfo.Name.EndsWith("Id")) // Ex: OrderId, ItemId, etc.
+                    return propertyInfo.Name.Substring(0, propertyInfo.Name.Length - 2);
+
+                if (propertyInfo.Name.StartsWith("Id")) // Ex: IdOrder, IdItem, etc.
+                    return propertyInfo.Name.Substring(2);
+            }
+
+            return null;
+        }
+        
+        internal static bool IsFkEntity(this PropertyInfo propertyInfo)
+        {
+            return propertyInfo.Name.Equals(propertyInfo.PropertyType.Name);
+            // || (propertyInfo.GetGetMethod()?.IsVirtual ?? false) == true;
+        }
+        
         internal static DbType MapToDbType(this Type type)
         {
             type = Nullable.GetUnderlyingType(type) ?? type;
@@ -241,11 +307,6 @@ namespace EH.Properties
             if (type.IsEnum) return DbType.Int32;
 
             throw new NotSupportedException($"Type not supported for map with DbType: {type.FullName}");
-        }
-
-        internal static string GetTypeSql(Type realType, Database dbContext)
-        {
-            return dbContext.TypesDefault?.FirstOrDefault(x => x.Key == realType.Name).Value;
         }
 
 
