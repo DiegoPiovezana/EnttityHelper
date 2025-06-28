@@ -194,9 +194,7 @@ namespace EH.Properties
 
             Value = objectEntity != null ? propertyInfo.GetValue(objectEntity) : null;
             ValueSql = ConvertValueToSqlTextFormat(Value, propertyInfo.PropertyType);
-
-            IsFkEntity = propertyInfo.Name.Equals(propertyInfo.PropertyType.Name) || IsVirtual == true; // TODO: Remove virtual
-            IsFkId = Name.EndsWith("Id") && Name.Length > 2;
+            
             
             static object? ConvertValueToSqlTextFormat(object? value, Type propertyType)
             {
