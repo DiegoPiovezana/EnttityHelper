@@ -248,7 +248,11 @@ namespace EH.Command
                     for (int i = 1; i < insertQueriesEntity.Value.Count; i++)
                     {
                         // insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'&ID1'", $"'{id}'");
-                        insertQueriesEntity.Value[i].Parameters[$"{_enttityHelper.DbContext.PrefixParameter}ID1"].Value = id;
+                        // insertQueriesEntity.Value[i].Parameters[$"{_enttityHelper.DbContext.PrefixParameter}ID1"].Value = id;
+                        
+                        // If is MxN or 1:N
+                        string entityFkId = $"ID1";
+                        insertQueriesEntity.Value[i].Parameters[entityFkId].Value = id;
                         
                         // insertions += ExecuteNonQuery(insertQueriesEntity.Value[i], 1);
                         insertions += Execute.ExecuteNonQuery(_enttityHelper.DbContext, new List<QueryCommand?>{ insertQueriesEntity.Value[i] }, 1).First();
