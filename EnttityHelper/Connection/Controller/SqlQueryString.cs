@@ -69,9 +69,15 @@ namespace EH.Connection
         /// <param name="dbType">The type of database in which the information will be inserted. Example: Oracle.</param>  
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>
         /// <param name="tableName1">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
-        /// <param name="ignoreInversePropertyProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
+        /// <param name="ignoreInverseAndCollectionProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
         /// <returns>String command.</returns>
-        public ICollection<QueryCommand?> Insert<TEntity>(TEntity entity, Enums.DbProvider? dbType = null, Dictionary<string, string>? replacesTableName = null, string? tableName1 = null, bool ignoreInversePropertyProperties = false) where TEntity : class
+        public ICollection<QueryCommand?> Insert<TEntity>(
+            TEntity entity, 
+            Enums.DbProvider? dbType = null, 
+            Dictionary<string, string>? replacesTableName = null, 
+            string? tableName1 = null, 
+            bool ignoreInverseAndCollectionProperties = false
+            ) where TEntity : class
         {
             //if (dbType == null) throw new ArgumentNullException("The type of database is invalid!");
 
@@ -80,7 +86,7 @@ namespace EH.Connection
             Dictionary<string, Property>? properties = ToolsProp.GetProperties(entity, false, false);
 
             Dictionary<string, Property>? filteredProperties = properties
-                .Where(p => p.Value.IsFkEntity == false)
+                .Where(p => p.Value.PropertyInfo.IsFkEntity() == false)
                 .Where(p => p.Value.Value is not null)
                 .ToDictionary(p => p.Key, p => p.Value);
             
@@ -127,13 +133,25 @@ namespace EH.Connection
             
             queries.Add(queryCommand);
 
-            if (!ignoreInversePropertyProperties) InsertInverseProperty(entity, replacesTableName, queries, properties);
+            if (!ignoreInverseAndCollectionProperties)
+            {
+                InsertInverseProperties(entity, replacesTableName, queries, properties);
+                InsertCollectionProperties(entity, dbType, replacesTableName, queries, properties);
+            }
             return queries;
         }
 
-        private void InsertInverseProperty<TEntity>(TEntity entity, Dictionary<string, string>? replacesTableName, List<QueryCommand?> queries, Dictionary<string, Property> properties)
+        private void InsertInverseProperties<TEntity>(
+            TEntity entity, 
+            Dictionary<string, string>? replacesTableName, 
+            List<QueryCommand?> queries, 
+            Dictionary<string, Property> properties
+            )
         {
-            Dictionary<string, Property>? inverseProperties = properties.Where(p => p.Value.InverseProperty != null).ToDictionary(p => p.Key, p => p.Value);
+            Dictionary<string, Property>? inverseProperties = properties
+                .Where(p => p.Value.InverseProperty != null)
+                .ToDictionary(p => p.Key, p => p.Value);
+            
             foreach (var invProp in inverseProperties)
             {
                 Type collectionType = invProp.Value.PropertyInfo.PropertyType;
@@ -184,6 +202,48 @@ namespace EH.Connection
                             ));
                         }
                     }
+                }
+            }
+        }
+
+        private void InsertCollectionProperties<TEntity>(
+            TEntity entity, 
+            Enums.DbProvider? dbType,
+            Dictionary<string, string>? replacesTableName,
+            List<QueryCommand?> queries, 
+            Dictionary<string, Property> properties
+            )
+        {
+            Dictionary<string, Property>? collectionProperties = properties
+                .Where(p => p.Value.IsCollection == true)
+                .ToDictionary(p => p.Key, p => p.Value);
+            
+            foreach (var collectionProp in collectionProperties)
+            {
+                Type collectionType = collectionProp.Value.PropertyInfo.PropertyType;
+                Type entity2Type = collectionType.GetGenericArguments()[0]; // Ex: Item
+                
+                // Get item from collection
+                if (collectionProp.Value.Value is not IEnumerable<object> itemsCollection)
+                    continue;
+                
+                foreach (var item in itemsCollection)
+                {
+                    var insertMethod = this.GetType()
+                        .GetMethod("Insert", BindingFlags.Instance | BindingFlags.Public)
+                        .MakeGenericMethod(entity2Type);
+
+                    var result = insertMethod.Invoke(this, new object?[]
+                    {
+                        item,
+                        dbType,
+                        replacesTableName,
+                        null,            // tableName1
+                        true             // ignoreInverseAndCollectionProperties
+                    }) as ICollection<QueryCommand?>;
+                    
+                    if (result != null)
+                        queries.AddRange(result);
                 }
             }
         }
@@ -607,7 +667,8 @@ namespace EH.Connection
 
                 if (prop.Value.IsCollection.HasValue && !prop.Value.IsCollection.Value) // Not IsCollection
                 {
-                    if (prop.Value.IsFkEntity.HasValue && prop.Value.IsFkEntity.Value) { continue; }
+                    // if (prop.Value.IsFkEntity && prop.Value.IsFkEntity.Value) { continue; }
+                    if (prop.Value.PropertyInfo.IsFkEntity()) { continue; }
 
                     typesSql.TryGetValue(prop.Value.Type.Name.Trim(), out string value);
 
