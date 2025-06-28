@@ -87,6 +87,7 @@ namespace EH.Connection
 
             Dictionary<string, Property>? filteredProperties = properties
                 .Where(p => p.Value.PropertyInfo.IsFkEntity() == false)
+                .Where(p => p.Value.IsCollection == false)
                 .Where(p => p.Value.Value is not null)
                 .ToDictionary(p => p.Key, p => p.Value);
             
@@ -223,12 +224,20 @@ namespace EH.Connection
                 Type collectionType = collectionProp.Value.PropertyInfo.PropertyType;
                 Type entity2Type = collectionType.GetGenericArguments()[0]; // Ex: Item
                 
+                // Define the foreign key property name based on the collection property key.
+                string? nameIdFk1 = ToolsProp.GetNameIdFk1(entity2Type, entity.GetType().Name);
+                
                 // Get item from collection
                 if (collectionProp.Value.Value is not IEnumerable<object> itemsCollection)
                     continue;
                 
                 foreach (var item in itemsCollection)
                 {
+                    if (string.IsNullOrEmpty(nameIdFk1))
+                    {
+                        throw new InvalidOperationException("The collection property must have a foreign key property.");;
+                    }
+                    
                     var insertMethod = this.GetType()
                         .GetMethod("Insert", BindingFlags.Instance | BindingFlags.Public)
                         .MakeGenericMethod(entity2Type);
@@ -243,7 +252,15 @@ namespace EH.Connection
                     }) as ICollection<QueryCommand?>;
                     
                     if (result != null)
-                        queries.AddRange(result);
+                        foreach (var queryCommand in result)
+                        {
+                            //string nameIdFk1 = "OrderId";
+                            Property valueId1 = queryCommand.Parameters[nameIdFk1];
+                            queryCommand.Parameters.Remove(nameIdFk1);
+                            queryCommand.Parameters["ID1"] = valueId1;
+                            
+                            queries.Add(queryCommand);
+                        }
                 }
             }
         }
