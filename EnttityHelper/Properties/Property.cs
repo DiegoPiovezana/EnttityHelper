@@ -53,16 +53,6 @@ namespace EH.Properties
         /// Indicates whether the property is required.
         /// </summary>
         public bool? IsRequired { get; set; }
-
-        /// <summary>
-        /// Indicates whether the property is a foreign key entity.
-        /// </summary>
-        public bool? IsFkEntity { get; set; }
-        
-        /// <summary>
-        /// Indicates whether the property is a foreign key ID.
-        /// </summary>
-        public bool? IsFkId { get; set; }
         
         /// <summary>
         /// Indicates whether the property is virtual.
