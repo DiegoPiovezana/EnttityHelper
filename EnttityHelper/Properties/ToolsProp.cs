@@ -285,6 +285,61 @@ namespace EH.Properties
             return null;
         }
         
+        internal static string? GetNameIdFk1(Type entityType, string navigationPropertyName)
+        {
+            if (entityType == null)
+                throw new ArgumentNullException(nameof(entityType));
+            
+            if (string.IsNullOrEmpty(navigationPropertyName))
+                throw new ArgumentException("Navigation property name cannot be null or empty",
+                    nameof(navigationPropertyName));
+            
+            // #1: search directly for a property named "{NavigationPropertyName}Id" or "Id{NavigationPropertyName}"
+            var directMatch = entityType.GetProperties()
+                .FirstOrDefault(p => 
+                    p.Name.Equals($"{navigationPropertyName}Id", StringComparison.OrdinalIgnoreCase) ||
+                    p.Name.Equals($"Id{navigationPropertyName}", StringComparison.OrdinalIgnoreCase)
+                    );
+    
+            if (directMatch != null)
+                return directMatch.Name;
+            
+            // #2: search for a ForeignKey attribute on the navigation property
+            var navigationProperty = entityType.GetProperty(navigationPropertyName);
+            if (navigationProperty != null)
+            {
+                var foreignKeyAttr = navigationProperty.GetCustomAttribute<ForeignKeyAttribute>();
+                if (foreignKeyAttr != null)
+                    return foreignKeyAttr.Name;
+            }
+
+            // #3: search for properties that end with "Id" or start with "Id"
+            var fkProperties = entityType.GetProperties()
+                .Where(p => (p.Name.EndsWith("Id") || p.Name.StartsWith("Id")) 
+                            && (p.PropertyType.IsValueType || p.PropertyType == typeof(string))
+                            )
+                .ToList();
+
+            // #3.1: check if any FK property matches the navigation property name
+            var partialMatch = fkProperties.FirstOrDefault(p =>
+                p.Name.StartsWith(navigationPropertyName, StringComparison.OrdinalIgnoreCase));
+
+            if (partialMatch != null)
+                return partialMatch.Name;
+
+            // #3.2: check if any FK property has a ForeignKey attribute that matches the navigation property name
+            foreach (var fkProp in fkProperties)
+            {
+                var fkAttr = fkProp.GetCustomAttribute<ForeignKeyAttribute>();
+                if (fkAttr != null && fkAttr.Name.Equals(navigationPropertyName, StringComparison.OrdinalIgnoreCase))
+                    return fkProp.Name;
+            }
+
+            // If no FK property found, return null
+            return null;
+        }
+
+      
         internal static bool IsFkEntity(this PropertyInfo propertyInfo)
         {
             return propertyInfo.Name.Equals(propertyInfo.PropertyType.Name);
