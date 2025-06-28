@@ -25,7 +25,15 @@ namespace EH.Command
             _enttityHelper = enttityHelper;
         }
 
-        public long Insert<TEntity>(TEntity entity, bool setPrimaryKeyAfterInsert, string? namePropUnique, bool createTable, string? tableName, bool ignoreInversePropertyProperties, int timeOutSeconds) where TEntity : class
+        public long Insert<TEntity>(
+            TEntity entity, 
+            bool setPrimaryKeyAfterInsert, 
+            string? namePropUnique, 
+            bool createTable, 
+            string? tableName, 
+            bool ignoreInversePropertyProperties, 
+            int timeOutSeconds
+            ) where TEntity : class
         {
             if (entity is DataTable dataTable) return InsertDataTable(createTable, ref tableName, timeOutSeconds, dataTable);
             if (entity is IDataReader dataReader) return InsertIDataReader(createTable, tableName, timeOutSeconds, dataReader);
@@ -73,7 +81,7 @@ namespace EH.Command
                 return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataRows, tableName, timeOutSeconds);
             }
 
-            long InsertEntities<TEntity>(TEntity entity, bool setPrimaryKeyAfterInsert, string? namePropUnique, bool createTable, ref string? tableName, bool ignoreInversePropertyProperties) where TEntity : class
+            long InsertEntities<TEntity>(TEntity entity, bool setPrimaryKeyAfterInsert, string? namePropUnique, bool createTable, ref string? tableName, bool ignoreInverseAndCollectionsProperties) where TEntity : class
             {
                 if (entity is null) throw new InvalidOperationException($"$'{nameof(entity)}' is null!");
                 
@@ -85,8 +93,7 @@ namespace EH.Command
                 // TODO: If >100, use bulk insert - test performance
 
                 // Check FK table
-                // Dictionary<object, object>? fkProperties = ToolsProp.GetFKProperties(entityFirst);
-                Dictionary<string, object>? fkProperties = ToolsProp.GetFKEntities(entityFirst);
+                Dictionary<object, object>? fkProperties = ToolsProp.GetFKProperties(entityFirst);
                 if (fkProperties != null)
                 {
                     foreach (var fkProp in fkProperties)
@@ -102,8 +109,8 @@ namespace EH.Command
                     }
                 }
 
-                // Check MxN table
-                if (!ignoreInversePropertyProperties)
+                // Check MxN and 1:N table exists
+                if (!ignoreInverseAndCollectionsProperties)
                 {
                     List<PropertyInfo>? inverseProperties = ToolsProp.GetInverseProperties(entityFirst);
                     if (inverseProperties != null)
@@ -117,6 +124,25 @@ namespace EH.Command
                             {
                                 if (createTable) CreateTable<TEntity>(false, null, tableNameInverseProp);
                                 else throw new InvalidOperationException($"Table '{tableNameInverseProp}' does not exist!");
+                            }
+                        }
+                    }
+                    
+                    List<PropertyInfo>? collectionProperties = ToolsProp.GetCollecionProperties(entityFirst);
+                    if (collectionProperties != null)
+                    {
+                        foreach (var collectionProp in collectionProperties)
+                        {
+                            Type propItemCollectionType = collectionProp.PropertyType.IsGenericType
+                                ? collectionProp.PropertyType.GetGenericArguments()[0]
+                                : collectionProp.PropertyType;
+                            
+                            string tableNameItemCollecionProp = ToolsProp.GetTableName(propItemCollectionType, _enttityHelper.ReplacesTableName);
+
+                            if (!CheckIfExist(tableNameItemCollecionProp, 0, null))
+                            {
+                                if (createTable) CreateTable<TEntity>(false, null, tableNameItemCollecionProp);
+                                else throw new InvalidOperationException($"Table '{tableNameItemCollecionProp}' does not exist!");
                             }
                         }
                     }
@@ -149,7 +175,7 @@ namespace EH.Command
                         }
                     }
 
-                    insertsQueriesEntities[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.DbContext.Provider, _enttityHelper.ReplacesTableName, tableName, ignoreInversePropertyProperties).ToList();
+                    insertsQueriesEntities[entityItem] = _enttityHelper.GetQuery.Insert(entityItem, _enttityHelper.DbContext.Provider, _enttityHelper.ReplacesTableName, tableName, ignoreInverseAndCollectionsProperties).ToList();
                 }
 
                 long insertions = 0;

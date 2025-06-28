@@ -2009,8 +2009,8 @@ namespace TestEH_UnitTest
                 EnttityHelper eh = new(stringConnectionBd1);
                 Assert.That(eh.DbContext.ValidateConnection(), Is.True, "Database connection validation failed.");
                 
-                eh.CreateTableIfNotExist<Item>(createOnlyPrimaryTable: false);
-                eh.CreateTableIfNotExist<Order>(createOnlyPrimaryTable: false);
+                //eh.CreateTableIfNotExist<Item>(createOnlyPrimaryTable: false);
+                //eh.CreateTableIfNotExist<Order>(createOnlyPrimaryTable: false);
                 
                 Order order = new()
                 {
