@@ -583,19 +583,25 @@ namespace EH.Connection
 
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
             string tableNameScaped = EscapeIdentifier(tableName);
-            var idPropValue = entity.GetType().GetProperty(idPropName).GetValue(entity, null);
+            // var idPropValue = entity.GetType().GetProperty(idPropName).GetValue(entity, null);
+            PropertyInfo? idProp = entity.GetType().GetProperty(idPropName);
 
             // string whereClause = $"{idPropName} = '{idPropValue}'";
-            string whereClause = $"{idPropName} = {Database.PrefixParameter}{idPropValue}";
+            string whereClause = $"{idPropName} = {Database.PrefixParameter}{idPropName}";
 
             string sql = Database.Provider switch
             {
                 Enums.DbProvider.Oracle => $"SELECT 1 FROM {tableNameScaped} WHERE {whereClause} AND ROWNUM = 1",
-                Enums.DbProvider.SqlServer => $"SELECT TOP 1 FROM {tableNameScaped} WHERE {whereClause}",
+                Enums.DbProvider.SqlServer => $"SELECT TOP 1 1 FROM {tableNameScaped} WHERE {whereClause}",
                 _ => $"SELECT 1 FROM {tableNameScaped} WHERE {whereClause} LIMIT 1",
             };
             
-           return new(sql, entity, null);
+            Dictionary<string, Property> parameters = new Dictionary<string, Property>()
+            {
+                [idPropName] = new Property(idProp, entity)
+            };
+            
+           return new(sql, entity, parameters);
         }
 
         /// <summary>
