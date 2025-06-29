@@ -19,7 +19,7 @@ namespace EH.Connection
         /// can be either a raw SQL statement or a predefined query string. It is the
         /// core of the <see cref="QueryCommand"/> and is necessary for executing database operations.
         /// </remarks>
-        public string Sql { get; set; } = string.Empty;
+        public string Sql { get; set; }
 
         /// <summary>
         /// Gets the collection of parameters associated with the SQL query.
@@ -47,15 +47,25 @@ namespace EH.Connection
         // public DbTransaction? Transaction { get; set; }
         // public DateTime ExecutionDate { get; set; }
         // public bool Commited { get; set; } = false;
-        
-        
 
-        public QueryCommand(string sql, IDictionary<string, Property>? parameters, IDictionary<string, Property>? parametersOutput = null)
+        /// <summary>
+        /// Gets or sets the entity associated with the query command.
+        /// </summary>
+        /// <remarks>
+        /// This property represents an object that can be used to store or retrieve
+        /// data related to the execution of the SQL query. It allows the caller to
+        /// associate a custom entity object with the command for contextual purposes.
+        /// </remarks>
+        public Object? Entity { get; set; }
+
+
+        public QueryCommand(string sql, Object? entity, IDictionary<string, Property>? parameters, IDictionary<string, Property>? parametersOutput = null)
         {
             if (string.IsNullOrWhiteSpace(sql))
                 throw new ArgumentException("SQL query cannot be null or empty.", nameof(sql));
             
             Sql = sql;
+            Entity = entity;
             Parameters = parameters ?? new Dictionary<string, Property>();
             ParametersOutput = parametersOutput ?? new Dictionary<string, Property>();
         }
