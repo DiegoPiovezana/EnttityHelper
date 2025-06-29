@@ -185,7 +185,7 @@ namespace EH.Command
                     if (insertQueriesEntity.Value == null) throw new Exception("EH-000: Insert query does not exist!");
 
                     var queryEntity = insertQueriesEntity.Value.First();
-                    object? id = InsertQueryEntity(queryEntity, entity, setPrimaryKeyAfterInsert);  // insertQueriesEntity.Key
+                    object? id = InsertQueryEntity(queryEntity, setPrimaryKeyAfterInsert);  // insertQueriesEntity.Key
                     insertions++;
 
                     // Useful for MxN and 1:N relationships
@@ -200,7 +200,7 @@ namespace EH.Command
                         
                         // insertions += ExecuteNonQuery(insertQueriesEntity.Value[i], 1);
                         // insertions += Execute.ExecuteNonQuery(_enttityHelper.DbContext, new List<QueryCommand?>{ insertQueriesEntity.Value[i] }, 1).First();
-                        var resultInsert = InsertQueryEntity(insertQueriesEntity.Value[i], insertQueriesEntity.Key, setPrimaryKeyAfterInsert);
+                        var resultInsert = InsertQueryEntity(insertQueriesEntity.Value[i], setPrimaryKeyAfterInsert);
                         insertions++;
                     }
                 }
@@ -209,10 +209,9 @@ namespace EH.Command
             }
         }
 
-        private object? InsertQueryEntity<TEntity>(QueryCommand insertQueryEntity, TEntity entity, bool setPrimaryKeyAfterInsert)
-            where TEntity : class
+        private object? InsertQueryEntity(QueryCommand insertQueryEntity, bool setPrimaryKeyAfterInsert)
         {
-            var propPk = ToolsProp.GetPK(entity) ?? throw new Exception("EH-000: Entity does not have a primary key!");  // insertQueriesEntity.Key
+            var propPk = ToolsProp.GetPK(insertQueryEntity.Entity) ?? throw new Exception("EH-000: Entity does not have a primary key!");  // insertQueriesEntity.Key
             var id = Execute.ExecuteScalar(_enttityHelper.DbContext,new List<QueryCommand?> { insertQueryEntity }).First(); // Inserts the main entity
             if (id == null || id == DBNull.Value) throw new Exception("EH-000: Insert query does not return an ID!");
 
@@ -248,7 +247,7 @@ namespace EH.Command
                 {
                     try
                     {
-                        propPk.SetValue(entity, convertedId);
+                        propPk.SetValue(insertQueryEntity.Entity, convertedId);
                     }
                     catch (Exception ex)
                     {
@@ -258,10 +257,10 @@ namespace EH.Command
                 else
                 {
                     // Try to set via backing field
-                    var backingField = entity.GetType().GetField($"<{propPk.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+                    var backingField = insertQueryEntity.Entity.GetType().GetField($"<{propPk.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
                     if (backingField != null)
                     {
-                        backingField.SetValue(entity, convertedId);
+                        backingField.SetValue(insertQueryEntity.Entity, convertedId);
                     }
                     else
                     {
