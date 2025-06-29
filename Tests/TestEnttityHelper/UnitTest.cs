@@ -53,13 +53,23 @@ namespace TestEH_UnitTest
             string groupId = ConvertToVarchar(nameof(Group.Id), eh);
             string careerId = ConvertToVarchar(nameof(Career.IdCareer), eh);
             string ticketId = ConvertToVarchar(nameof(Ticket.IdLog), eh);
-
-            string tbManyToManyScaped = eh.GetQuery.EscapeIdentifier(eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups)));
-            string tbCareerScaped = eh.GetQuery.EscapeIdentifier(eh.GetTableName<Career>());
-            string tbUserScaped = eh.GetQuery.EscapeIdentifier(eh.GetTableName<User>());
-            string tbGroupScaped = eh.GetQuery.EscapeIdentifier(eh.GetTableName<Group>());
-            string tbTicketScaped = eh.GetQuery.EscapeIdentifier(eh.GetTableName<Ticket>());
+            string orderId = ConvertToVarchar(nameof(Order.Id), eh);
+            string itemId = ConvertToVarchar(nameof(Item.Id), eh);
+          
+            string tbCareer = eh.GetTableName<Career>();
+            string tbUser = eh.GetTableName<User>();
+            string tbGroup = eh.GetTableName<Group>();
             string tbTicket = eh.GetTableName<Ticket>();
+            string tbOrder = eh.GetTableName<Order>();
+            string tbItem = eh.GetTableName<Item>();
+            
+            string tbManyToManyScaped = eh.GetQuery.EscapeIdentifier(eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups)));
+            string tbCareerScaped = eh.GetQuery.EscapeIdentifier(tbCareer);
+            string tbUserScaped = eh.GetQuery.EscapeIdentifier(tbUser);
+            string tbGroupScaped = eh.GetQuery.EscapeIdentifier(tbGroup);
+            string tbTicketScaped = eh.GetQuery.EscapeIdentifier(tbTicket);
+            string tbOrderScaped = eh.GetQuery.EscapeIdentifier(tbOrder);
+            string tbItemScaped = eh.GetQuery.EscapeIdentifier(tbItem);
 
             try
             {
@@ -67,10 +77,12 @@ namespace TestEH_UnitTest
             }
             catch (Exception) { }
             
-            eh.ExecuteNonQuery($@"DELETE FROM {tbUserScaped} WHERE {userId} LIKE '{idTest}__'");
-            eh.ExecuteNonQuery($@"DELETE FROM {tbGroupScaped} WHERE {groupId} LIKE '{idTest}__'");
-            eh.ExecuteNonQuery($@"DELETE FROM {tbCareerScaped} WHERE {careerId} LIKE '{idTest}__'");
+            if (eh.CheckIfExist(tbUser)) { eh.ExecuteNonQuery($@"DELETE FROM {tbUserScaped} WHERE {userId} LIKE '{idTest}__'");}
+            if (eh.CheckIfExist(tbGroup)) { eh.ExecuteNonQuery($@"DELETE FROM {tbGroupScaped} WHERE {groupId} LIKE '{idTest}__'");}
+            if (eh.CheckIfExist(tbCareer)) { eh.ExecuteNonQuery($@"DELETE FROM {tbCareerScaped} WHERE {careerId} LIKE '{idTest}__'");}
             if (eh.CheckIfExist(tbTicket)) { eh.ExecuteNonQuery($@"DELETE FROM {tbTicketScaped} WHERE {ticketId} LIKE '{idTest}__'"); }
+            if (eh.CheckIfExist(tbOrder)) { eh.ExecuteNonQuery($@"DELETE FROM {tbOrderScaped} WHERE {orderId} LIKE '{idTest}__'"); }
+            if (eh.CheckIfExist(tbItem)) { eh.ExecuteNonQuery($@"DELETE FROM {tbItemScaped} WHERE {itemId} LIKE '{idTest}__'"); }
         }
 
 
@@ -2014,13 +2026,14 @@ namespace TestEH_UnitTest
                 
                 Order order = new()
                 {
+                    Id = 25001,
                     OrderDate = DateTime.Now,
                     CustomerName = "Cliente Teste",
                     Items = new List<Item>
                     {
-                        new() { Name = "Item 1", Quantity = 2, UnitPrice = 10.5m },
-                        new() { Name = "Item 2", Quantity = 1, UnitPrice = 25.0m },
-                        new() { Name = "Item 3", Quantity = 5, UnitPrice = 7.0m }
+                        new() { Id = 25001, Name = "Item 1", Quantity = 2, UnitPrice = 10.5m },
+                        new() { Id = 25002, Name = "Item 2", Quantity = 1, UnitPrice = 25.0m },
+                        new() { Id = 25003, Name = "Item 3", Quantity = 5, UnitPrice = 7.0m }
                     }
                 };
                

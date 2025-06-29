@@ -91,7 +91,12 @@ namespace EH.Entities
             }
         }
 
-        internal void IncludeInverseProperties<T>(T objectEntity, Dictionary<string, string>? replacesTableName, EnttityHelper enttityHelper, string? inversePropertyNameOnly = null)
+        internal void IncludeInverseProperties<T>(
+            T objectEntity, 
+            Dictionary<string, string>? replacesTableName, 
+            EnttityHelper enttityHelper, 
+            string? inversePropertyNameOnly = null
+            ) where T : class
         {
             if (objectEntity == null) return;
 
@@ -155,6 +160,16 @@ namespace EH.Entities
                     }
                 }
             }
+        }
+
+        internal void IncludeCollectionProperties<T>(
+            T objectEntity, 
+            Dictionary<string, string>? replacesTableName,
+            EnttityHelper enttityHelper, 
+            string? collectionPropertyNameOnly = null
+            )
+        {
+            
         }
 
 
