@@ -114,18 +114,21 @@ namespace EH.Connection
             {
                 Enums.DbProvider.Oracle => new QueryCommand(
                     sql: $"INSERT INTO {tableName1Escaped} ({columns}) VALUES ({parametersSql}) RETURNING {pk.Name} INTO :Result",
+                    entity: entity,
                     parameters: filteredProperties,
                     parametersOutput: new Dictionary<string, Property> { { "Result", new Property(pk, entity) } }
                 ),
                 Enums.DbProvider.SqlServer => new QueryCommand
                 (
                     sql: $"INSERT INTO {tableName1Escaped} ({columns}) OUTPUT INSERTED.{pk.Name} VALUES ({parametersSql})",
+                    entity: entity,
                     parameters: filteredProperties,
                     parametersOutput: new Dictionary<string, Property> { { "Result", new Property(pk, entity) } }
                 ),
                 Enums.DbProvider.SqLite => new QueryCommand
                 (
                     sql: $"INSERT INTO {tableName1Escaped} ({columns}) VALUES ({parametersSql}) RETURNING {pk.Name}",
+                    entity: entity,
                     parameters: filteredProperties,
                     parametersOutput: new Dictionary<string, Property> { { "Result", new Property(pk, entity) } }
                 ),
@@ -199,6 +202,7 @@ namespace EH.Connection
                             queries.Add(new QueryCommand
                             (
                                 sql: sql,
+                                entity: entity,
                                 parameters: parameters
                             ));
                         }
@@ -314,7 +318,7 @@ namespace EH.Connection
             //return queryBuilder.ToString();
             // queries.Add(queryBuilder.ToString());
          
-            var cmd = new QueryCommand(queryBuilder.ToString(), properties);
+            var cmd = new QueryCommand(queryBuilder.ToString(), entity, properties);
             queries.Add(cmd);
 
             if (!ignoreInversePropertyProperties) queries.AddRange(UpdateInverseProperty(entity, enttityHelper));
@@ -445,7 +449,7 @@ namespace EH.Connection
                                 {$"ID_" + idTb2, itemInsert}
                             };
 
-                            QueryCommand queryCommandInsert = new(sql, parametersInsert);
+                            QueryCommand queryCommandInsert = new(sql, null, parametersInsert);
                             queries.Add(queryCommandInsert);
                         }
                     }
@@ -472,7 +476,7 @@ namespace EH.Connection
                                 {$"{Database.PrefixParameter}ID_" + idTb2, itemDelete}
                             };
                             
-                            QueryCommand queryCommandDelete = new(sql, parametersDelete);
+                            QueryCommand queryCommandDelete = new(sql, null, parametersDelete);
                             queries.Add(queryCommandDelete);
                         }
                     }
@@ -495,7 +499,7 @@ namespace EH.Connection
             tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
             string tableNameEscaped = EscapeIdentifier(tableName);
             // return $@"SELECT * FROM {tableName} WHERE ({filter})";
-            return new QueryCommand($@"SELECT * FROM {tableNameEscaped} WHERE ({filter})", null);
+            return new QueryCommand($@"SELECT * FROM {tableNameEscaped} WHERE ({filter})", null, null);
         }
 
         /// <summary>
@@ -520,7 +524,7 @@ namespace EH.Connection
                 {idPropName, new Property(typeof(TEntity).GetProperty(idPropName), entity)}
             };
             
-            return new QueryCommand($@"SELECT * FROM {tableNameEscaped} WHERE ({idPropName} = {Database.PrefixParameter}{idPropName})", parameters);
+            return new QueryCommand($@"SELECT * FROM {tableNameEscaped} WHERE ({idPropName} = {Database.PrefixParameter}{idPropName})", entity, parameters);
         }
 
         /// <summary>
@@ -555,7 +559,7 @@ namespace EH.Connection
             };
             
             
-            return new QueryCommand($@"DELETE FROM {tableNameEscaped} WHERE ({idPropName} = {Database.PrefixParameter}{idPropName})", parameters);
+            return new QueryCommand($@"DELETE FROM {tableNameEscaped} WHERE ({idPropName} = {Database.PrefixParameter}{idPropName})", entity, parameters);
         }
 
         /// <summary>
@@ -591,7 +595,7 @@ namespace EH.Connection
                 _ => $"SELECT 1 FROM {tableNameScaped} WHERE {whereClause} LIMIT 1",
             };
             
-           return new(sql, null);
+           return new(sql, entity, null);
         }
 
         /// <summary>
@@ -648,7 +652,7 @@ namespace EH.Connection
                 {idPropName, new Property(entity.GetType().GetProperty(idPropName), entity)}
             };
             
-            return new QueryCommand($@"SELECT COUNT(*) FROM {tableNameEscaped} WHERE ({idPropName} = {Database.PrefixParameter}{idPropName})", parameters);
+            return new QueryCommand($@"SELECT COUNT(*) FROM {tableNameEscaped} WHERE ({idPropName} = {Database.PrefixParameter}{idPropName})", entity, parameters);
         }
 
         /// <summary>
@@ -774,7 +778,7 @@ namespace EH.Connection
             queryBuilderPrincipal.Append(")");
             //createsTable.Add(queryBuilderPrincipal.ToString());
             
-            QueryCommand queryCommand = new QueryCommand(queryBuilderPrincipal.ToString(), null);
+            QueryCommand queryCommand = new QueryCommand(queryBuilderPrincipal.ToString(), entity, null);
             
             // queryCreatesTable[tableName] = queryBuilderPrincipal.ToString();
             queryCreatesTable[tableName] = queryCommand;
@@ -891,7 +895,7 @@ namespace EH.Connection
             queryBuilder.Append(")");
             // return queryBuilder.ToString();
             
-            return new QueryCommand(queryBuilder.ToString(), null);
+            return new QueryCommand(queryBuilder.ToString(), null, null);
         }
 
         /// <summary>
@@ -913,7 +917,7 @@ namespace EH.Connection
                 FOREIGN KEY ({childKeyColumn})
                 REFERENCES {parentTableName}({parentKeyColumn});";
             
-            return new QueryCommand(sql, null);
+            return new QueryCommand(sql, null, null);
         }
         
         // private static readonly Regex OrderByRegex = new(@"ORDER\s+BY\s+[\w\W]+?$", RegexOptions.IgnoreCase | RegexOptions.Multiline);
@@ -1022,7 +1026,7 @@ namespace EH.Connection
                     $@"{baseQuery.Sql} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
             };
 
-            return new QueryCommand(sql, baseQuery.Parameters);
+            return new QueryCommand(sql, baseQuery.Entity, baseQuery.Parameters);
         }
 
         /// <summary>
@@ -1051,7 +1055,7 @@ namespace EH.Connection
                 : string.Empty;
 
             // return $"SELECT COUNT(1) FROM ({mainQuery}) CountQuery {filterClause}";
-            return new QueryCommand($"SELECT COUNT(1) FROM ({mainQuery}) CountQuery {filterClause}", null);
+            return new QueryCommand($"SELECT COUNT(1) FROM ({mainQuery}) CountQuery {filterClause}", null, null);
         }
 
         /// <summary>
@@ -1105,7 +1109,7 @@ namespace EH.Connection
                 var db = database ?? Database;
 
                 // return queryVersion;
-                return new QueryCommand(queryVersion, null);
+                return new QueryCommand(queryVersion, null, null);
             }
             catch (Exception ex)
             {
