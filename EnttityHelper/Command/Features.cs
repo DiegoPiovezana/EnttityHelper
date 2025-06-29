@@ -184,67 +184,11 @@ namespace EH.Command
                 {
                     if (insertQueriesEntity.Value == null) throw new Exception("EH-000: Insert query does not exist!");
 
-                    var pk = ToolsProp.GetPK(insertQueriesEntity.Key) ?? throw new Exception("EH-000: Entity does not have a primary key!");
-                    var id = Execute.ExecuteScalar(_enttityHelper.DbContext,new List<QueryCommand?> { insertQueriesEntity.Value.First() }).First(); // Inserts the main entity
-                    if (id == null || id == DBNull.Value) throw new Exception("EH-000: Insert query does not return an ID!");
-
-                    var typePk = pk.PropertyType;
-                    var targetType  = Nullable.GetUnderlyingType(typePk) ?? typePk;
-                    // var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id.ToString(), typePk);
-                    // var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id, targetType);
-
-                    object convertedId;
-                    if (targetType == typeof(Guid))
-                    {
-                        if (id is byte[] bytes && bytes.Length == 16) { convertedId = new Guid(bytes); }
-                        else if (id is string s) { convertedId = Guid.Parse(s); }
-                        else if (id is Guid guid) { convertedId = guid; }
-                        else { throw new InvalidCastException($"Could not convert type '{id?.GetType()}' to Guid."); }
-                    }
-                    else
-                    {
-                        convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id, targetType);
-                    }
-
-                    //if (setPrimaryKeyAfterInsert)
-                    //{
-                    //    if (!pk.CanWrite || pk.SetMethod == null || !pk.SetMethod.IsPublic)
-                    //        throw new Exception($"EH-000: Property '{pk.Name}' does not have a public setter.");
-
-                    //    pk.SetValue(insertQueriesEntity.Key, convertedId);
-                    //}
-
-                    if (setPrimaryKeyAfterInsert)
-                    {
-                        if (pk.CanWrite || pk.SetMethod != null)
-                        {
-                            try
-                            {
-                                pk.SetValue(insertQueriesEntity.Key, convertedId);
-                            }
-                            catch (Exception ex)
-                            {
-                                throw new Exception($"EH-000: Failed to set primary key '{pk.Name}' via SetValue.", ex);
-                            }
-                        }
-                        else
-                        {
-                            // Try to set via backing field
-                            var backingField = entity.GetType().GetField($"<{pk.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
-                            if (backingField != null)
-                            {
-                                backingField.SetValue(insertQueriesEntity.Key, convertedId);
-                            }
-                            else
-                            {
-                                throw new Exception($"EH-000: Property '{pk.Name}' is readonly and no backing field was found.");
-                            }
-                        }
-                    }
-
+                    var queryEntity = insertQueriesEntity.Value.First();
+                    object? id = InsertQueryEntity(queryEntity, entity, setPrimaryKeyAfterInsert);  // insertQueriesEntity.Key
                     insertions++;
 
-                    // Useful for MxN
+                    // Useful for MxN and 1:N relationships
                     for (int i = 1; i < insertQueriesEntity.Value.Count; i++)
                     {
                         // insertQueriesEntity.Value[i] = insertQueriesEntity.Value[i].Replace("'&ID1'", $"'{id}'");
@@ -255,12 +199,78 @@ namespace EH.Command
                         insertQueriesEntity.Value[i].Parameters[entityFkId].Value = id;
                         
                         // insertions += ExecuteNonQuery(insertQueriesEntity.Value[i], 1);
-                        insertions += Execute.ExecuteNonQuery(_enttityHelper.DbContext, new List<QueryCommand?>{ insertQueriesEntity.Value[i] }, 1).First();
+                        // insertions += Execute.ExecuteNonQuery(_enttityHelper.DbContext, new List<QueryCommand?>{ insertQueriesEntity.Value[i] }, 1).First();
+                        var resultInsert = InsertQueryEntity(insertQueriesEntity.Value[i], insertQueriesEntity.Key, setPrimaryKeyAfterInsert);
+                        insertions++;
                     }
                 }
 
                 return insertions;
             }
+        }
+
+        private object? InsertQueryEntity<TEntity>(QueryCommand insertQueryEntity, TEntity entity, bool setPrimaryKeyAfterInsert)
+            where TEntity : class
+        {
+            var propPk = ToolsProp.GetPK(entity) ?? throw new Exception("EH-000: Entity does not have a primary key!");  // insertQueriesEntity.Key
+            var id = Execute.ExecuteScalar(_enttityHelper.DbContext,new List<QueryCommand?> { insertQueryEntity }).First(); // Inserts the main entity
+            if (id == null || id == DBNull.Value) throw new Exception("EH-000: Insert query does not return an ID!");
+
+            var typePk = propPk.PropertyType;
+            var targetType  = Nullable.GetUnderlyingType(typePk) ?? typePk;
+            // var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id.ToString(), typePk);
+            // var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id, targetType);
+
+            object convertedId;
+            if (targetType == typeof(Guid))
+            {
+                if (id is byte[] bytes && bytes.Length == 16) { convertedId = new Guid(bytes); }
+                else if (id is string s) { convertedId = Guid.Parse(s); }
+                else if (id is Guid guid) { convertedId = guid; }
+                else { throw new InvalidCastException($"Could not convert type '{id?.GetType()}' to Guid."); }
+            }
+            else
+            {
+                convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id, targetType);
+            }
+
+            //if (setPrimaryKeyAfterInsert)
+            //{
+            //    if (!pk.CanWrite || pk.SetMethod == null || !pk.SetMethod.IsPublic)
+            //        throw new Exception($"EH-000: Property '{pk.Name}' does not have a public setter.");
+
+            //    pk.SetValue(insertQueriesEntity.Key, convertedId);
+            //}
+
+            if (setPrimaryKeyAfterInsert)
+            {
+                if (propPk.CanWrite || propPk.SetMethod != null)
+                {
+                    try
+                    {
+                        propPk.SetValue(entity, convertedId);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception($"EH-000: Failed to set primary key '{propPk.Name}' via SetValue.", ex);
+                    }
+                }
+                else
+                {
+                    // Try to set via backing field
+                    var backingField = entity.GetType().GetField($"<{propPk.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+                    if (backingField != null)
+                    {
+                        backingField.SetValue(entity, convertedId);
+                    }
+                    else
+                    {
+                        throw new Exception($"EH-000: Property '{propPk.Name}' is readonly and no backing field was found.");
+                    }
+                }
+            }
+
+            return id;
         }
 
         public long InsertLinkSelect(string selectQuery, EnttityHelper db2, string tableName, int timeOutSeconds)

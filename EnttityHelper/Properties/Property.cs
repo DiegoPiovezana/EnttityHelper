@@ -13,6 +13,9 @@ namespace EH.Properties
     /// </summary>
     public class Property
     {
+        private object? _value;
+        
+        
         /// <summary>
         /// Gets or sets the PropertyInfo.
         /// </summary>
@@ -26,12 +29,20 @@ namespace EH.Properties
         /// <summary>
         /// Gets or sets the value of the property.
         /// </summary>
-        public object? Value { get; set; }
+        public object? Value
+        {
+            get => _value;
+            set
+            {
+                _value = value;
+                ValueSql = ConvertValueToSqlTextFormat(_value, Type);
+            }
+        }
 
         /// <summary>
         /// Gets or sets the value of the property considering the database standard. Example: Bool to 1/0.
         /// </summary>
-        public object? ValueSql { get; set; }
+        public object? ValueSql { get; private set; }
 
         /// <summary>
         /// Gets or sets the type of the property.
@@ -184,18 +195,17 @@ namespace EH.Properties
 
             Value = objectEntity != null ? propertyInfo.GetValue(objectEntity) : null;
             ValueSql = ConvertValueToSqlTextFormat(Value, propertyInfo.PropertyType);
-            
-            
-            static object? ConvertValueToSqlTextFormat(object? value, Type propertyType)
+        }
+        
+        private static object? ConvertValueToSqlTextFormat(object? value, Type propertyType)
+        {
+            return value != null ? propertyType switch
             {
-                return value != null ? propertyType switch
-                {
-                    Type t when t == typeof(DateTime) => ((DateTime)value).ToString(),
-                    Type t when t == typeof(decimal) => ((decimal)value).ToString(),
-                    Type t when t == typeof(bool) => (bool)value ? 1 : 0,
-                    _ => value
-                } : DBNull.Value;
-            }
+                Type t when t == typeof(DateTime) => ((DateTime)value).ToString(),
+                Type t when t == typeof(decimal) => ((decimal)value).ToString(),
+                Type t when t == typeof(bool) => (bool)value ? 1 : 0,
+                _ => value
+            } : DBNull.Value;
         }
 
         override public string? ToString()
