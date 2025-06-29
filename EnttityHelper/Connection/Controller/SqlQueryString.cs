@@ -258,6 +258,11 @@ namespace EH.Connection
                             Property valueId1 = queryCommand.Parameters[nameIdFk1];
                             queryCommand.Parameters.Remove(nameIdFk1);
                             queryCommand.Parameters["ID1"] = valueId1;
+
+                            queryCommand.Sql = queryCommand.Sql.Replace(
+                                Database.PrefixParameter + nameIdFk1,
+                                Database.PrefixParameter + "ID1"
+                            );
                             
                             queries.Add(queryCommand);
                         }
