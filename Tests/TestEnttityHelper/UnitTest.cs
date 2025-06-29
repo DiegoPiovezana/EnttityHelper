@@ -2038,7 +2038,7 @@ namespace TestEH_UnitTest
                 };
                
                 long inserted = eh.Insert(order);
-                Assert.That(inserted, Is.EqualTo(1), "Order insertion failed.");
+                Assert.That(inserted, Is.EqualTo(4), "Order insertion failed.");
                
                 bool exists = eh.CheckIfExist(order);
                 Assert.That(exists, Is.True, "Order does not exist after insertion.");

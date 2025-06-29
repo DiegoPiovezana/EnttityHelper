@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using EH.Properties;
 
 namespace EH.Command
 {
@@ -31,9 +32,14 @@ namespace EH.Command
                 {
                     T obj = Activator.CreateInstance<T>();
 
-                    foreach (PropertyInfo propInfo in typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+                    var properties =
+                        typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    
+                    foreach (PropertyInfo propInfo in properties)
                     {
                         if (propInfo?.GetGetMethod().IsVirtual != false || propInfo.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
+                        if (ToolsProp.IsFkEntity(propInfo)) { continue; }
+                        if (propInfo.PropertyType != typeof(string) && typeof(System.Collections.IEnumerable).IsAssignableFrom(propInfo.PropertyType)) { continue; }
 
                         string nameColumn = propInfo.GetCustomAttribute<ColumnAttribute>()?.Name ?? propInfo.Name;
 
