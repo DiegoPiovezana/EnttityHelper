@@ -19,19 +19,19 @@ namespace EH.Connection
                 throw new ArgumentException("The property must be a collection", nameof(collectionProperty));
             }
 
-            var entity2Type = GetCollectionElementType(collectionProperty.PropertyInfo.PropertyType);
+            var entity2Type = ToolsProp.GetCollectionElementType(collectionProperty.PropertyInfo.PropertyType);
 
             // 1. Checks if there is InverseProperty defined
             var inverseProperty = GetInverseProperty(entity1, entity2Type, collectionProperty);
 
             // 2. If there is an inverse property that is collection = M:N
-            if (inverseProperty != null && IsCollectionProperty(inverseProperty))
+            if (inverseProperty != null && ToolsProp.IsCollectionProperty(inverseProperty))
             {
                 return RelationshipType.ManyToMany;
             }
 
             // 3. Checks if related entity has FK to first entity
-            var foreignKeyProperty = GetForeignKeyPropertyToEntity(entity2Type, entity1);
+            var foreignKeyProperty = ToolsProp.GetForeignKeyPropertyToEntity(entity2Type, entity1);
 
             // 4. If it has direct FK = 1:N, if it doesn't = M:N
             return foreignKeyProperty != null ? RelationshipType.OneToMany : RelationshipType.ManyToMany;
@@ -49,13 +49,13 @@ namespace EH.Connection
             {
                 return (null, null);
             }
-
-            var entity2Type = GetCollectionElementType(collectionProperty.PropertyInfo.PropertyType);
             
-            var tableName = GenerateJunctionTableName(entity1, entity2Type, replacesTableName);
+            var tableName = ToolsProp.GetTableNameManyToMany(entity1, collectionProperty.PropertyInfo, replacesTableName);
             
-            var pkEntity1 = GetPrimaryKeyProperty(entity1);
-            var pkEntity2 = GetPrimaryKeyProperty(entity2Type);
+            var entity2Type = ToolsProp.GetCollectionElementType(collectionProperty.PropertyInfo.PropertyType);
+            
+            var pkEntity1 = ToolsProp.GetPK(entity1);
+            var pkEntity2 = ToolsProp.GetPK(entity2Type);
 
             if (pkEntity1 == null || pkEntity2 == null)
             {
@@ -76,67 +76,8 @@ namespace EH.Connection
 
             // Search by convention
             return entity2.GetProperties()
-                .FirstOrDefault(p => IsCollectionProperty(p) &&
-                                     GetCollectionElementType(p.PropertyType) == entity1);
-        }
-
-        private static PropertyInfo? GetForeignKeyPropertyToEntity(Type sourceType, Type targetType)
-        {
-            return sourceType.GetProperties()
-                .FirstOrDefault(p =>
-                {
-                    // Checks if it is FK by convention (Id + entity name)
-                    if (p.Name.Equals($"Id{targetType.Name}", StringComparison.OrdinalIgnoreCase) ||
-                        p.Name.Equals($"{targetType.Name}Id", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return true;
-                    }
-                   
-                    // Check for ForeignKeyAttribute
-                    var fkAttr = p.GetCustomAttribute<ForeignKeyAttribute>();
-                    return fkAttr != null &&
-                           sourceType.GetProperties().Any(prop =>
-                               prop.Name == fkAttr.Name && prop.PropertyType == targetType);
-                });
-        }
-
-        private static Type GetCollectionElementType(Type collectionType)
-        {
-            if (collectionType.IsGenericType)
-            {
-                return collectionType.GetGenericArguments()[0];
-            }
-           
-            var enumerableInterface = collectionType.GetInterfaces()
-                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-
-            return enumerableInterface?.GetGenericArguments()[0]
-                   ?? throw new ArgumentException("Unsupported collection type");
-        }
-
-        private static bool IsCollectionProperty(PropertyInfo property)
-        {
-            return property.PropertyType != typeof(string) &&
-                   typeof(System.Collections.IEnumerable).IsAssignableFrom(property.PropertyType);
-        }
-
-        private static PropertyInfo? GetPrimaryKeyProperty(Type entityType)
-        {
-            return entityType.GetProperties()
-                .FirstOrDefault(p =>
-                    p.GetCustomAttribute<System.ComponentModel.DataAnnotations.KeyAttribute>() != null);
-        }
-
-        private static string GenerateJunctionTableName(Type entity1, Type entity2,
-            Dictionary<string, string>? replacesTableName)
-        {
-            var table1Name = ToolsProp.GetTableName(entity1, replacesTableName);
-            var table2Name = ToolsProp.GetTableName(entity2, replacesTableName);
-
-            // Ordened alfabetically to ensure consistent naming
-            var orderedNames = new[] { table1Name, table2Name }.OrderBy(n => n).ToArray();
-
-            return $"{orderedNames[0]}_{orderedNames[1]}";
+                .FirstOrDefault(p => ToolsProp.IsCollectionProperty(p) &&
+                                     ToolsProp.GetCollectionElementType(p.PropertyType) == entity1);
         }
 
         private static QueryCommand CreateJunctionTableCommand(string tableName, Type entity1, Type entity2,
@@ -160,7 +101,7 @@ namespace EH.Connection
             CREATE TABLE {sqlQueryString.EscapeIdentifier(tableName)} (
                 ID_{idTb1} {type1} NOT NULL,
                 ID_{idTb2} {type2} NOT NULL,
-                PRIMARY KEY (ID_{idTb1}, ID_{tb2}),
+                PRIMARY KEY (ID_{idTb1}, ID_{idTb2}),
                 FOREIGN KEY (ID_{idTb1}) REFERENCES {idTb1Escaped}({pkEntity1.Name}),
                 FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2Escaped}({pkEntity2.Name})
             )";

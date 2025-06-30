@@ -285,6 +285,26 @@ namespace EH.Properties
             return null;
         }
         
+        internal static PropertyInfo? GetForeignKeyPropertyToEntity(Type sourceType, Type targetType)
+        {
+            return sourceType.GetProperties()
+                .FirstOrDefault(p =>
+                {
+                    // Checks if it is FK by convention (Id + entity name)
+                    if (p.Name.Equals($"Id{targetType.Name}", StringComparison.OrdinalIgnoreCase) ||
+                        p.Name.Equals($"{targetType.Name}Id", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                   
+                    // Check for ForeignKeyAttribute
+                    var fkAttr = p.GetCustomAttribute<ForeignKeyAttribute>();
+                    return fkAttr != null &&
+                           sourceType.GetProperties().Any(prop =>
+                               prop.Name == fkAttr.Name && prop.PropertyType == targetType);
+                });
+        }
+        
         internal static string? GetNameIdFk1(Type entityType, string navigationPropertyName)
         {
             if (entityType == null)
@@ -338,7 +358,20 @@ namespace EH.Properties
             // If no FK property found, return null
             return null;
         }
+        
+        internal static Type GetCollectionElementType(Type collectionType)
+        {
+            if (collectionType.IsGenericType)
+            {
+                return collectionType.GetGenericArguments()[0];
+            }
+           
+            var enumerableInterface = collectionType.GetInterfaces()
+                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
 
+            return enumerableInterface?.GetGenericArguments()[0]
+                   ?? throw new ArgumentException("Unsupported collection type");
+        }
       
         internal static bool IsFkEntity(this PropertyInfo propertyInfo)
         {
@@ -363,6 +396,12 @@ namespace EH.Properties
             //     return true;
 
             return false;
+        }
+        
+        internal static bool IsCollectionProperty(PropertyInfo property)
+        {
+            return property.PropertyType != typeof(string) &&
+                   typeof(System.Collections.IEnumerable).IsAssignableFrom(property.PropertyType);
         }
         
         internal static DbType MapToDbType(this Type type)
