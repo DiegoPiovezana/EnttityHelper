@@ -158,13 +158,13 @@ namespace EH.Connection
             
             foreach (var invProp in inverseProperties)
             {
+                if (invProp.Value.IsCollection != true) { throw new InvalidOperationException("The InverseProperty property must be a collection."); }
+                
                 Type collectionType = invProp.Value.PropertyInfo.PropertyType;
                 Type entity2Type = collectionType.GetGenericArguments()[0];
                 string tableNameInverseProperty = ToolsProp.GetTableNameManyToMany(entity.GetType(), invProp.Value.PropertyInfo, replacesTableName);
                 string tableNameInversePropertyEscaped = EscapeIdentifier(tableNameInverseProperty);
-
-                if (invProp.Value.IsCollection != true) { throw new InvalidOperationException("The InverseProperty property must be a collection."); }
-
+                
                 string tableName1 = ToolsProp.GetTableName(entity.GetType(), replacesTableName, false);
                 string tableName2 = ToolsProp.GetTableName(entity2Type, replacesTableName, false);
 
@@ -195,7 +195,7 @@ namespace EH.Connection
                             
                             Dictionary<string, Property> parameters = new()
                             {
-                                { $"{Database.PrefixParameter}ID1", new Property(prop1, entity)},
+                                { $"ID1", new Property(prop1, entity)},
                                 { "ID_" + idTb2, new Property(prop2, item)}
                             };
 
@@ -221,6 +221,7 @@ namespace EH.Connection
         {
             Dictionary<string, Property>? collectionProperties = properties
                 .Where(p => p.Value.IsCollection == true)
+                .Where(p => p.Value.InverseProperty == null)
                 .ToDictionary(p => p.Key, p => p.Value);
             
             foreach (var collectionProp in collectionProperties)

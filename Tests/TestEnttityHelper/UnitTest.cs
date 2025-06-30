@@ -1346,10 +1346,9 @@ namespace TestEH_UnitTest
         [Test, Order(201)]
         public void TestIncludeAll()
         {
+            
             EnttityHelper eh = new(stringConnectionBd1);
             Assert.That(eh.DbContext.ValidateConnection(), Is.EqualTo(true));
-            
-            ResetTables("201");
 
             /////////////////////////////////////////////////// 
             // CREATE TABLE
@@ -1357,17 +1356,8 @@ namespace TestEH_UnitTest
             eh.CreateTableIfNotExist<Group>(createOnlyPrimaryTable: true); // The M:N auxiliary table will not be created here
             eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false); // It will be created here
             eh.CreateTableIfNotExist<Career>(false);
-
-
-            /////////////////////////////////////////////////// 
-            // DELETE
-
-            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups))} WHERE TO_CHAR(ID_TB_GROUP_USERS) LIKE '201%' OR TO_CHAR(ID_USER) LIKE '201%'");
-            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<User>()} WHERE TO_CHAR({nameof(User.Id)}) LIKE '201%'");
-            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Group>()} WHERE TO_CHAR({nameof(Group.Id)}) LIKE '201%'");
-            //eh.ExecuteNonQuery($"DELETE FROM {eh.GetTableName<Career>()} WHERE TO_CHAR({nameof(Career.IdCareer)}) LIKE '201%'");
+            
             ResetTables("201");
-
 
             /////////////////////////////////////////////////// 
             // INSERT
