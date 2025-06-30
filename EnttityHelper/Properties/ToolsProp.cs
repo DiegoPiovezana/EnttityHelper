@@ -342,8 +342,27 @@ namespace EH.Properties
       
         internal static bool IsFkEntity(this PropertyInfo propertyInfo)
         {
-            return propertyInfo.Name.Equals(propertyInfo.PropertyType.Name);
-            // || (propertyInfo.GetGetMethod()?.IsVirtual ?? false) == true;
+            bool isByName = propertyInfo.Name.Equals(propertyInfo.PropertyType.Name, StringComparison.OrdinalIgnoreCase);
+            if (isByName) return true;
+            
+            bool isEntityType = propertyInfo.PropertyType.IsClass && propertyInfo.PropertyType != typeof(string);
+            if (isEntityType) return true;
+            
+            // var declaringType = propertyInfo.DeclaringType;
+            // if (declaringType == null) return false;
+            //
+            // // Checks if there is any other property with the [ForeignKey] attribute that points to this one
+            // var allProps = declaringType.GetProperties();
+            // var hasForeignKeyReference = allProps.Any(p =>
+            // {
+            //     var fkAttr = p.GetCustomAttribute<ForeignKeyAttribute>();
+            //     return fkAttr != null && fkAttr.Name == propertyInfo.Name;
+            // });
+            //
+            // if (hasForeignKeyReference)
+            //     return true;
+
+            return false;
         }
         
         internal static DbType MapToDbType(this Type type)
