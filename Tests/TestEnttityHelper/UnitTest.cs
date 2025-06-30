@@ -2024,7 +2024,8 @@ namespace TestEH_UnitTest
                         new() { Id = 25001, Name = "Item 1", Quantity = 2, UnitPrice = 10.5m },
                         new() { Id = 25002, Name = "Item 2", Quantity = 1, UnitPrice = 25.0m },
                         new() { Id = 25003, Name = "Item 3", Quantity = 5, UnitPrice = 7.0m }
-                    }
+                    },
+                    Tags = new List<string> { "Tag1", "Tag2", "Tag3" }
                 };
                
                 long inserted = eh.Insert(order);
