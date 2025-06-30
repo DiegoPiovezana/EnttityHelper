@@ -1133,13 +1133,10 @@ namespace EH.Connection
         {
             bool NeedsQuoting(string part)
             {
-                // if (!Regex.IsMatch(part, @"^[A-Za-z0-9_]+$"))
                 if (!part.All(c => char.IsLetterOrDigit(c) || c == '_'))
                     return true;
-
                 if (Database.ReservedWords.Contains(part))
                     return true;
-              
                 return false;
             }
 
@@ -1154,12 +1151,19 @@ namespace EH.Connection
             };
 
             var parts = name.Split('.');
-            var escaped = parts.Select(part =>
+            // Determine if table part needs quoting
+            var needsQuoteFlags = parts.Select(NeedsQuoting).ToArray();
+            bool shouldQuoteAll = parts.Length > 1 && needsQuoteFlags[needsQuoteFlags.Length - 1];
+
+            var escaped = parts.Select((part, index) =>
             {
-                if (NeedsQuoting(part))
+                bool quote = shouldQuoteAll || needsQuoteFlags[index];
+                if (quote)
+                {
                     return Quote(part);
-                // se não precisa, normaliza para o case padrão (Oracle sem quotes vira maiúsculo)
-                return Database.Provider == Enums.DbProvider.Oracle
+                }
+                // for Oracle, unquoted identifiers are uppercased
+                return (Database.Provider == Enums.DbProvider.Oracle)
                     ? part.ToUpperInvariant()
                     : part;
             });
