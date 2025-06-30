@@ -270,6 +270,9 @@ namespace EH.Properties
         /// </summary>
         internal static string? GetFkEntityNameById(this PropertyInfo propertyInfo)
         {
+            if (propertyInfo.GetCustomAttribute<KeyAttribute>() != null)
+                return null;
+            
             if (propertyInfo.GetCustomAttribute<ForeignKeyAttribute>() != null)
                 return propertyInfo.GetCustomAttribute<ForeignKeyAttribute>().Name;
 
