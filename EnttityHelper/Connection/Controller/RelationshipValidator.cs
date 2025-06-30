@@ -21,51 +21,48 @@ namespace EH.Connection
 
             var entity2Type = GetCollectionElementType(collectionProperty.PropertyInfo.PropertyType);
 
-            // 1. Verifica se existe InverseProperty definido
+            // 1. Checks if there is InverseProperty defined
             var inverseProperty = GetInverseProperty(entity1, entity2Type, collectionProperty);
 
-            // 2. Se existe propriedade inversa que é coleção = M:N
+            // 2. If there is an inverse property that is collection = M:N
             if (inverseProperty != null && IsCollectionProperty(inverseProperty))
             {
                 return RelationshipType.ManyToMany;
             }
 
-            // 3. Verifica se a entidade relacionada tem FK para a primeira entidade
+            // 3. Checks if related entity has FK to first entity
             var foreignKeyProperty = GetForeignKeyPropertyToEntity(entity2Type, entity1);
 
-            // 4. Se tem FK direta = 1:N, se não tem = M:N
+            // 4. If it has direct FK = 1:N, if it doesn't = M:N
             return foreignKeyProperty != null ? RelationshipType.OneToMany : RelationshipType.ManyToMany;
         }
 
         /// <summary>
-        /// Cria tabela auxiliar para relacionamento M:N
+        /// Creates a junction table for a Many-to-Many relationship between two entities.
         /// </summary>
-        public static (string, QueryCommand?) CreateManyToManyTable(Type entity1, Property collectionProperty,
+        public static (string, QueryCommand?) CreateManyToManyTable(Type entity1, Property collectionProperty, Database database,
             Dictionary<string, string>? replacesTableName = null)
         {
             var relationshipType = ValidateRelationshipType(entity1, collectionProperty);
 
             if (relationshipType != RelationshipType.ManyToMany)
             {
-                return (null, null); // Não precisa de tabela auxiliar
+                return (null, null);
             }
 
             var entity2Type = GetCollectionElementType(collectionProperty.PropertyInfo.PropertyType);
-
-            // Gera nome da tabela auxiliar
+            
             var tableName = GenerateJunctionTableName(entity1, entity2Type, replacesTableName);
-
-            // Obtém as chaves primárias das duas entidades
+            
             var pkEntity1 = GetPrimaryKeyProperty(entity1);
             var pkEntity2 = GetPrimaryKeyProperty(entity2Type);
 
             if (pkEntity1 == null || pkEntity2 == null)
             {
-                throw new InvalidOperationException("Ambas as entidades devem ter chave primária definida");
+                throw new InvalidOperationException("Both entities must have primary key defined");
             }
-
-            // Cria o comando SQL para a tabela auxiliar
-            return (tableName, CreateJunctionTableCommand(tableName, entity1, entity2Type, pkEntity1, pkEntity2));
+            
+            return (tableName, CreateJunctionTableCommand(tableName, entity1, entity2Type, pkEntity1, pkEntity2, database));
         }
 
         private static PropertyInfo? GetInverseProperty(Type entity1, Type entity2, Property originalProperty)
@@ -77,7 +74,7 @@ namespace EH.Connection
                 return entity2.GetProperty(inversePropertyAttr.Property);
             }
 
-            // Busca por convenção
+            // Search by convention
             return entity2.GetProperties()
                 .FirstOrDefault(p => IsCollectionProperty(p) &&
                                      GetCollectionElementType(p.PropertyType) == entity1);
@@ -88,14 +85,14 @@ namespace EH.Connection
             return sourceType.GetProperties()
                 .FirstOrDefault(p =>
                 {
-                    // Verifica se é FK por convenção (Id + nome da entidade)
+                    // Checks if it is FK by convention (Id + entity name)
                     if (p.Name.Equals($"Id{targetType.Name}", StringComparison.OrdinalIgnoreCase) ||
                         p.Name.Equals($"{targetType.Name}Id", StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
                     }
-
-                    // Verifica se tem ForeignKeyAttribute
+                   
+                    // Check for ForeignKeyAttribute
                     var fkAttr = p.GetCustomAttribute<ForeignKeyAttribute>();
                     return fkAttr != null &&
                            sourceType.GetProperties().Any(prop =>
@@ -109,13 +106,12 @@ namespace EH.Connection
             {
                 return collectionType.GetGenericArguments()[0];
             }
-
-            // Para IEnumerable não genérico
+           
             var enumerableInterface = collectionType.GetInterfaces()
                 .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
 
             return enumerableInterface?.GetGenericArguments()[0]
-                   ?? throw new ArgumentException("Tipo de coleção não suportado");
+                   ?? throw new ArgumentException("Unsupported collection type");
         }
 
         private static bool IsCollectionProperty(PropertyInfo property)
@@ -134,53 +130,44 @@ namespace EH.Connection
         private static string GenerateJunctionTableName(Type entity1, Type entity2,
             Dictionary<string, string>? replacesTableName)
         {
-            var table1Name = GetTableName(entity1, replacesTableName);
-            var table2Name = GetTableName(entity2, replacesTableName);
+            var table1Name = ToolsProp.GetTableName(entity1, replacesTableName);
+            var table2Name = ToolsProp.GetTableName(entity2, replacesTableName);
 
-            // Ordena alfabeticamente para consistência
+            // Ordened alfabetically to ensure consistent naming
             var orderedNames = new[] { table1Name, table2Name }.OrderBy(n => n).ToArray();
 
             return $"{orderedNames[0]}_{orderedNames[1]}";
         }
 
-        private static string GetTableName(Type entityType, Dictionary<string, string>? replacesTableName)
-        {
-            if (replacesTableName?.ContainsKey(entityType.Name) == true)
-            {
-                return replacesTableName[entityType.Name];
-            }
-
-            var tableAttr = entityType.GetCustomAttribute<TableAttribute>();
-            return tableAttr?.Name ?? entityType.Name;
-        }
-
         private static QueryCommand CreateJunctionTableCommand(string tableName, Type entity1, Type entity2,
-            PropertyInfo pkEntity1, PropertyInfo pkEntity2)
+            PropertyInfo pkEntity1, PropertyInfo pkEntity2, Database database)
         {
+            var sqlQueryString = new SqlQueryString(database);
+            
+            string tb1 = ToolsProp.GetTableName(entity1, null);
+            string tb2 = ToolsProp.GetTableName(entity2, null);
+            string idTb1 = tb1.Substring(0, Math.Min(tb1.Length, 27));
+            string idTb2 = tb2.Substring(0, Math.Min(tb2.Length, 27));
+            string idTb1Escaped = sqlQueryString.EscapeIdentifier(idTb1);
+            string idTb2Escaped = sqlQueryString.EscapeIdentifier(idTb2);
+            idTb1 = idTb1.Contains('.') ? idTb1.Split('.').Last(): idTb1;
+            idTb2 = idTb2.Contains('.') ? idTb2.Split('.').Last(): idTb2;
+            
+            string type1 = database.TypesDefault[pkEntity1.PropertyType.Name];
+            string type2 = database.TypesDefault[pkEntity2.PropertyType.Name];
+            
             var sql = $@"
-            CREATE TABLE {tableName} (
-                {GetTableName(entity1, null)}Id {GetSqlType(pkEntity1.PropertyType)} NOT NULL,
-                {GetTableName(entity2, null)}Id {GetSqlType(pkEntity2.PropertyType)} NOT NULL,
-                PRIMARY KEY ({GetTableName(entity1, null)}Id, {GetTableName(entity2, null)}Id),
-                FOREIGN KEY ({GetTableName(entity1, null)}Id) REFERENCES {GetTableName(entity1, null)}({pkEntity1.Name}),
-                FOREIGN KEY ({GetTableName(entity2, null)}Id) REFERENCES {GetTableName(entity2, null)}({pkEntity2.Name})
+            CREATE TABLE {sqlQueryString.EscapeIdentifier(tableName)} (
+                ID_{idTb1} {type1} NOT NULL,
+                ID_{idTb2} {type2} NOT NULL,
+                PRIMARY KEY (ID_{idTb1}, ID_{tb2}),
+                FOREIGN KEY (ID_{idTb1}) REFERENCES {idTb1Escaped}({pkEntity1.Name}),
+                FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2Escaped}({pkEntity2.Name})
             )";
 
             return new QueryCommand(sql, null, null);
         }
-
-        private static string GetSqlType(Type type)
-        {
-            // Simplificado - você deve usar sua lógica de mapeamento de tipos
-            return type.Name switch
-            {
-                "Int64" => "BIGINT",
-                "Int32" => "INT",
-                "String" => "NVARCHAR(450)",
-                "Guid" => "UNIQUEIDENTIFIER",
-                _ => "NVARCHAR(450)"
-            };
-        }
+        
     }
 
     public enum RelationshipType

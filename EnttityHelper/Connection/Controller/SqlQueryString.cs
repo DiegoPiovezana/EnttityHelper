@@ -751,7 +751,7 @@ namespace EH.Connection
                     var propInfoPkEntity1 = pk ?? throw new InvalidOperationException("Primary key not found for the first entity!");
                     
                     // var queryCollection = CreateTableFromCollectionProp(entity1Type, propEntity2, propInfoPkEntity1, replacesTableName);
-                    var (tableNameManyToMany, queryCollection) = RelationshipValidator.CreateManyToManyTable(entity1Type, propEntity2, replacesTableName);
+                    var (tableNameManyToMany, queryCollection) = RelationshipValidator.CreateManyToManyTable(entity1Type, propEntity2, Database, replacesTableName);
                     if (queryCollection is not null)
                     {
                         // Merged Dictionary (prioritizing the value of createsTable)
@@ -819,8 +819,6 @@ namespace EH.Connection
         //     TableAttribute table2Attribute = entity2Type.GetCustomAttribute<TableAttribute>();
         //     string tableEntity2 = (table2Attribute?.Schema != null ? $"{table2Attribute.Schema}.{table2Attribute.Name}" : table2Attribute?.Name) ?? entity2Type.Name;
         //
-        //     // TODO: Validate if M:N or 1:N relationship
-        //     
         //     string tableNameManyToMany = ToolsProp.GetTableNameManyToMany(entity1Type, propEntity2.PropertyInfo, replacesTableName);
         //     var queryCommand = CreateCommandManyToMany(propInfoPkEntity1, tableNameManyToMany, tableEntity1, tableEntity2, propInfoPkEntity2, pkEntity1Name, pkEntity2Name);
         //
