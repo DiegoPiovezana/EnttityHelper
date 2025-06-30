@@ -127,22 +127,25 @@ namespace EH.Command
                             }
                         }
                     }
-                    
-                    List<PropertyInfo>? collectionProperties = ToolsProp.GetCollecionProperties(entityFirst);
-                    if (collectionProperties != null)
-                    {
-                        foreach (var collectionProp in collectionProperties)
-                        {
-                            Type propItemCollectionType = collectionProp.PropertyType.IsGenericType
-                                ? collectionProp.PropertyType.GetGenericArguments()[0]
-                                : collectionProp.PropertyType;
-                            
-                            string tableNameItemCollecionProp = ToolsProp.GetTableName(propItemCollectionType, _enttityHelper.ReplacesTableName);
 
-                            if (!CheckIfExist(tableNameItemCollecionProp, 0, null))
+                    if (inverseProperties.Count == 0)
+                    {
+                        List<PropertyInfo>? collectionProperties = ToolsProp.GetCollecionProperties(entityFirst);
+                        if (collectionProperties != null)
+                        {
+                            foreach (var collectionProp in collectionProperties)
                             {
-                                if (createTable) CreateTable<TEntity>(false, null, tableNameItemCollecionProp);
-                                else throw new InvalidOperationException($"Table '{tableNameItemCollecionProp}' does not exist!");
+                                Type propItemCollectionType = collectionProp.PropertyType.IsGenericType
+                                    ? collectionProp.PropertyType.GetGenericArguments()[0]
+                                    : collectionProp.PropertyType;
+                            
+                                string tableNameItemCollecionProp = ToolsProp.GetTableName(propItemCollectionType, _enttityHelper.ReplacesTableName);
+
+                                if (!CheckIfExist(tableNameItemCollecionProp, 0, null))
+                                {
+                                    if (createTable) CreateTable<TEntity>(false, null, tableNameItemCollecionProp);
+                                    else throw new InvalidOperationException($"Table '{tableNameItemCollecionProp}' does not exist!");
+                                }
                             }
                         }
                     }
