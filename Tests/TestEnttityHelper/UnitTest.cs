@@ -1573,69 +1573,77 @@ namespace TestEH_UnitTest
             EnttityHelper eh = new(stringConnectionBd1);
             Assert.That(eh.DbContext.ValidateConnection());
 
-            try
+            ResetTables("204");
+            
+            //eh.CreateTableIfNotExist<Group>(true); // Entity FK necessary for table MxN User and Group
+            //eh.CreateTableIfNotExist<User>(false);
+
+            eh.CreateTableIfNotExist<User>(true);
+            eh.CreateTableIfNotExist<Career>(false);
+
+            Career carrer1 = new() { IdCareer = 20401, Name = "Pleno", CareerLevel = 2, Active = true };
+            Assert.AreEqual(eh.Insert(carrer1), 1);
+
+            const int countUsers = 20;
+            var users = new List<User>
             {
-                //eh.CreateTableIfNotExist<Group>(true); // Entity FK necessary for table MxN User and Group
-                //eh.CreateTableIfNotExist<User>(false);
+                new() { Id = 20401, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 20401 },
+                new() { Id = 20402, Name = "John Victor", GitHub = "@JohnVictor", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20401 },
+                new() { Id = 20403, Name = "Alice Souza", GitHub = "@AliceSouza", DtCreation = DateTime.Now, IdCareer = 20401 },
+                new() { Id = 20404, Name = "Maria Oliveira", GitHub = "@MariaOliveira", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20401 },
+                new() { Id = 20405, Name = "Carlos Silva", GitHub = "@CarlosSilva", DtCreation = DateTime.Now, IdCareer = 20401 },
+                new() { Id = 20406, Name = "Bruna Ferreira", GitHub = "@BrunaFerreira", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20404 },
+                new() { Id = 20407, Name = "Pedro Santos", GitHub = "@PedroSantos", DtCreation = DateTime.Now, IdCareer = 20401 },
+                new() { Id = 20408, Name = "Fernanda Lima", GitHub = "@FernandaLima", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20405 },
+                new() { Id = 20409, Name = "Lucas Pereira", GitHub = "@LucasPereira", DtCreation = DateTime.Now, IdCareer = 20401 },
+                new() { Id = 20410, Name = "Julia Alves", GitHub = "@JuliaAlves", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20407 },
+                new() { Id = 20411, Name = "Gustavo Rocha", GitHub = "@GustavoRocha", DtCreation = DateTime.Now, IdCareer = 20401 },
+                new() { Id = 20412, Name = "Leticia Costa", GitHub = "@LeticiaCosta", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20406 },
+                new() { Id = 20413, Name = "Thiago Martins", GitHub = "@ThiagoMartins", DtCreation = DateTime.Now, IdCareer = 20401 },
+                new() { Id = 20414, Name = "Natalia Souza", GitHub = "@NataliaSouza", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20410 },
+                new() { Id = 20415, Name = "Vinicius Oliveira", GitHub = "@ViniciusOliveira", DtCreation = DateTime.Now, IdCareer = 20401 },
+                new() { Id = 20416, Name = "Amanda Ribeiro", GitHub = "@AmandaRibeiro", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20411 },
+                new() { Id = 20417, Name = "Renato Almeida", GitHub = "@RenatoAlmeida", DtCreation = DateTime.Now, IdCareer = 20401 },
+                new() { Id = 20418, Name = "Patricia Silva", GitHub = "@PatriciaSilva", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20413 },
+                new() { Id = 20419, Name = "Fabio Gomes", GitHub = "@FabioGomes", DtCreation = DateTime.Now, IdCareer = 20401 },
+                new() { Id = 20420, Name = "Gabriela Santos", GitHub = "@GabrielaSantos", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20404 }
+            };
 
-                eh.CreateTableIfNotExist<User>(true);
-                eh.CreateTableIfNotExist<Career>(false);
+            Assert.AreEqual(eh.Insert(users), countUsers);
 
-                Career carrer1 = new() { IdCareer = 20401, Name = "Pleno", CareerLevel = 2, Active = true };
-                Assert.AreEqual(eh.Insert(carrer1), 1);
+            string nameTableEscaped = eh.GetQuery.EscapeIdentifier(eh.GetTableName<User>());
 
-                const int countUsers = 20;
-                var users = new List<User>
-                {
-                    new() { Id = 20401, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20402, Name = "John Victor", GitHub = "@JohnVictor", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20401 },
-                    new() { Id = 20403, Name = "Alice Souza", GitHub = "@AliceSouza", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20404, Name = "Maria Oliveira", GitHub = "@MariaOliveira", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20401 },
-                    new() { Id = 20405, Name = "Carlos Silva", GitHub = "@CarlosSilva", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20406, Name = "Bruna Ferreira", GitHub = "@BrunaFerreira", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20404 },
-                    new() { Id = 20407, Name = "Pedro Santos", GitHub = "@PedroSantos", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20408, Name = "Fernanda Lima", GitHub = "@FernandaLima", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20405 },
-                    new() { Id = 20409, Name = "Lucas Pereira", GitHub = "@LucasPereira", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20410, Name = "Julia Alves", GitHub = "@JuliaAlves", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20407 },
-                    new() { Id = 20411, Name = "Gustavo Rocha", GitHub = "@GustavoRocha", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20412, Name = "Leticia Costa", GitHub = "@LeticiaCosta", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20406 },
-                    new() { Id = 20413, Name = "Thiago Martins", GitHub = "@ThiagoMartins", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20414, Name = "Natalia Souza", GitHub = "@NataliaSouza", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20410 },
-                    new() { Id = 20415, Name = "Vinicius Oliveira", GitHub = "@ViniciusOliveira", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20416, Name = "Amanda Ribeiro", GitHub = "@AmandaRibeiro", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20411 },
-                    new() { Id = 20417, Name = "Renato Almeida", GitHub = "@RenatoAlmeida", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20418, Name = "Patricia Silva", GitHub = "@PatriciaSilva", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20413 },
-                    new() { Id = 20419, Name = "Fabio Gomes", GitHub = "@FabioGomes", DtCreation = DateTime.Now, IdCareer = 20401 },
-                    new() { Id = 20420, Name = "Gabriela Santos", GitHub = "@GabrielaSantos", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20404 }
-                };
+            var notPaginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTableEscaped} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'",                    pageSize: null);
+            Assert.AreEqual(countUsers, notPaginated1.Rows.Count);
 
-                Assert.AreEqual(eh.Insert(users), countUsers);
+            var notPaginated2 =
+                eh.ExecuteSelect<User>(
+                    $"SELECT * FROM {nameTableEscaped} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'",
+                    pageSize: null);
+            Assert.AreEqual(countUsers, notPaginated2.Count);
 
-                string nameTableEscaped = eh.GetQuery.EscapeIdentifier(eh.GetTableName<User>());
+            var notPaginated3 = eh.Get<User>(includeAll: false,
+                filter: $"{ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", tableName: eh.GetTableName<User>(),
+                pageSize: null);
+            Assert.AreEqual(countUsers, notPaginated3.Count);
+            
 
-                var notPaginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTableEscaped} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: null);
-                Assert.AreEqual(countUsers, notPaginated1.Rows.Count);
+            var paginated1 =
+                eh.ExecuteSelectDt(
+                    $"SELECT * FROM {nameTableEscaped} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'",
+                    pageSize: 10, pageIndex: 0);
+            Assert.AreEqual(10, paginated1.Rows.Count);
 
-                var notPaginated2 = eh.ExecuteSelect<User>($"SELECT * FROM {nameTableEscaped} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: null);
-                Assert.AreEqual(countUsers, notPaginated2.Count);
+            var paginated2 =
+                eh.ExecuteSelect<User>(
+                    $"SELECT * FROM {nameTableEscaped} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'",
+                    pageSize: 15, pageIndex: 1);
+            Assert.AreEqual(5, paginated2.Count);
 
-                var notPaginated3 = eh.Get<User>(includeAll: false, filter: $"{ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", tableName: eh.GetTableName<User>(), pageSize: null);
-                Assert.AreEqual(countUsers, notPaginated3.Count);
-
-
-                var paginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTableEscaped} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: 10, pageIndex: 0);
-                Assert.AreEqual(10, paginated1.Rows.Count);
-
-                var paginated2 = eh.ExecuteSelect<User>($"SELECT * FROM {nameTableEscaped} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: 15, pageIndex: 1);
-                Assert.AreEqual(5, paginated2.Count);
-
-                var paginated3 = eh.Get<User>(includeAll: false, filter: $"{ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", tableName: null, pageSize: 15, pageIndex: 1);
-                Assert.AreEqual(5, paginated3.Count);
-            }
-            finally
-            {
-                ResetTables("204");
-            }
+            var paginated3 = eh.Get<User>(includeAll: false,
+                filter: $"{ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", tableName: null, pageSize: 15,
+                pageIndex: 1);
+            Assert.AreEqual(5, paginated3.Count);
         }
 
         [Test, Order(205)]

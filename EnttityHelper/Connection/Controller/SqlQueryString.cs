@@ -1043,7 +1043,7 @@ namespace EH.Connection
                                 WHERE rnum > {offset} AND rnum <= {offset + pageSize}"
                 },
                 Enums.DbProvider.SqlServer or Enums.DbProvider.PostgreSql =>
-                    $@"{baseQuery.Sql} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                    $@"{baseQuery.Sql} {filterClause} {orderClause ?? "ORDER BY (SELECT NULL)"} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
                 Enums.DbProvider.MySql =>
                     $@"{baseQuery.Sql} {filterClause} {orderClause} LIMIT {pageSize} OFFSET {offset}",
                 _ =>
