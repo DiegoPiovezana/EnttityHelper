@@ -976,6 +976,7 @@ namespace EH.Connection
             if (pageIndex < 0)
                 throw new ArgumentException("Page index cannot be negative!", nameof(pageIndex));
 
+            baseQuery = baseQuery.TrimEnd().TrimEnd(';');
             var offset = pageSize * pageIndex;
             var filterClause = !string.IsNullOrEmpty(filter) ? $"WHERE {filter}" : string.Empty;
             
@@ -992,65 +993,80 @@ namespace EH.Connection
             //     baseQuery = baseQuery.Substring(0, lastOrderByIndex).TrimEnd().TrimEnd(';');
             // }
 
-            string sql = Database.Provider switch
+            switch (Database.Provider)
             {
-                Enums.DbProvider.Oracle => Database.Version.Major switch
-                {
-                    >= 12 => $@"{baseQuery} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
-                    <= 11 => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM (SELECT a.*, ROW_NUMBER() OVER ({orderClause ?? "ORDER BY 1"}) AS rnum FROM ({baseQuery} {filterClause}) a) WHERE rnum > {offset} AND rnum <= {offset + pageSize}"
+                case Enums.DbProvider.Oracle: 
+                    if (Database.Version.Major >= 12) 
+                        return $@"{baseQuery} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
+                    else
+                        return $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM (SELECT a.*, ROW_NUMBER() OVER ({orderClause ?? "ORDER BY 1"}) AS rnum FROM ({baseQuery} {filterClause}) a) WHERE rnum > {offset} AND rnum <= {offset + pageSize}";
+                
                     //<= 11 => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM ( SELECT inner_query.*, ROWNUM AS rnum FROM ( {baseQuery} {filterClause} {orderClause} ) inner_query WHERE ROWNUM <= {offset + pageSize} ) WHERE rnum > {offset}",
-                    
                     // >= 12 => $@"SELECT * FROM ({baseQuery}) {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
                     // _   => $@"SELECT * FROM (SELECT a.*, ROWNUM AS rnum FROM ({baseQuery}) a {filterClause} {orderClause}) WHERE rnum > {offset} AND rnum <= {offset + pageSize}"
-                },
-                Enums.DbProvider.SqlServer or Enums.DbProvider.PostgreSql =>
-                    $@"{baseQuery} {filterClause} {orderClause ?? "ORDER BY (SELECT NULL)"} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                
+                case Enums.DbProvider.SqlServer:
+                case Enums.DbProvider.PostgreSql:
+                    if (HasFinalOrderBy(baseQuery)) throw new InvalidOperationException("The base query contains a final ORDER BY clause. Please remove it before applying pagination.");
+                    return $@"{baseQuery} {filterClause} {orderClause ?? "ORDER BY (SELECT NULL)"} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
                     // $@"SELECT * FROM ({baseQuery}) AS paged {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
-                Enums.DbProvider.MySql =>
-                    $@"{baseQuery} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                case Enums.DbProvider.MySql:
+                    return $@"{baseQuery} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
                     // $@"SELECT * FROM ({baseQuery}) AS paged {filterClause} {orderClause} LIMIT {pageSize} OFFSET {offset}",
-                _ => $@"{baseQuery} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY"
+                default:
+                    return
+                        $@"{baseQuery} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
                 // _ => $@"SELECT * FROM ({baseQuery}) AS paged {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
             };
-
-            return sql;
         }
         
-        public QueryCommand PaginatedQuery(QueryCommand baseQuery, int pageSize, int pageIndex, string? filter, string? sortColumn, bool sortAscending)
+        public QueryCommand PaginatedQuery(QueryCommand query, int pageSize, int pageIndex, string? filter, string? sortColumn, bool sortAscending)
         {
             if (Database?.Provider is null)
                 throw new ArgumentNullException("The database type is required to generate this query!");
-            if (string.IsNullOrWhiteSpace(baseQuery.Sql))
-                throw new ArgumentNullException(nameof(baseQuery.Sql));
+            if (string.IsNullOrWhiteSpace(query.Sql))
+                throw new ArgumentNullException(nameof(query.Sql));
             if (pageSize <= 0)
                 throw new ArgumentException("Page size must be greater than zero!", nameof(pageSize));
             if (pageIndex < 0)
                 throw new ArgumentException("Page index cannot be negative!", nameof(pageIndex));
 
+            string baseQuery = query.Sql.TrimEnd().TrimEnd(';');
             var offset = pageSize * pageIndex;
             var filterClause = !string.IsNullOrWhiteSpace(filter) ? $"WHERE {filter}" : string.Empty;
             var orderClause = !string.IsNullOrWhiteSpace(sortColumn) ? $"ORDER BY {sortColumn} {(sortAscending ? "ASC" : "DESC")}" : null;
 
-            string sql = Database.Provider switch
-            {
-                Enums.DbProvider.Oracle => Database.Version.Major switch
+            string sql = null;
+            switch (Database.Provider) {
+
+                case Enums.DbProvider.Oracle:
                 {
-                    >= 12 => $@"{baseQuery.Sql} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
-                    <= 11 => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM (
-                                    SELECT a.*, ROW_NUMBER() OVER ({orderClause ?? "ORDER BY 1"}) AS rnum
-                                    FROM ({baseQuery.Sql} {filterClause}) a
-                                )
-                                WHERE rnum > {offset} AND rnum <= {offset + pageSize}"
-                },
-                Enums.DbProvider.SqlServer or Enums.DbProvider.PostgreSql =>
-                    $@"{baseQuery.Sql} {filterClause} {orderClause ?? "ORDER BY (SELECT NULL)"} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
-                Enums.DbProvider.MySql =>
-                    $@"{baseQuery.Sql} {filterClause} {orderClause} LIMIT {pageSize} OFFSET {offset}",
-                _ =>
-                    $@"{baseQuery.Sql} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                    sql = Database.Version.Major switch
+                    {
+                        >= 12 =>
+                            $@"{baseQuery} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                        <= 11 => $@"SELECT /*+ FIRST_ROWS({pageSize}) */ * FROM (
+                                        SELECT a.*, ROW_NUMBER() OVER ({orderClause ?? "ORDER BY 1"}) AS rnum
+                                        FROM ({baseQuery} {filterClause}) a
+                                    )
+                                    WHERE rnum > {offset} AND rnum <= {offset + pageSize}"
+                    };
+                    break;
+                }
+                case Enums.DbProvider.SqlServer:
+                case Enums.DbProvider.PostgreSql:
+                    if (HasFinalOrderBy(baseQuery)) throw new InvalidOperationException("The base query contains a final ORDER BY clause. Please remove it before applying pagination.");
+                    sql = $@"{baseQuery} {filterClause} {orderClause ?? "ORDER BY (SELECT NULL)"} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
+                    break;
+                case Enums.DbProvider.MySql:
+                    sql = $@"{baseQuery} {filterClause} {orderClause} LIMIT {pageSize} OFFSET {offset}";
+                    break;
+                default:
+                    sql = $@"{baseQuery} {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
+                    break;
             };
 
-            return new QueryCommand(sql, baseQuery.Entity, baseQuery.Parameters, null);
+            return new QueryCommand(sql, query.Entity, query.Parameters, null);
         }
 
         /// <summary>
@@ -1222,6 +1238,26 @@ namespace EH.Connection
             });
 
             return string.Join(".", escaped);
+        }
+
+        /// <summary>
+        /// Checks if the query ends with an ORDER BY clause (ignoring whitespace).
+        /// Returns true only if ORDER BY is the last meaningful clause.
+        /// </summary>
+        public bool HasFinalOrderBy(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return false;
+            
+            int lastOrderByIndex = query.ToUpperInvariant().LastIndexOf("ORDER BY", StringComparison.OrdinalIgnoreCase);
+            if (lastOrderByIndex >= 0)
+            {
+                // Only considers it as final ORDER BY if there is nothing else relevant after it
+                string afterOrderBy = query.Substring(lastOrderByIndex + 8).Trim(); // 8 = "ORDER BY".Length
+                return !string.IsNullOrWhiteSpace(afterOrderBy);
+            }
+
+            return false;
         }
 
 

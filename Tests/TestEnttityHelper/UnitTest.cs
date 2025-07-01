@@ -1765,7 +1765,7 @@ namespace TestEH_UnitTest
                             COUNT(ug.ID_USER) AS UserCountInGroup,
                             SUM(CASE WHEN u.IsActive = 1 THEN 1 ELSE 0 END) AS ActiveUsersInGroup,
                             MAX(u.CreatedDate) AS LastUserCreated
-                        FROM TEST.USER u
+                        FROM [TEST].[USER] u
                                  INNER JOIN TEST.[TB_GROUP_USERStoGROUPS] ug ON u.Id = ug.ID_USER
                                  INNER JOIN TEST.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
                                  LEFT JOIN TEST.TB_CAREERS c ON u.IdCareer = c.IdCareer
@@ -1797,15 +1797,16 @@ namespace TestEH_UnitTest
                                  NULL AS LastUserCreated
                              FROM TEST.[TB_GROUP_USERStoGROUPS] ug
                                       INNER JOIN TEST.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
-                                      LEFT JOIN TEST.USER u ON u.Id = ug.ID_USER   
+                                      LEFT JOIN [TEST].[USER] u ON u.Id = ug.ID_USER   
                              GROUP BY g.Id, g.Name
                          )
 
-                    SELECT * FROM CombinedResults
-                    ORDER BY
-                        GroupId,
-                        CASE WHEN UserId IS NULL THEN 1 ELSE 0 END,
-                        UserId;";
+                    SELECT * FROM CombinedResults;";
+                
+                // ORDER BY
+                //     GroupId,
+                //     CASE WHEN UserId IS NULL THEN 1 ELSE 0 END,
+                // UserId
 
                 string complexQuery = eh.DbContext.Provider == Enums.DbProvider.Oracle
                     ? complexQueryOracle
