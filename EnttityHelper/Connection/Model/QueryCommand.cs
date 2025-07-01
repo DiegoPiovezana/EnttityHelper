@@ -59,7 +59,7 @@ namespace EH.Connection
         public Object? Entity { get; set; }
 
 
-        public QueryCommand(string sql, Object? entity, IDictionary<string, Property>? parameters, IDictionary<string, Property>? parametersOutput = null)
+        public QueryCommand(string sql, Object? entity, IDictionary<string, Property>? parameters, IDictionary<string, Property>? parametersOutput)
         {
             if (string.IsNullOrWhiteSpace(sql))
                 throw new ArgumentException("SQL query cannot be null or empty.", nameof(sql));

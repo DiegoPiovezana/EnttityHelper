@@ -106,7 +106,7 @@ namespace EH.Connection
                 FOREIGN KEY (ID_{idTb2}) REFERENCES {idTb2Escaped}({pkEntity2.Name})
             )";
 
-            return new QueryCommand(sql, null, null);
+            return new QueryCommand(sql, null, null, null);
         }
         
     }
