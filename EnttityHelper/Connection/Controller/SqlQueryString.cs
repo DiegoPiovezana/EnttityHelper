@@ -674,17 +674,34 @@ namespace EH.Connection
         /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>  
         /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
         /// <returns>Table creation query. If it is necessary to create an auxiliary table, for an M:N relationship for example, more than one query will be returned.</returns>
-        public Dictionary<string, QueryCommand?> CreateTable<TEntity>(Dictionary<string, string>? typesSql, bool onlyPrimaryTable, ICollection<string>? ignoreProps = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
+        public Dictionary<string, QueryCommand?> CreateTable<TEntity>(Dictionary<string, string>? typesSql,
+            bool onlyPrimaryTable, ICollection<string>? ignoreProps = null,
+            Dictionary<string, string>? replacesTableName = null, string? tableName = null)
+        {
+            return CreateTable(typeof(TEntity), typesSql, onlyPrimaryTable, ignoreProps, replacesTableName, tableName);
+        }
+        
+        /// <summary>
+        /// Allows you to get the table creation query for TEntity./>.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of main entity.</typeparam>
+        /// <param name="typesSql">Dictionary containing types related to C# code and database data.</param>
+        /// <param name="onlyPrimaryTable">(Optional) If true, properties that do not belong to an auxiliary table will be ignored.</param>
+        /// <param name="ignoreProps">(Optional) The query to create table will ignore the listed properties.</param>
+        /// <param name="replacesTableName">(Optional) Terms that can be replaced in table names.</param>  
+        /// <param name="tableName">(Optional) Name of the table to which the entity will be inserted. By default, the table informed in the "Table" attribute of the entity class will be considered.</param> 
+        /// <returns>Table creation query. If it is necessary to create an auxiliary table, for an M:N relationship for example, more than one query will be returned.</returns>
+        public Dictionary<string, QueryCommand?> CreateTable(Type entityType, Dictionary<string, string>? typesSql, bool onlyPrimaryTable, ICollection<string>? ignoreProps = null, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
         {
             if (typesSql is null) { throw new ArgumentNullException(nameof(typesSql)); }
-            ignoreProps ??= new List<string>();
+                ignoreProps ??= new List<string>();
 
             Dictionary<string, QueryCommand?> queryCreatesTable = new();
             StringBuilder queryBuilderPrincipal = new();
-            tableName ??= ToolsProp.GetTableName<TEntity>(replacesTableName);
+            tableName ??= ToolsProp.GetTableName(entityType, replacesTableName);
             string tableNameEscaped = EscapeIdentifier(tableName);
 
-            Type entityType = typeof(TEntity);
+            // Type entityType = typeof(TEntity);
             Type itemType = entityType;
             if (typeof(IEnumerable).IsAssignableFrom(entityType) && entityType.IsGenericType) { itemType = entityType.GetGenericArguments()[0]; }
 

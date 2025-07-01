@@ -87,13 +87,13 @@ namespace TestEH_UnitTest
 
 
         [Test, Order(1)]
-        public void TestPass()
+        public void Pass()
         {
             Assert.Pass();
         }
 
         [Test, Order(2)]
-        public void TestConnection()
+        public void Connection()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             bool test = eh.DbContext.ValidateConnection();
@@ -101,7 +101,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(3)]
-        public void TestCreateTableIfNotExist()
+        public void CreateTableIfNotExist()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
@@ -116,7 +116,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(4)]
-        public void TestCreateTableAlreadExist()
+        public void CreateTableAlreadExist()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
@@ -143,7 +143,7 @@ namespace TestEH_UnitTest
         }
         
         [Test, Order(4)]
-        public void TestDropTable()
+        public void DropTable()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
@@ -158,7 +158,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(5)]
-        public void TestInsertEntity()
+        public void InsertEntity()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
@@ -182,7 +182,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(6)]
-        public void TestUpdateEntity()
+        public void UpdateEntity()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
@@ -199,7 +199,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(7)]
-        public void TestSearchEntity()
+        public void SearchEntity()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
@@ -216,7 +216,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(8)]
-        public void TestGetEntity_SuccessfulRetrieval()
+        public void GetEntity_SuccessfulRetrieval()
         {
             EnttityHelper eh = new(stringConnectionBd1);
 
@@ -242,14 +242,14 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(9)]
-        public void TestGetEntity_FailureWhenNoConnection()
+        public void GetEntity_FailureWhenNoConnection()
         {
             var exception = Assert.Throws<Exception>(() => new EnttityHelper($"Data Source=invalid;User Id=invalid;Password=invalid"));
             Assert.That(exception.Message, Is.EqualTo("Invalid connection string!"));
         }
 
         [Test, Order(10)]
-        public void TestNonQuery()
+        public void NonQuery()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
@@ -264,7 +264,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(10)]
-        public void TestFullEntity()
+        public void FullEntity()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
@@ -291,7 +291,7 @@ namespace TestEH_UnitTest
 
 
         [Test, Order(11)]
-        public void TestOneToOne()
+        public void OneToOne()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
@@ -319,7 +319,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(12)]
-        public void TestManyToOne()  // Many Users in One Career
+        public void ManyToOne()  // Many Users in One Career
         {
             EnttityHelper eh = new(stringConnectionBd1);
             Assert.That(eh.DbContext.ValidateConnection(), Is.True);
@@ -363,7 +363,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(13)]
-        public void TestManyToMany()
+        public void ManyToMany()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             Assert.That(eh.DbContext.ValidateConnection(), Is.EqualTo(true));
@@ -464,7 +464,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(101)]
-        public void TestInsertDataTable()
+        public void DataTable()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
@@ -572,7 +572,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(103)]
-        public void TestFullEntityREADME()
+        public void FullEntityREADME()
         {
             // Create a connection with the database using the connection string
             EnttityHelper eh = new(stringConnectionBd1);
@@ -625,7 +625,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(104)]
-        public void TestManyInsertionsSimple()
+        public void ManyInsertionsSimple()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
@@ -673,7 +673,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(105)]
-        public void TestInsertEntityWithoutEntity_AndManyDelete()
+        public void InsertEntityWithoutEntity_AndManyDelete()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
@@ -726,7 +726,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(106)]
-        public void TestManyInsertionsMxN()
+        public void ManyInsertionsMxN()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
@@ -771,7 +771,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(107)]
-        public void TestManyInsertionsNxM()
+        public void ManyInsertionsNxM()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
@@ -820,7 +820,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(108)]
-        public void TestInsert_EntityPropNull()
+        public void Insert_EntityPropNull()
         {
             //EnttityHelper eh = new(stringConnection11g);
             EnttityHelper eh = new(connectionString: stringConnectionBd1);
@@ -900,7 +900,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(109)]
-        public void TestInsert_EntityPropMissing()
+        public void Insert_EntityPropMissing()
         {
             EnttityHelper eh = new(stringConnectionBd1);
 
@@ -1011,7 +1011,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(758)]
-        public void TestInsert_EntityGuidPk()
+        public void Insert_EntityGuidPk()
         {
             EnttityHelper eh = new(stringConnectionBd1);
 
@@ -1041,7 +1041,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(455)]
-        public void TestManyUpdates()
+        public void ManyUpdates()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
@@ -1344,7 +1344,7 @@ namespace TestEH_UnitTest
         }
 
         [Test, Order(201)]
-        public void TestIncludeAll()
+        public void IncludeAll()
         {
             
             EnttityHelper eh = new(stringConnectionBd1);
@@ -1444,8 +1444,8 @@ namespace TestEH_UnitTest
             // UPDATE
 
             user1.Groups = new List<Group>() { group1 }; // Remove group2
-            user2.IdSupervisor = user3.Id; // Change supervisor (user1 -> use3) ???
-            user2.Supervisor = user3; // Change supervisor (user1 -> use3) ???
+            user2.IdSupervisor = user3.Id; // Change supervisor (user1 -> use3)
+            user2.Supervisor = user3; // Change supervisor (user1 -> use3)
             eh.Update(new List<User>() { user1, user2 });
 
             List<User>? usersUpdated = eh.Get<User>(true, $"{ConvertToVarchar(nameof(User.Id), eh)} LIKE '201%'");
@@ -1506,7 +1506,7 @@ namespace TestEH_UnitTest
             }
             else
             {
-                Assert.That(result.Sql, Does.StartWith("INSERT INTO TEST.[USER] (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor, IsActive) OUTPUT INSERTED.Id VALUES (@Id, "));
+                Assert.That(result.Sql, Does.StartWith("INSERT INTO [TEST].[USER] (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor, IsActive) OUTPUT INSERTED.Id VALUES (@Id, "));
                 StringAssert.EndsWith(", '20202', '20201', '1')", query);
             }
            
@@ -2006,50 +2006,44 @@ namespace TestEH_UnitTest
         [Test, Order(250)]
         public void TestOneToMany() // One Order with Many Items
         {
-            try
-            {
-                EnttityHelper eh = new(stringConnectionBd1);
-                Assert.That(eh.DbContext.ValidateConnection(), Is.True, "Database connection validation failed.");
-                
-                //eh.CreateTableIfNotExist<Item>(createOnlyPrimaryTable: false);
-                //eh.CreateTableIfNotExist<Order>(createOnlyPrimaryTable: false);
-                
-                Order order = new()
-                {
-                    Id = 25001,
-                    OrderDate = DateTime.Now,
-                    CustomerName = "Cliente Teste",
-                    Items = new List<Item>
-                    {
-                        new() { Id = 25001, Name = "Item 1", Quantity = 2, UnitPrice = 10.5m },
-                        new() { Id = 25002, Name = "Item 2", Quantity = 1, UnitPrice = 25.0m },
-                        new() { Id = 25003, Name = "Item 3", Quantity = 5, UnitPrice = 7.0m }
-                    },
-                    Tags = new List<string> { "Tag1", "Tag2", "Tag3" }
-                };
-               
-                long inserted = eh.Insert(order);
-                Assert.That(inserted, Is.EqualTo(4), "Order insertion failed.");
-               
-                bool exists = eh.CheckIfExist(order);
-                Assert.That(exists, Is.True, "Order does not exist after insertion.");
-               
-                var items = eh.Get<Item>(filter: $"OrderId = '{order.Id}'");
-                Assert.That(items, Is.Not.Null.And.Not.Empty, "No Item were retrieved for the Order.");
-                Assert.That(items!.Count, Is.EqualTo(order.Items.Count), "Quantity of items does not match.");
+            EnttityHelper eh = new(stringConnectionBd1);
+            Assert.That(eh.DbContext.ValidateConnection(), Is.True, "Database connection validation failed.");
 
-                foreach (var item in items)
-                {
-                    Assert.That(item.OrderId, Is.EqualTo(order.Id), "Item not correctly associated with order.");
-                    Assert.That(item.Name, Is.Not.Null.And.Not.Empty, "Item Name cannot be null.");
-                }
-            }
-            finally
+            ResetTables("250");
+
+            //eh.CreateTableIfNotExist<Item>(createOnlyPrimaryTable: false);
+            //eh.CreateTableIfNotExist<Order>(createOnlyPrimaryTable: false);
+
+            Order order = new()
             {
-                ResetTables("250");
+                Id = 25001,
+                OrderDate = DateTime.Now,
+                CustomerName = "Cliente Teste",
+                Items = new List<Item>
+                {
+                    new() { Id = 25001, Name = "Item 1", Quantity = 2, UnitPrice = 10.5m },
+                    new() { Id = 25002, Name = "Item 2", Quantity = 1, UnitPrice = 25.0m },
+                    new() { Id = 25003, Name = "Item 3", Quantity = 5, UnitPrice = 7.0m }
+                },
+                Tags = new List<string> { "Tag1", "Tag2", "Tag3" }
+            };
+
+            long inserted = eh.Insert(order);
+            Assert.That(inserted, Is.EqualTo(4), "Order insertion failed.");
+
+            bool exists = eh.CheckIfExist(order);
+            Assert.That(exists, Is.True, "Order does not exist after insertion.");
+
+            var items = eh.Get<Item>(filter: $"OrderId = '{order.Id}'");
+            Assert.That(items, Is.Not.Null.And.Not.Empty, "No Item were retrieved for the Order.");
+            Assert.That(items!.Count, Is.EqualTo(order.Items.Count), "Quantity of items does not match.");
+
+            foreach (var item in items)
+            {
+                Assert.That(item.OrderId, Is.EqualTo(order.Id), "Item not correctly associated with order.");
+                Assert.That(item.Name, Is.Not.Null.And.Not.Empty, "Item Name cannot be null.");
             }
         }
-        
 
 
     }
