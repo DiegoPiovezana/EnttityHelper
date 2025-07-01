@@ -203,7 +203,10 @@ namespace EH.Command
                         
                         // insertions += ExecuteNonQuery(insertQueriesEntity.Value[i], 1);
                         // insertions += Execute.ExecuteNonQuery(_enttityHelper.DbContext, new List<QueryCommand?>{ insertQueriesEntity.Value[i] }, 1).First();
-                        var resultInsert = InsertQueryEntity(insertQueriesEntity.Value[i], setPrimaryKeyAfterInsert);
+                        
+                        var insertQueryEntity = insertQueriesEntity.Value[i] ?? throw new Exception("EH-000: Insert query is null!");
+                        setPrimaryKeyAfterInsert = insertQueryEntity.Entity is not null;
+                        var resultInsert = InsertQueryEntity(insertQueryEntity, setPrimaryKeyAfterInsert);
                         insertions++;
                     }
                 }
@@ -214,10 +217,11 @@ namespace EH.Command
 
         private object? InsertQueryEntity(QueryCommand insertQueryEntity, bool setPrimaryKeyAfterInsert)
         {
-            var propPk = ToolsProp.GetPK(insertQueryEntity.Entity) ?? throw new Exception("EH-000: Entity does not have a primary key!");  // insertQueriesEntity.Key
             var id = Execute.ExecuteScalar(_enttityHelper.DbContext,new List<QueryCommand?> { insertQueryEntity }).First(); // Inserts the main entity
+            if (!setPrimaryKeyAfterInsert) return id; // If not set primary key after insert, return the ID
             if (id == null || id == DBNull.Value) throw new Exception("EH-000: Insert query does not return an ID!");
-
+            
+            var propPk = ToolsProp.GetPK(insertQueryEntity.Entity) ?? throw new Exception("EH-000: Entity does not have a primary key!");  // insertQueriesEntity.Key
             var typePk = propPk.PropertyType;
             var targetType  = Nullable.GetUnderlyingType(typePk) ?? typePk;
             // var convertedId = typePk.IsAssignableFrom(id.GetType()) ? id : Convert.ChangeType(id.ToString(), typePk);
@@ -243,32 +247,29 @@ namespace EH.Command
 
             //    pk.SetValue(insertQueriesEntity.Key, convertedId);
             //}
-
-            if (setPrimaryKeyAfterInsert)
+          
+            if (propPk.CanWrite || propPk.SetMethod != null)
             {
-                if (propPk.CanWrite || propPk.SetMethod != null)
+                try
                 {
-                    try
-                    {
-                        propPk.SetValue(insertQueryEntity.Entity, convertedId);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception($"EH-000: Failed to set primary key '{propPk.Name}' via SetValue.", ex);
-                    }
+                    propPk.SetValue(insertQueryEntity.Entity, convertedId);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"EH-000: Failed to set primary key '{propPk.Name}' via SetValue.", ex);
+                }
+            }
+            else
+            {
+                // Try to set via backing field
+                var backingField = insertQueryEntity.Entity.GetType().GetField($"<{propPk.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (backingField != null)
+                {
+                    backingField.SetValue(insertQueryEntity.Entity, convertedId);
                 }
                 else
                 {
-                    // Try to set via backing field
-                    var backingField = insertQueryEntity.Entity.GetType().GetField($"<{propPk.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
-                    if (backingField != null)
-                    {
-                        backingField.SetValue(insertQueryEntity.Entity, convertedId);
-                    }
-                    else
-                    {
-                        throw new Exception($"EH-000: Property '{propPk.Name}' is readonly and no backing field was found.");
-                    }
+                    throw new Exception($"EH-000: Property '{propPk.Name}' is readonly and no backing field was found.");
                 }
             }
 
