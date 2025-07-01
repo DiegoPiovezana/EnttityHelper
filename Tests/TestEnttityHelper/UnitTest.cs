@@ -1928,7 +1928,7 @@ namespace TestEH_UnitTest
                         u.Name AS UserName,
                         g.Id AS GroupId,
                         g.Name AS GroupName
-                    FROM TEST.[USER] u
+                    FROM [TEST].[USER] u
                     JOIN TEST.TB_GROUP_USERStoGROUPS ug ON u.Id = ug.ID_USER
                     JOIN TEST.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
                 )
@@ -1952,7 +1952,7 @@ namespace TestEH_UnitTest
             
             string queryWithUnionSqlServer = @"
                 SELECT Id, Name 
-                FROM TEST.[USER]
+                FROM [TEST].[USER]
                 WHERE Id < 20605 
                 AND CAST(Id AS VARCHAR) LIKE '206%'
                 UNION ALL
@@ -1965,7 +1965,7 @@ namespace TestEH_UnitTest
             // Query simples sem clausulas adicionais - 20 registros
             string simpleQueryOracle = "SELECT Id, Name FROM TEST.\"USER\" WHERE TO_CHAR(Id) LIKE '206%'";
             
-            string simpleQuerySqlServer = "SELECT Id, Name FROM TEST.[USER] WHERE CAST(Id AS VARCHAR) LIKE '206%'";
+            string simpleQuerySqlServer = "SELECT Id, Name FROM [TEST].[USER] WHERE CAST(Id AS VARCHAR) LIKE '206%'";
 
             // Query com subquery - 6 registros
             string queryWithSubqueryOracle = @"
@@ -1975,7 +1975,7 @@ namespace TestEH_UnitTest
             
             string queryWithSubquerySqlServer = @"
                 SELECT u.Id, u.Name
-                FROM TEST.[USER] u
+                FROM [TEST].[USER] u
                 WHERE u.Id IN (SELECT ug.ID_USER FROM TEST.TB_GROUP_USERStoGROUPS ug WHERE ug.ID_TB_GROUP_USERS = 20601)";
             
 

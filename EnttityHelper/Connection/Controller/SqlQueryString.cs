@@ -1068,18 +1068,53 @@ namespace EH.Connection
         /// </remarks>
         public QueryCommand CountQuery(string baseQuery, string? filter = null)
         {
-            var orderByIndex = baseQuery.ToUpperInvariant().LastIndexOf("ORDER BY");
-
-            var mainQuery = orderByIndex >= 0
-                ? baseQuery.Substring(0, orderByIndex).Trim()
-                : baseQuery.Trim();
-
-            var filterClause = !string.IsNullOrEmpty(filter)
+            var trimmed = baseQuery.Trim();
+            string filterClause = !string.IsNullOrEmpty(filter)
                 ? $"WHERE {filter}"
                 : string.Empty;
 
-            // return $"SELECT COUNT(1) FROM ({mainQuery}) CountQuery {filterClause}";
-            return new QueryCommand($"SELECT COUNT(1) FROM ({mainQuery}) CountQuery {filterClause}", null, null, null);
+            // If the query starts with a CTE, split off the CTE definition first.
+            if (trimmed.StartsWith("WITH ", StringComparison.OrdinalIgnoreCase))
+            {
+                // Locate the closing ')' of the last CTE and the start of the main SELECT
+                var match = Regex.Match(trimmed, @"\)\s*SELECT", RegexOptions.IgnoreCase);
+                if (match.Success)
+                {
+                    // ctePart includes everything up to and including the ')'
+                    var ctePart = trimmed.Substring(0, match.Index + 1);
+                    // mainPart is the SELECT ... that follows
+                    var mainPart = trimmed.Substring(match.Index + 1).Trim();
+
+                    // Remove any trailing ORDER BY in the main part
+                    var orderByIndex = mainPart.ToUpperInvariant().LastIndexOf("ORDER BY");
+                    if (orderByIndex >= 0)
+                        mainPart = mainPart.Substring(0, orderByIndex).Trim();
+
+                    // Build the count query, keeping the CTE outside the subquery
+                    var sql = $@"
+                        {ctePart}
+                        SELECT COUNT(1)
+                        FROM (
+                            {mainPart}
+                        ) AS CountQuery
+                        {filterClause}";
+                    return new QueryCommand(sql, null, null, null);
+                }
+            }
+
+            // No CTE: strip ORDER BY and wrap the base query
+            var orderByPos = trimmed.ToUpperInvariant().LastIndexOf("ORDER BY");
+            var coreQuery = orderByPos >= 0
+                ? trimmed.Substring(0, orderByPos).Trim()
+                : trimmed;
+
+            var fallbackSql = $@"
+                SELECT COUNT(1)
+                FROM (
+                    {coreQuery}
+                ) AS CountQuery
+                {filterClause}";
+            return new QueryCommand(fallbackSql, null, null, null);
         }
 
         /// <summary>
