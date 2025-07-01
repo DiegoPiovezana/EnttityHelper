@@ -202,7 +202,7 @@ namespace EH.Connection
                             queries.Add(new QueryCommand
                             (
                                 sql: sql,
-                                entity: entity,
+                                entity: null,  // Null because are two different entities involved in the relationship.
                                 parameters: parameters
                             ));
                         }
