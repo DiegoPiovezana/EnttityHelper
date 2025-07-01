@@ -1004,7 +1004,7 @@ namespace EH.Connection
                     // _   => $@"SELECT * FROM (SELECT a.*, ROWNUM AS rnum FROM ({baseQuery}) a {filterClause} {orderClause}) WHERE rnum > {offset} AND rnum <= {offset + pageSize}"
                 },
                 Enums.DbProvider.SqlServer or Enums.DbProvider.PostgreSql =>
-                    $@"{baseQuery} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                    $@"{baseQuery} {filterClause} {orderClause ?? "ORDER BY (SELECT NULL)"} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
                     // $@"SELECT * FROM ({baseQuery}) AS paged {filterClause} {orderClause} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
                 Enums.DbProvider.MySql =>
                     $@"{baseQuery} {filterClause} {orderClause ?? ""} OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",

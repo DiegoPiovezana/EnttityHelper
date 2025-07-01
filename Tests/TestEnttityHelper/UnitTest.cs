@@ -1524,7 +1524,7 @@ namespace TestEH_UnitTest
 
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ExcelCsvGerado_1000000x10.csv";
 
-            string tableName = "TestTableCsv_RangeRowsBig";
+            string tableName = "TEST.TestTableCsv_RangeRowsBig";
             int batchSize = 200_000;
             int timeout = 15;
             char delimiter = ';';
@@ -1538,17 +1538,13 @@ namespace TestEH_UnitTest
 
             if (hasHeader) insertCount--; // Remove the header => 199_999 rows
 
-            if (!eh.CheckIfExist(tableName))
-            {
-                long result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
-                Assert.AreEqual(insertCount, result);
-            }
-            else
+            if (eh.CheckIfExist(tableName))
             {
                 eh.ExecuteNonQuery($"DROP TABLE {tableName}");
-                long result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
-                Assert.AreEqual(insertCount, result);
             }
+                
+            long result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
+            Assert.AreEqual(insertCount, result);
 
             var paginated1 = eh.ExecuteSelectDt($"SELECT * FROM {tableName}", pageSize: 20); // pageIndex: 0
             Assert.AreEqual(20, paginated1.Rows.Count);
