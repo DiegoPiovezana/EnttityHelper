@@ -139,11 +139,14 @@ namespace EH.Command
                                     ? collectionProp.PropertyType.GetGenericArguments()[0]
                                     : collectionProp.PropertyType;
                             
+                                // If primitive type, skip
+                                if (ToolsProp.IsPrimitiveType(propItemCollectionType)) throw new InvalidOperationException($"Collection property '{collectionProp.Name}' is a primitive type and cannot be inserted! Please use 'NotMapped' attribute or change the property type to a complex type.");
+                                
                                 string tableNameItemCollecionProp = ToolsProp.GetTableName(propItemCollectionType, _enttityHelper.ReplacesTableName);
 
                                 if (!CheckIfExist(tableNameItemCollecionProp, 0, null))
                                 {
-                                    if (createTable) CreateTable<TEntity>(false, null, tableNameItemCollecionProp);
+                                    if (createTable) CreateTable(propItemCollectionType, false, null, tableNameItemCollecionProp);
                                     else throw new InvalidOperationException($"Table '{tableNameItemCollecionProp}' does not exist!");
                                 }
                             }
@@ -680,8 +683,13 @@ namespace EH.Command
 
         public bool CreateTable<TEntity>(bool createOnlyPrimaryTable, ICollection<string>? ignoreProps, string? tableName) where TEntity : class
         {
+            return CreateTable(typeof(TEntity), createOnlyPrimaryTable, ignoreProps, tableName);
+        }
+        
+        public bool CreateTable(Type type, bool createOnlyPrimaryTable, ICollection<string>? ignoreProps, string? tableName)
+        {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
-            var createsTableQuery = _enttityHelper.GetQuery.CreateTable<TEntity>(_enttityHelper.TypesDefault, createOnlyPrimaryTable, ignoreProps, _enttityHelper.ReplacesTableName, tableName);
+            var createsTableQuery = _enttityHelper.GetQuery.CreateTable(type, _enttityHelper.TypesDefault, createOnlyPrimaryTable, ignoreProps, _enttityHelper.ReplacesTableName, tableName);
             var queryCreates = createsTableQuery.Values.Reverse().ToList();
             var creates = Execute.ExecuteNonQuery(_enttityHelper.DbContext, queryCreates, -1); // The last table is the main table
             return createsTableQuery.Count == creates.Count;
