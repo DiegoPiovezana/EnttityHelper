@@ -139,6 +139,7 @@ namespace EH.Properties
 
                 foreach (PropertyInfo prop in properties)
                 {
+                    if (prop.GetCustomAttribute<NotMappedAttribute>() != null) { continue; } 
                     if (prop.GetCustomAttribute<InversePropertyAttribute>() is null) { continue; }
                     propertiesInverseProperty.Add(prop);
 
@@ -164,6 +165,8 @@ namespace EH.Properties
 
                 foreach (PropertyInfo prop in properties)
                 {
+                    if (prop.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
+                    
                     // If is a collection property
                     if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(ICollection<>))
                     {
@@ -405,6 +408,14 @@ namespace EH.Properties
         {
             return property.PropertyType != typeof(string) &&
                    typeof(System.Collections.IEnumerable).IsAssignableFrom(property.PropertyType);
+        }
+
+        internal static bool IsPrimitiveType(Type type)
+        {
+            if (type == null) throw new ArgumentNullException(nameof(type));
+
+            return type.IsPrimitive || type.IsEnum || type == typeof(string) || type == typeof(decimal) ||
+                   type == typeof(DateTime) || type == typeof(DateTimeOffset) || type == typeof(Guid);
         }
         
         internal static DbType MapToDbType(this Type type)
