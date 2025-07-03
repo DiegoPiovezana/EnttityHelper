@@ -25,7 +25,8 @@ namespace EH.Command
                     { "Int64", "NUMBER" },
                     { "Single", "NUMBER" },
                     { "TimeSpan", "DATE" },
-                    { "Guid", "RAW(16)" }
+                    { "Guid", "RAW(16)" },
+                    { "Object", "NVARCHAR2(1000)" }
                     },
                 Enums.DbProvider.SqlServer => new Dictionary<string, string>
                     {
@@ -39,7 +40,8 @@ namespace EH.Command
                     { "Int64", "BIGINT" },
                     { "Single", "REAL" },
                     { "TimeSpan", "TIME" },
-                    { "Guid", "UNIQUEIDENTIFIER" }
+                    { "Guid", "UNIQUEIDENTIFIER" },
+                    { "Object", "NVARCHAR(1000)" }
                     },
                 Enums.DbProvider.SqLite => new Dictionary<string, string>
                     {
@@ -53,7 +55,8 @@ namespace EH.Command
                     { "Int64", "INTEGER" },
                     { "Single", "REAL" },
                     { "TimeSpan", "TEXT" },
-                    { "Guid", "TEXT" }
+                    { "Guid", "TEXT" },
+                    { "Object", "TEXT" }
                     },
                 //case Enums.DbType.PostgreSQL:
                 //    break;

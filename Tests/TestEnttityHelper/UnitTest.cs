@@ -471,18 +471,21 @@ namespace TestEH_UnitTest
             {
                 // Empty columns will automatically have the Object type. In the database, the Object type will be NVARCHAR2(100)
                 if (eh.DbContext.Provider == Enums.DbProvider.Oracle)
-                    eh.TypesDefault.Add("Object", "NVARCHAR2(100)");
+                    eh.TypesDefault["Object"] = "NVARCHAR2(100)";
                 else if (eh.DbContext.Provider == Enums.DbProvider.SqlServer)
-                    eh.TypesDefault.Add("Object", "NVARCHAR(100)");
+                    // eh.TypesDefault.Add("Object", "NVARCHAR(100)");
+                    eh.TypesDefault["Object"] = "NVARCHAR(100)";
 
                 // Reads the first tab of the DataTable
                 var dt = SheetHelper.GetDataTable(@"C:\Users\diego\Desktop\Tests\Converter\ColunasExcel.xlsx", "1");
 
+                string tableName = "TEST.TableX";
+                
                 // If the table exists, it will be deleted
-                if (eh.CheckIfExist("TableX")) eh.ExecuteNonQuery($"DROP TABLE TableX");
+                if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
 
                 // Possible to insert the DataTable considering different scenarios
-                var result = eh.Insert(dt, true, null, true, "TableX");
+                var result = eh.Insert(dt, true, null, true, tableName);
                 //eh.Insert(dt, null, true); // The table name will automatically be the name of the spreadsheet tab (removing special characters)
                 //eh.Insert(dt, null, false); // The table will not be created and only the DataTable will be inserted              
 
@@ -1146,7 +1149,7 @@ namespace TestEH_UnitTest
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoIrregular.csv";
             var insertCount = 100;
 
-            string tableName = "TestTable";
+            string tableName = "TEST.TestTable";
             int batchSize = 100000;
             int timeout = 300000;
 
@@ -1169,7 +1172,7 @@ namespace TestEH_UnitTest
         {
             // Arrange
             string csvFilePath = "invalid_path.csv";
-            string tableName = "TestTable";
+            string tableName = "TEST.TestTable";
 
             // Act & Assert
             EnttityHelper eh = new(stringConnectionBd1);
@@ -1200,7 +1203,7 @@ namespace TestEH_UnitTest
             var insertCount = 5_000_000;
 
             bool createTable = true;
-            string tableName = "TestTable_BigCsv";
+            string tableName = "TEST.TestTable_BigCsv";
             int batchSize = 100_000;
             int timeOutSeconds = 50; // Timeout in seconds to insert 1 batch (max)
 
@@ -1227,7 +1230,7 @@ namespace TestEH_UnitTest
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoIrregular.txt";
             var insertCount = 100;
 
-            string tableName = "TestTable_Txt";
+            string tableName = "TEST.TestTable_Txt";
             int batchSize = 100000;
             int timeout = 30;
             char delimiter = ';';
@@ -1249,7 +1252,7 @@ namespace TestEH_UnitTest
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoVazio.csv";
             var insertCount = 100; // J100
 
-            string tableName = "TestTableCsvHeader1";
+            string tableName = "TEST.TestTableCsvHeader1";
             int batchSize = 100;
             int timeout = 30;
             char delimiter = ';';
@@ -1273,7 +1276,7 @@ namespace TestEH_UnitTest
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoInexistente.csv";
             var insertCount = 101_254; // AB101254
 
-            string tableName = "TestTableCsvHeader2";
+            string tableName = "TEST.TestTableCsvHeader2";
             int batchSize = 100_000;
             int timeout = 60;
             char delimiter = ';';
@@ -1294,7 +1297,7 @@ namespace TestEH_UnitTest
 
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\CabecalhoIrregular.csv"; // J100
 
-            string tableName = "TestTableCsv_RangeRows";
+            string tableName = "TEST.TestTableCsv_RangeRows";
             int batchSize = 100;
             int timeout = 15;
             char delimiter = ';';
@@ -1323,7 +1326,7 @@ namespace TestEH_UnitTest
             string csvFilePath = "C:\\Users\\diego\\Desktop\\Tests\\Converter\\ExcelUTF8.csv"; // J4
             Encoding encodingRead = Encoding.UTF8;
 
-            string tableName = "TestTableCsv_UTF8";
+            string tableName = "TEST.TestTableCsv_UTF8";
             int batchSize = 10;
             int timeout = 1;
             char delimiter = ';';
