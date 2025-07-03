@@ -1118,7 +1118,7 @@ namespace EH.Connection
                 }
             }
 
-            // No CTE: strip ORDER BY and wrap the base query
+            // No CTE: strip ORDER BY and wrap the base query
             var orderByPos = trimmed.ToUpperInvariant().LastIndexOf("ORDER BY");
             var coreQuery = orderByPos >= 0
                 ? trimmed.Substring(0, orderByPos).Trim()

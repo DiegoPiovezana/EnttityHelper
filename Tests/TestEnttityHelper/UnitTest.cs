@@ -1183,8 +1183,8 @@ namespace TestEH_UnitTest
         [Test]
         public void LoadCSV_BIGCSVFile()
         {
-            DateTime dtTarget = new DateTime(2024, 11, 28, 00, 30, 0);
-            int minuteExpirationTest = 40;
+            DateTime dtTarget = new DateTime(2025, 07, 02, 21, 20, 0);
+            int minuteExpirationTest = 5;
 
             if (DateTime.Now - dtTarget > TimeSpan.FromMinutes(minuteExpirationTest))
             {
