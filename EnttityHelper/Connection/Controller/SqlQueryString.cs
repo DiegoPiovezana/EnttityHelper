@@ -1084,7 +1084,7 @@ namespace EH.Connection
         /// </remarks>
         public QueryCommand CountQuery(string baseQuery, string? filter = null)
         {
-            var trimmed = baseQuery.Trim();
+            var trimmed = baseQuery.Trim().TrimEnd(';');
             string filterClause = !string.IsNullOrEmpty(filter)
                 ? $"WHERE {filter}"
                 : string.Empty;

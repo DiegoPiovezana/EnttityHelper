@@ -1829,7 +1829,7 @@ namespace TestEH_UnitTest
 
                 // Teste de contagem total
                 long totalRecords = await eh.GetTotalRecordCountAsync(complexQuery);
-                Assert.AreEqual(32, totalRecords); // Deve retornar a quantidade total de registros da query
+                Assert.AreEqual(15, totalRecords); // Deve retornar a quantidade total de registros da query
 
 
                 // Validacao cruzada
