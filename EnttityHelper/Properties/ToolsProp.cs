@@ -23,6 +23,7 @@ namespace EH.Properties
                 if (prop is null) { continue; }
                 if (!includeNotMapped && prop.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
                 if (ignoreVirtual && prop.GetGetMethod().IsVirtual) { continue; }
+                if (IsFkEntity(prop)) { continue; }
 
                 Property property = new(prop, objectEntity);
 
