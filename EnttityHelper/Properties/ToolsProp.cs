@@ -100,7 +100,7 @@ namespace EH.Properties
                 }
 
                 // If is FK Id
-                string? entityNameFk = prop.GetFkEntityNameById();
+                string? entityNameFk = prop.TryGetFkEntityNameById();
                 if (entityNameFk is not null)
                 {
                     object? idFk = prop.GetValue(objectEntity, null);
@@ -271,8 +271,11 @@ namespace EH.Properties
         /// <summary>
         /// If is a foreign key property, returns the name of the entity it refers to.
         /// </summary>
-        internal static string? GetFkEntityNameById(this PropertyInfo propertyInfo)
+        internal static string? TryGetFkEntityNameById(this PropertyInfo propertyInfo)
         {
+            if (IsPrimitiveType(propertyInfo.PropertyType))
+                return null;
+            
             if (propertyInfo.GetCustomAttribute<KeyAttribute>() != null)
                 return null;
             
@@ -414,8 +417,15 @@ namespace EH.Properties
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
 
-            return type.IsPrimitive || type.IsEnum || type == typeof(string) || type == typeof(decimal) ||
-                   type == typeof(DateTime) || type == typeof(DateTimeOffset) || type == typeof(Guid);
+            Type baseType = Nullable.GetUnderlyingType(type) ?? type;
+
+            return baseType.IsPrimitive
+                   || baseType.IsEnum
+                   || baseType == typeof(string)
+                   || baseType == typeof(decimal)
+                   || baseType == typeof(DateTime)
+                   || baseType == typeof(DateTimeOffset)
+                   || baseType == typeof(Guid);
         }
         
         internal static DbType MapToDbType(this Type type)
