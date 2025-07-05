@@ -424,12 +424,16 @@ namespace EH.Command
             {
                 if (updateQueriesEntity.Value == null) throw new Exception("EH-000: Update query does not exist!");
 
-                updates += updateQueriesEntity.Value.Sum(updateQuery => 
-                        updateQuery is null 
-                            ? throw new Exception($"EH-000: Error update query!")
-                            : _enttityHelper.DbContext.ExecuteNonQuery(new[] { (QueryCommand?)updateQuery }, 1).First()
-                            );
+                // updates += updateQueriesEntity.Value.Sum(updateQueryCommandList =>
+                //     updateQueryCommandList is null
+                //         ? throw new Exception($"EH-000: Error update query!")
+                //         : _enttityHelper.DbContext.ExecuteNonQuery(new[] { (QueryCommand?)updateQueryCommandList }, 1).First()
+                // );
+
+                var result = _enttityHelper.DbContext.ExecuteNonQuery(updateQueriesEntity.Value, 1);
+                updates += result.Sum();
             }
+
             return updates;
         }
         
