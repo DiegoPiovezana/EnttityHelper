@@ -266,7 +266,14 @@ namespace EH.Properties
         
         internal static string GetTypeSql(Type realType, Database dbContext)
         {
-            return dbContext.TypesDefault?.FirstOrDefault(x => x.Key == realType.Name).Value;
+            try
+            {
+                return dbContext.TypesDefault?.First(x => x.Key == realType.Name).Value;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error getting SQL type for '{realType.Name}'. Please check the {nameof(dbContext.TypesDefault)}.", ex);
+            }
         }
 
         /// <summary>
