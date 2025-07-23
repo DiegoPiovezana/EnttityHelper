@@ -198,6 +198,11 @@ namespace EH.Entities
                 }
             
                 var foreignKeyProp = ToolsProp.GetForeignKeyPropertyToEntity(entityType, objectEntity.GetType());
+                if (foreignKeyProp == null)
+                {
+                    Debug.WriteLine($"No foreign key property found for entity '{entityType.Name}' in '{objectEntity.GetType().Name}'.");
+                    continue;
+                }
             
                 string? tableName = ToolsProp.GetTableName(entityType, replacesTableName);
                 string tableNameEscaped = enttityHelper.GetQuery.EscapeIdentifier(tableName);
