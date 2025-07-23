@@ -922,6 +922,7 @@ namespace EH.Command
             {
                 inclusions.IncludeForeignKeyEntities(entity);
                 inclusions.IncludeInverseProperties(entity, _enttityHelper.ReplacesTableName, _enttityHelper, null);
+                inclusions.IncludeCollectionProperties(entity, _enttityHelper.ReplacesTableName, _enttityHelper, null);
             }
             return true;
         }
