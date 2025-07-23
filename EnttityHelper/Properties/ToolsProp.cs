@@ -301,7 +301,13 @@ namespace EH.Properties
 
             return null;
         }
-        
+
+        /// <summary>
+        /// Retrieves the foreign key property in the source type that references the target type entity.
+        /// </summary>
+        /// <param name="sourceType">The type of the source entity.</param>
+        /// <param name="targetType">The type of the target entity being referenced by the foreign key.</param>
+        /// <returns>The foreign key property info if found; otherwise, null.</returns>
         internal static PropertyInfo? GetForeignKeyPropertyToEntity(Type sourceType, Type targetType)
         {
             return sourceType.GetProperties()
