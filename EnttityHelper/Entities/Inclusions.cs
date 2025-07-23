@@ -163,14 +163,85 @@ namespace EH.Entities
         }
 
         internal void IncludeCollectionProperties<T>(
-            T objectEntity, 
+            T objectEntity,
             Dictionary<string, string>? replacesTableName,
-            EnttityHelper enttityHelper, 
-            string? collectionPropertyNameOnly = null
-            )
+            EnttityHelper enttityHelper,
+            string? collectionPropertyNameOnly = null)
         {
+            if (objectEntity == null)
+                throw new ArgumentNullException(nameof(objectEntity));
+            if (enttityHelper == null)
+                throw new ArgumentNullException(nameof(enttityHelper));
+
+            List<PropertyInfo>? propertiesCollection = ToolsProp.GetCollecionProperties(objectEntity);
+            if (propertiesCollection == null || propertiesCollection.Count == 0)
+            {
+                Debug.WriteLine($"No collection properties found in '{typeof(T).Name}'.");
+                return;
+            }
+
+            // Filter to only one property if specified
+            if (!string.IsNullOrEmpty(collectionPropertyNameOnly))
+            {
+                propertiesCollection = propertiesCollection
+                    .Where(p => p.Name == collectionPropertyNameOnly)
+                    .ToList();
+            }
+
+            foreach (var collectionProp in propertiesCollection)
+            {
+                Type? entityType = collectionProp.PropertyType.GetGenericArguments().FirstOrDefault();
+                if (entityType == null)
+                {
+                    Debug.WriteLine($"Unable to determine element type of collection '{collectionProp.Name}'.");
+                    continue;
+                }
             
+                var foreignKeyProp = ToolsProp.GetForeignKeyPropertyToEntity(entityType, objectEntity.GetType());
+            
+                string? tableName = ToolsProp.GetTableName(entityType, replacesTableName);
+                string tableNameEscaped = enttityHelper.GetQuery.EscapeIdentifier(tableName);
+                
+                // Call EnttityHelper.Get<TEntity>(...) using reflection
+                var getMethod = typeof(EnttityHelper).GetMethod(nameof(EnttityHelper.Get));
+                if (getMethod == null)
+                    throw new InvalidOperationException("The method 'Get' was not found in EnttityHelper.");
+
+                var genericMethod = getMethod.MakeGenericMethod(entityType);
+                
+                try
+                {
+                    var propPk = ToolsProp.GetPK(objectEntity.GetType());
+                    var pkValue = propPk?.GetValue(objectEntity, null);
+                    string filter = $"{foreignKeyProp.Name} = '{pkValue}'";
+                    
+                    // List<TEntity>? Get<TEntity>(bool includeAll = true, string? filter = null, string? tableName = null
+                    object? result = genericMethod.Invoke(enttityHelper, new object[]
+                    {
+                        true,                   // includeAll
+                        filter,                 // filter
+                        tableNameEscaped,       // tableName
+                        null,                   // pageSize
+                        0,                      // pageIndex
+                        null,                   // sortColumn
+                        true                    // sortAscending
+                    });
+
+                    if (result == null)
+                    {
+                        Debug.WriteLine($"No records returned for collection '{collectionProp.Name}'.");
+                        continue;
+                    }
+
+                    collectionProp.SetValue(objectEntity, result);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException($"Failed to load data for collection property '{collectionProp.Name}' of type '{entityType.Name}'.", ex);
+                }
+            }
         }
+
 
 
     }
