@@ -281,8 +281,8 @@ namespace EH.Properties
         /// </summary>
         internal static string? TryGetFkEntityNameById(this PropertyInfo propertyInfo)
         {
-            if (IsPrimitiveType(propertyInfo.PropertyType))
-                return null;
+            // if (IsPrimitiveType(propertyInfo.PropertyType))
+            //     return null;
             
             if (propertyInfo.GetCustomAttribute<KeyAttribute>() != null)
                 return null;
@@ -398,6 +398,9 @@ namespace EH.Properties
       
         internal static bool IsFkEntity(this PropertyInfo propertyInfo)
         {
+            if (IsPrimitiveType(propertyInfo.PropertyType))
+                return false;
+            
             bool isByName = propertyInfo.Name.Equals(propertyInfo.PropertyType.Name, StringComparison.OrdinalIgnoreCase);
             if (isByName) return true;
             
