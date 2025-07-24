@@ -43,15 +43,15 @@ namespace EH.Entities
                     var pk = ToolsProp.GetPK(pair.Value);
                     if (pk == null) continue;
 
-                    var propertyToUpdate = entity.GetType().GetProperty(pair.Key.ToString());
+                    var propertyToModify = entity.GetType().GetProperty(pair.Key.ToString());
 
-                    if (propertyToUpdate != null)
+                    if (propertyToModify != null)
                     {
                         var pkValue = pk.GetValue(pair.Value, null);
                         if (pkValue == null || string.IsNullOrEmpty(pkValue.ToString().Trim()) || pk.PropertyType.IsPrimitive && pkValue.Equals(Convert.ChangeType(0, pkValue.GetType()))) continue;
 
                         // Get the property type of the foreign key
-                        Type? fkEntityType = propertyToUpdate.PropertyType;
+                        Type? fkEntityType = propertyToModify.PropertyType;
 
                         // Check if it is a generic collection type
                         bool isCollection = typeof(ICollection<>).IsAssignableFrom(fkEntityType);
@@ -74,7 +74,7 @@ namespace EH.Entities
                             // Iterate through the casted entity list and add each entity to the collection
                             foreach (var entityFK in castEntityFKList)
                             {
-                                if (propertyToUpdate.GetValue(entity) is ICollection<object> collection)
+                                if (propertyToModify.GetValue(entity) is ICollection<object> collection)
                                 {
                                     collection.Add(entityFK);
                                 }
@@ -84,7 +84,7 @@ namespace EH.Entities
                         {
                             // Assign the first element of the casted entity list to the property
                             var entityFK = castEntityFKList.FirstOrDefault();
-                            propertyToUpdate.SetValue(entity, entityFK);
+                            propertyToModify.SetValue(entity, entityFK);
                         }
                     }
                 }
