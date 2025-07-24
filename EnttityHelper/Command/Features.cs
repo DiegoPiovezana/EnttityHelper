@@ -909,6 +909,8 @@ namespace EH.Command
 
         public bool IncludeAll<TEntity>(TEntity entity) where TEntity : class
         {
+            if (entity == null) return false;
+            
             // Check if the entity is an IEnumerable and not a string (to avoid treating strings as collections)
             if (entity is IEnumerable<object> entityList && entity is not string) { return IncludeAllRange(entityList); }
             return IncludeAllRange(new List<TEntity> { entity });
