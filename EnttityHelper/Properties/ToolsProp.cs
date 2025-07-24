@@ -118,6 +118,7 @@ namespace EH.Properties
             foreach (var propFkKey in propertiesIdFk.Keys.ToList())
             {
                 if(propertiesIdFk[propFkKey] == null) { continue; } // If PropFk not assigned
+                if (!propertiesEntityFk.ContainsKey(propFkKey)) { continue; } // If not FK entity
                 var propFk = propertiesEntityFk[propFkKey];
                 propFk.GetType().GetProperty(GetPK(propFk).Name).SetValue(propFk, propertiesIdFk[propFkKey]);
                 propertiesObj.Add(propFkKey, propFk);
