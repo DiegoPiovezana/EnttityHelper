@@ -550,8 +550,6 @@ namespace EH.Command
             }
         }
 
-
-
         public long CountEntity<TEntity>(TEntity entity, string? tableName, string? nameId) where TEntity : class
         {
             try
@@ -753,6 +751,24 @@ namespace EH.Command
             if (CheckIfExist(tableName, 0, null)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
             return CreateTable(dataTable, tableName);
         }
+        
+        // public bool ReCreateTable<TEntity>(ICollection<string>? ignoreProps, string? tableName) where TEntity : class
+        // {
+        //     if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
+        //
+        //     tableName ??= ToolsProp.GetTableName<TEntity>(_enttityHelper.ReplacesTableName);
+        //     if (CheckIfExist(tableName, 0, null))
+        //     {
+        //         Debug.WriteLine($"Table '{tableName}' already exists! Dropping it before recreating.");
+        //         var dropQuery = _enttityHelper.GetQuery.DropTable(tableName);
+        //         if (ExecuteNonQuery(dropQuery, 0) == 0) // Return = -1
+        //         {
+        //             throw new InvalidOperationException($"Failed to drop table '{tableName}' before recreation.");
+        //         }
+        //     }
+        //
+        //     return CreateTable<TEntity>(false, ignoreProps, tableName);
+        // }
 
         //public bool CreateTableInverseProperty<TEntity>(TEntity entity, string inversePropertyName, string? tableName = null)
         //{
