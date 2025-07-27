@@ -11,7 +11,7 @@ namespace EH.Properties
 {
     internal static class ToolsProp
     {
-        internal static Dictionary<string, Property> GetProperties<T>(this T objectEntity, bool ignoreVirtual, bool includeNotMapped)
+        internal static Dictionary<string, Property> GetProperties<T>(this T objectEntity, bool ignoreColletion, bool ignoreVirtual, bool includeNotMapped)
         {
             if (objectEntity == null) { throw new ArgumentNullException(nameof(objectEntity)); }
 
@@ -23,6 +23,7 @@ namespace EH.Properties
                 if (prop is null) { continue; }
                 if (!includeNotMapped && prop.GetCustomAttribute<NotMappedAttribute>() != null) { continue; }
                 if (ignoreVirtual && prop.GetGetMethod().IsVirtual) { continue; }
+                if (ignoreColletion && typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType) && prop.PropertyType != typeof(string)) { continue; }
                 if (IsFkEntity(prop)) { continue; }
 
                 Property property = new(prop, objectEntity);

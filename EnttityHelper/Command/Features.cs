@@ -170,7 +170,7 @@ namespace EH.Command
                 {
                     if (!string.IsNullOrEmpty(namePropUnique))
                     {
-                        var properties = ToolsProp.GetProperties(entityItem, true, false); // TODO: ToolsProp.GetProperty
+                        var properties = ToolsProp.GetProperties(entityItem, true, true, false); // TODO: ToolsProp.GetProperty
 
                         // Check if ENTITY exists (duplicates)
                         if (CheckIfExist(tableName, 1, $"{namePropUnique} = '{properties[namePropUnique]}'"))

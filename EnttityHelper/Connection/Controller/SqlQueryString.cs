@@ -83,7 +83,7 @@ namespace EH.Connection
 
             List<QueryCommand?> queries = new();
 
-            Dictionary<string, Property>? properties = ToolsProp.GetProperties(entity, false, false);
+            Dictionary<string, Property>? properties = ToolsProp.GetProperties(entity, true, false, false);
 
             Dictionary<string, Property>? filteredProperties = properties
                 .Where(p => p.Value.PropertyInfo.IsFkEntity() == false)
@@ -297,7 +297,7 @@ namespace EH.Connection
             
             nameId ??= ToolsProp.GetPK(entity)?.Name ?? throw new InvalidOperationException("No primary key found!");
 
-            Dictionary<string, Property> properties = ToolsProp.GetProperties(entity, true, false);
+            Dictionary<string, Property> properties = ToolsProp.GetProperties(entity, true, true, false);
             
             StringBuilder queryBuilder = new();
             queryBuilder.Append($@"UPDATE {tableNameEscaped } SET ");
@@ -706,7 +706,7 @@ namespace EH.Connection
             if (typeof(IEnumerable).IsAssignableFrom(entityType) && entityType.IsGenericType) { itemType = entityType.GetGenericArguments()[0]; }
 
             object entity = Activator.CreateInstance(itemType) ?? throw new ArgumentNullException(nameof(entity));
-            var properties = ToolsProp.GetProperties(entity, false, false);
+            var properties = ToolsProp.GetProperties(entity, true, false, false);
             var pk = ToolsProp.GetPK(entity);
 
             queryBuilderPrincipal.Append($@"CREATE TABLE {tableNameEscaped} (");
