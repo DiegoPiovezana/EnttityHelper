@@ -103,8 +103,12 @@ namespace EH.Command
 
                         string pkNameFk = pkFk.Name;
                         string pkValueFk = pkFk.GetValue(fkProp.Value, null).ToString();
+                        if (string.IsNullOrEmpty(pkValueFk))
+                            throw new InvalidOperationException($"Primary key '{pkNameFk}' of entity {fkProp.Value.GetType()} is null or empty!");
+                        
+                        pkValueFk = pkValueFk.Replace("'", "''"); // Escape single quotes. TODO: Improve this
 
-                        if (!CheckIfExist(tableNamefkProp, 1, $"{pkNameFk} = {pkValueFk}"))
+                        if (!CheckIfExist(tableNamefkProp, 1, $"{pkNameFk} = '{pkValueFk}'"))
                             throw new InvalidOperationException($"Entity {fkProp.Value.GetType()} with {pkNameFk} '{pkValueFk}' or table '{tableNamefkProp}' does not exist!");
                     }
                 }
@@ -172,8 +176,18 @@ namespace EH.Command
                     {
                         var properties = ToolsProp.GetProperties(entityItem, true, true, false); // TODO: ToolsProp.GetProperty
 
+                        string valueSearch = properties[namePropUnique]?.ToString() ?? string.Empty;
+                        if (string.IsNullOrEmpty(valueSearch))
+                        {
+                            //Debug.WriteLine($"EH-000: Property '{namePropUnique}' is null or empty!");
+                            //return -1;
+                            throw new InvalidOperationException($"EH-000: Property '{namePropUnique}' is null or empty in entity '{entityItem.GetType().Name}'!");
+                        }
+                        
+                        valueSearch = valueSearch.Replace("'", "''"); // Escape single quotes. TODO: Improve this
+                        
                         // Check if ENTITY exists (duplicates)
-                        if (CheckIfExist(tableName, 1, $"{namePropUnique} = '{properties[namePropUnique]}'"))
+                        if (CheckIfExist(tableName, 1, $"{namePropUnique} = '{valueSearch}'"))
                         {
                             //Debug.WriteLine($"EH-101: Entity '{namePropUnique} {properties[namePropUnique]}' already exists in table!");
                             //return -101;
