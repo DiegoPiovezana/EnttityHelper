@@ -225,7 +225,7 @@ namespace EH.Entities
                     {
                         true,                   // includeAll
                         filter,                 // filter
-                        tableNameEscaped,       // tableName
+                        tableName,              // tableName
                         null,                   // pageSize
                         0,                      // pageIndex
                         null,                   // sortColumn
