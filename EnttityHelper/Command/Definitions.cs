@@ -15,7 +15,7 @@ namespace EH.Command
             var typesDefaultColumnsDb = dbContext.Provider switch
             {
                 Enums.DbProvider.Oracle => new Dictionary<string, string> {
-                    { "String", "NVARCHAR2(1000)" },
+                    { "String", "NVARCHAR2(4000)" },
                     { "Boolean", "NUMBER(1)" },
                     { "DateTime", "TIMESTAMP" },
                     { "Decimal", "NUMBER" },
@@ -26,11 +26,11 @@ namespace EH.Command
                     { "Single", "NUMBER" },
                     { "TimeSpan", "DATE" },
                     { "Guid", "RAW(16)" },
-                    { "Object", "NVARCHAR2(1000)" }
+                    { "Object", "NVARCHAR2(4000)" }
                     },
                 Enums.DbProvider.SqlServer => new Dictionary<string, string>
                     {
-                    { "String", "NVARCHAR(1000)" },
+                    { "String", "NVARCHAR(4000)" },
                     { "Boolean", "BIT" },
                     { "DateTime", "DATETIME" },
                     { "Decimal", "DECIMAL" },
@@ -41,7 +41,7 @@ namespace EH.Command
                     { "Single", "REAL" },
                     { "TimeSpan", "TIME" },
                     { "Guid", "UNIQUEIDENTIFIER" },
-                    { "Object", "NVARCHAR(1000)" }
+                    { "Object", "NVARCHAR(4000)" }
                     },
                 Enums.DbProvider.SqLite => new Dictionary<string, string>
                     {
