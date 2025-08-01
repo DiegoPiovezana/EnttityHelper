@@ -69,6 +69,8 @@ namespace EH.Connection
         /// (Optional) Terms (or full names) that can be replaced in table names.
         /// </summary>
         public Dictionary<string, string>? ReplacesTableName { get; set; }
+        
+        public int LimitNameLength { get; set; } = 30; // Default limit for name length in database objects (tables, columns, etc.)
 
         /// <summary>
         /// Gets or sets the prefix parameter used in database operations. E.g., @ or :

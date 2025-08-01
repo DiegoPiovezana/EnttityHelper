@@ -49,6 +49,7 @@ namespace EH.Connection
                     database.Provider = Enums.DbProvider.SqLite;
                     database.Service = dataSource.Trim();
                     database.PrefixParameter = "@";
+                    database.LimitNameLength = 255;
                     return true;
                 }
 
@@ -58,6 +59,7 @@ namespace EH.Connection
                     database.Provider = Enums.DbProvider.SqlServer;
                     database.Service = initialCatalog?.Trim();
                     database.PrefixParameter = "@";
+                    database.LimitNameLength = 128;
 
                     if (!string.IsNullOrEmpty(dataSource))
                     {
@@ -96,6 +98,8 @@ namespace EH.Connection
                     database.Port = Convert.ToInt32(parts[1].Split('/')[0]);
                     database.Service = parts[1].Split('/')[1].Trim();
                     database.PrefixParameter = ":";
+                    database.LimitNameLength = 30;
+                    
                     return true;
                 }
 

@@ -886,12 +886,12 @@ namespace EH.Connection
         /// <returns>The SQL query string for creating the table.</returns>
         /// <exception cref="ArgumentNullException">Thrown if the dataTable parameter is null.</exception>
         /// <exception cref="InvalidOperationException">Thrown if an error occurs while generating the SQL query.</exception>
-        public QueryCommand? CreateTableFromDataTable(DataTable dataTable, Dictionary<string, string>? typesSql, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
+        public QueryCommand? CreateTableFromDataTable(DataTable dataTable, Dictionary<string, string>? typesSql, int limitNameLenght, Dictionary<string, string>? replacesTableName = null, string? tableName = null)
         {
             if (typesSql is null) { throw new ArgumentNullException(nameof(typesSql)); }
 
             StringBuilder queryBuilder = new();
-            tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, replacesTableName);
+            tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, replacesTableName, limitNameLenght);
             string tableNameEscaped = EscapeIdentifier(tableName);
 
             queryBuilder.Append($@"CREATE TABLE {tableNameEscaped} (");
@@ -901,7 +901,7 @@ namespace EH.Connection
             {
                 string nameColumn = column.ColumnName;
                 //nameColumn = nameColumn.Length > 30 ? nameColumn.Substring(0, 30) : nameColumn;
-                nameColumn = nameColumn.NormalizeColumnOrTableName();
+                nameColumn = nameColumn.NormalizeColumnOrTableName(limitNameLenght);
                 // TODO: Column empty?
 
                 typesSql.TryGetValue(column.DataType.Name.Trim(), out string typeColumn);

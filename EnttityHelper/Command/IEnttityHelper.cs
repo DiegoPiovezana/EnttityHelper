@@ -412,10 +412,11 @@ namespace EH.Command
         /// The name must start with a letter or an underscore, contain only valid characters, and not exceed 30 characters in length. Invalid characters can optionally be replaced 
         /// </summary>
         /// <param name="name">The name to validate and normalize.</param>
+        /// <param name="limitNameLenght">The maximum length of the name. If the name exceeds this length, it will be truncated.</param>
         /// <param name="replaceInvalidChars">Indicates whether invalid characters should be replaced with underscores. Defaults to <c>true</c>.</param>
         /// <returns>The normalized name, suitable for use as a column or table name.</returns>
         /// <exception cref="ArgumentException">Thrown when the name is invalid.</exception>
-        string NormalizeColumnOrTableName(string? name, bool replaceInvalidChars = true);
+        string NormalizeColumnOrTableName(string? name, int limitNameLenght, bool replaceInvalidChars = true);
 
         /// <summary>
         /// Retrieve the version of the connected database.

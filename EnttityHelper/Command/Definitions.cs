@@ -119,7 +119,7 @@ namespace EH.Command
             }
         }
 
-        internal static string NameTableFromDataTable(string tableName, Dictionary<string, string>? replacesTableName)
+        internal static string NameTableFromDataTable(string tableName, Dictionary<string, string>? replacesTableName, int limitNameLength)
         {
             if (string.IsNullOrEmpty(tableName) && replacesTableName?.Keys != null)
             {
@@ -129,8 +129,8 @@ namespace EH.Command
                 }
             }
 
-            tableName = tableName.Length > 30 ? tableName.Substring(0, 30) : tableName;
-            tableName = tableName.NormalizeColumnOrTableName();
+            tableName = tableName.Length > limitNameLength ? tableName.Substring(0, limitNameLength) : tableName;
+            tableName = tableName.NormalizeColumnOrTableName(limitNameLength);
             return tableName;
         }
 

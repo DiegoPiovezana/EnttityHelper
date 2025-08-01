@@ -444,11 +444,11 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public string NormalizeColumnOrTableName(string? name, bool replaceInvalidChars = true)
+        public string NormalizeColumnOrTableName(string? name, int limitNameLenght, bool replaceInvalidChars = true)
         {
             try
             {
-                return _features.NormalizeColumnOrTableName(name, replaceInvalidChars);
+                return _features.NormalizeColumnOrTableName(name, limitNameLenght, replaceInvalidChars);
             }
             catch (Exception)
             {

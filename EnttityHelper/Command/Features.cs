@@ -45,7 +45,7 @@ namespace EH.Command
             {
                 if (dataTable.Rows.Count == 0) return 0;
 
-                tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
+                tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName, _enttityHelper.DbContext.LimitNameLength);
 
                 if (!CheckIfExist(tableName, 0, null) && createTable)
                 {
@@ -366,7 +366,7 @@ namespace EH.Command
                     }
                 }
 
-                tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
+                tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName, _enttityHelper.DbContext.LimitNameLength);
 
                 if (!CheckIfExist(tableName, 0, null) && createTable)
                 {
@@ -745,7 +745,7 @@ namespace EH.Command
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
 
-            var createTableQuery = _enttityHelper.GetQuery.CreateTableFromDataTable(dataTable, _enttityHelper.TypesDefault, _enttityHelper.ReplacesTableName, tableName);
+            var createTableQuery = _enttityHelper.GetQuery.CreateTableFromDataTable(dataTable, _enttityHelper.TypesDefault, _enttityHelper.DbContext.LimitNameLength, _enttityHelper.ReplacesTableName, tableName);
 
             if (Execute.ExecuteNonQuery(_enttityHelper.DbContext, new List<QueryCommand?>(){createTableQuery}, -1).First() != 0) // Return = -1
             {
@@ -761,7 +761,7 @@ namespace EH.Command
         public bool CreateTableIfNotExist(DataTable dataTable, string? tableName)
         {
             if (_enttityHelper.DbContext?.IDbConnection is null) throw new InvalidOperationException("Connection does not exist!");
-            tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName);
+            tableName ??= Definitions.NameTableFromDataTable(dataTable.TableName, _enttityHelper.ReplacesTableName, _enttityHelper.DbContext.LimitNameLength);
             if (CheckIfExist(tableName, 0, null)) { Debug.WriteLine($"Table '{tableName}' already exists!"); return true; }
             return CreateTable(dataTable, tableName);
         }
@@ -990,9 +990,9 @@ namespace EH.Command
             return Tools.Normalize(text, toLower, replaceSpace);
         }
 
-        public string NormalizeColumnOrTableName(string? name, bool replaceInvalidChars)
+        public string NormalizeColumnOrTableName(string? name, int limitNameLenght ,bool replaceInvalidChars)
         {
-            return Tools.NormalizeColumnOrTableName(name, replaceInvalidChars);
+            return Tools.NormalizeColumnOrTableName(name, limitNameLenght, replaceInvalidChars);
         }
 
         public string GetDatabaseVersion(Database? database)

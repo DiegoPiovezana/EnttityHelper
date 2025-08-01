@@ -258,12 +258,12 @@ namespace EH.Command
             }
         }
 
-        public static string NormalizeColumnOrTableName(this string? name, bool adjustInvalidChars = true)
+        public static string NormalizeColumnOrTableName(this string? name, int limitChars = 30, bool adjustInvalidChars = true)
         {
-            const int limitChars = 30;
-            char[] InvalidCharacters = { ' ', '.', ',', ';', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '{', '}', '[', ']', '|', ':', '"', '<', '>', '/', '?', '\\' };
-            HashSet<string> ReservedKeywords = new() { "SELECT", "INSERT", "UPDATE", "DELETE", "FROM", "WHERE", "JOIN", "CREATE", "ALTER", "DROP", "TABLE", "COLUMN", "INDEX", "VIEW" };
-            char[] AllowedSpecialCharacters = { '_' }; // Allowed characters for table and column names
+            // const int limitChars = 30;
+            char[] invalidCharacters = { ' ', '.', ',', ';', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '{', '}', '[', ']', '|', ':', '"', '<', '>', '/', '?', '\\' };
+            HashSet<string> reservedKeywords = new() { "SELECT", "INSERT", "UPDATE", "DELETE", "FROM", "WHERE", "JOIN", "CREATE", "ALTER", "DROP", "TABLE", "COLUMN", "INDEX", "VIEW" };
+            char[] allowedSpecialCharacters = { '_' }; // Allowed characters for table and column names
 
             name = name.Normalize(false);
 
@@ -276,7 +276,7 @@ namespace EH.Command
 
             foreach (char c in name)
             {
-                if (char.IsLetterOrDigit(c) || Array.Exists(AllowedSpecialCharacters, ch => ch == c))
+                if (char.IsLetterOrDigit(c) || Array.Exists(allowedSpecialCharacters, ch => ch == c))
                 {
                     normalizedName.Append(c);
                 }
@@ -307,7 +307,7 @@ namespace EH.Command
                 else throw new ArgumentException("Name must start with a letter or an underscore.");
             }
 
-            if (ReservedKeywords.Contains(result.ToUpper()))
+            if (reservedKeywords.Contains(result.ToUpper()))
             {
                 if (adjustInvalidChars) result = "c_" + result;
                 else throw new ArgumentException("Name cannot be a reserved keyword.", nameof(result));
