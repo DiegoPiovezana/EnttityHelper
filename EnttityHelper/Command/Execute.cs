@@ -517,11 +517,12 @@ namespace EH.Commands
         /// <param name="inputDataToCopy">The data to be copied, which can be of type DataRow[], DataTable, or IDataReader.</param>
         /// <param name="tableName">The name of the destination table where the data will be copied.</param>
         /// <param name="bulkCopyTimeout">The timeout duration (in seconds) for the bulk copy operation.</param>
+        /// <param name="batchCount">The package number of this bulk copy operation.</param>
         /// <returns>Returns true if the bulk copy operation is successful; otherwise, throws an exception.</returns>
         /// <exception cref="ArgumentNullException">Thrown if the database context, input data, or table name is null or empty.</exception>
         /// <exception cref="NotSupportedException">Thrown if the bulk copy operation is not supported for the provided data type or database provider.</exception>
         /// <exception cref="Exception">Thrown if an error occurs during the bulk copy operation, causing the connection to close and the exception to be rethrown.</exception>
-        internal static long PerformBulkCopyOperation(this Database dbContext, object inputDataToCopy, string tableName, int bulkCopyTimeout)
+        internal static long PerformBulkCopyOperation(this Database dbContext, object inputDataToCopy, string tableName, int bulkCopyTimeout, int batchCount)
         {
             // dataToCopy: DataRow[], DataTable, IDataReader
 
@@ -579,22 +580,24 @@ namespace EH.Commands
                 Debug.WriteLine("Error when performing the Bulk Copy operation: " + ex.Message);
                 dbContext.CloseConnection();
                 
-                const int maxLength = 4000;
+                string sqlType = ToolsProp.GetTypeSql(typeof(string), dbContext);
+                string sizeString = new string(sqlType.Where(char.IsDigit).ToArray());
+                int maxLengthString = sizeString.Length > 0 ? int.Parse(sizeString) : 4000; // Default max length for string columns
                 const int maxMessages = 10;
                 int messageCount = 0;
-                AnalyzeInputDataLength(inputDataToCopy, messageCount, maxMessages, maxLength);
+                AnalyzeInputDataLength(inputDataToCopy, messageCount, batchCount, maxMessages, maxLengthString);
 
                 throw;
             }
         }
 
-        private static int AnalyzeInputDataLength(object inputDataToCopy, int messageCount, int maxMessages, int maxLength)
+        private static int AnalyzeInputDataLength(object inputDataToCopy, int messageCount, int batchCount, int maxMessages, int maxLengthString)
         {
             void LogLongValue(string columnName, int indexRow, string value)
             {
                 if (messageCount < maxMessages)
                 {
-                    Console.WriteLine($"Column '{columnName}' (row {indexRow} - consider batch) has a value with {value.Length} characters (limit: {maxLength}): {value.Substring(0, Math.Min(100, value.Length))}...");
+                    Console.WriteLine($"Column '{columnName}' (row {indexRow*batchCount}) has a value with {value.Length} characters (limit: {maxLengthString}): {value.Substring(0, Math.Min(100, value.Length))}...");
                     messageCount++;
                 }
                 else if (messageCount == maxMessages)
@@ -604,16 +607,16 @@ namespace EH.Commands
                 }
             }
 
+            int rowIndex = 0;
             switch (inputDataToCopy)
-            {
+            {  
                 case DataTable dataTable:
-                    int rowIndex = 0;
                     foreach (DataRow row in dataTable.Rows)
                     {
-                        for (int i = 0; i < dataTable.Columns.Count; i++)
+                        for (int columnIndex = 0; columnIndex < dataTable.Columns.Count; columnIndex++)
                         {
-                            if (row[i] is string str && str.Length > maxLength)
-                                LogLongValue(dataTable.Columns[i].ColumnName, i, str);
+                            if (row[columnIndex] is string str && str.Length > maxLengthString)
+                                LogLongValue(dataTable.Columns[columnIndex].ColumnName, rowIndex + 1, str);
                         }
                         rowIndex++;
                     }
@@ -622,16 +625,16 @@ namespace EH.Commands
                 case DataRow[] rowArray:
                     if (rowArray.Length > 0)
                     {
-                        var columns = rowArray[0].Table?.Columns;
-                        for (int r = 0; r < rowArray.Length; r++)
+                        var columns = rowArray.FirstOrDefault().Table?.Columns;
+                        for (rowIndex = 0; rowIndex < rowArray.Length; rowIndex++)
                         {
-                            var row = rowArray[r];
+                            var row = rowArray[rowIndex];
                             for (int i = 0; i < row.ItemArray.Length; i++)
                             {
-                                if (row[i] is string str && str.Length > maxLength)
+                                string colName = columns != null && i < columns.Count ? columns[i].ColumnName : $"Column[{i}]";
+                                if (row[i] is string str && str.Length > maxLengthString)
                                 {
-                                    string colName = columns != null && i < columns.Count ? columns[i].ColumnName : $"Column[{i}]";
-                                    LogLongValue(colName, r, str);
+                                    LogLongValue(colName, rowIndex + 1, str);
                                 }
                             }
                         }
@@ -642,7 +645,6 @@ namespace EH.Commands
                     try
                     {
                         int fieldCount = reader.FieldCount;
-                        int countRow = 0;
                         while (reader.Read())
                         {
                             for (int i = 0; i < fieldCount; i++)
@@ -650,14 +652,14 @@ namespace EH.Commands
                                 if (!reader.IsDBNull(i) && reader.GetFieldType(i) == typeof(string))
                                 {
                                     string str = reader.GetString(i);
-                                    if (str.Length > maxLength)
+                                    if (str.Length > maxLengthString)
                                     {
                                         string colName = reader.GetName(i);
-                                        LogLongValue(colName, countRow, str);
+                                        LogLongValue(colName, rowIndex + 1, str);
                                     }
                                 }
                             }
-                            countRow++;
+                            rowIndex++;
                         }
                     }
                     catch (Exception readerEx)
