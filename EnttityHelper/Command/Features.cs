@@ -52,7 +52,7 @@ namespace EH.Command
                     CreateTable(dataTable, tableName);
                 }
 
-                return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataTable, tableName, timeOutSeconds);
+                return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataTable, tableName, timeOutSeconds, 1);
             }
 
             long InsertIDataReader(bool createTable, string? tableName, int timeOutSeconds, IDataReader dataReader)
@@ -67,7 +67,7 @@ namespace EH.Command
                     return -942; // Because IDataReader                   
                 }
 
-                var result = Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataReader, tableName, timeOutSeconds);
+                var result = Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataReader, tableName, timeOutSeconds, 1);
                 if (result == -1) result = CountTable(tableName, null);
                 return result;
             }
@@ -78,7 +78,7 @@ namespace EH.Command
 
                 if (tableName is null) throw new ArgumentNullException(nameof(tableName), "Table name cannot be null.");
 
-                return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataRows, tableName, timeOutSeconds);
+                return Execute.PerformBulkCopyOperation(_enttityHelper.DbContext, dataRows, tableName, timeOutSeconds, 1);
             }
 
             long InsertEntities<TEntity>(TEntity entity, bool setPrimaryKeyAfterInsert, string? namePropUnique, bool createTable, ref string? tableName, bool ignoreInverseAndCollectionsProperties) where TEntity : class
@@ -374,6 +374,7 @@ namespace EH.Command
                 }
 
                 // Read and load rows
+                int batchCount = 0;
                 while (!reader.EndOfStream)
                 {
                     string[] rows = Tools.ParseCsvLine(reader.ReadLine(), delimiter) ?? throw new InvalidOperationException("Error reading a row from the CSV/TXT file.");
@@ -418,7 +419,8 @@ namespace EH.Command
 
                         if (dataTable.Rows.Count >= batchSize)
                         {
-                            totalInserts += _enttityHelper.DbContext.PerformBulkCopyOperation(dataTable, tableName, timeOutSeconds);
+                            batchCount++;
+                            totalInserts += _enttityHelper.DbContext.PerformBulkCopyOperation(dataTable, tableName, timeOutSeconds, batchCount);
                             dataTable.Clear();
                         }
                     }
@@ -426,7 +428,8 @@ namespace EH.Command
 
                 if (dataTable.Rows.Count > 0) // Remaing selected rows
                 {
-                    totalInserts += _enttityHelper.DbContext.PerformBulkCopyOperation(dataTable, tableName, timeOutSeconds);
+                    batchCount++;
+                    totalInserts += _enttityHelper.DbContext.PerformBulkCopyOperation(dataTable, tableName, timeOutSeconds, batchCount);
                 }
             }
             catch (Exception ex)
