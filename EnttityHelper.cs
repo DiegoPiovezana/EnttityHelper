@@ -105,11 +105,11 @@ namespace EH
         }
 
         /// <inheritdoc/>
-        public long LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';', bool hasHeader = true, string? rowsToLoad = null, Encoding? encodingRead = null)
+        public long LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';', bool hasHeader = true, string? rowsToLoad = null, Encoding? encodingRead = null, bool normalizeColumnMismatch = true)
         {
             try
             {
-                return _features.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds, delimiter, hasHeader, rowsToLoad, encodingRead);
+                return _features.LoadCSV(csvFilePath, createTable, tableName, batchSize, timeOutSeconds, delimiter, hasHeader, rowsToLoad, encodingRead, normalizeColumnMismatch);
             }
             catch (Exception)
             {

@@ -77,9 +77,10 @@ namespace EH.Command
         /// <param name="hasHeader">Indicates whether the CSV/TXT file contains headers. Default is true.</param>
         /// <param name="rowsToLoad">Enter the rows or their range. E.g.: "1:23, 34:-56, 70, 75, -1". For default, all rows will be loaded. ATENTION: Order and duplicates will not be considered!</param>
         /// <param name="encodingRead">The encoding to use when reading the CSV/TXT file. Default is UTF8. Example: Encoding.GetEncoding("ISO-8859-1")</param>
+        /// <param name="normalizeColumnMismatch">Indicates whether column mismatches should be normalized by adding missing columns or removing excess columns from the table. Default is true.</param>
         /// <returns>The number of records inserted into the database.</returns>
         /// <exception cref="ArgumentException">Thrown when the CSV/TXT file is invalid or cannot be loaded.</exception>
-        long LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';', bool hasHeader = true, string? rowsToLoad = null, Encoding? encodingRead = null);
+        long LoadCSV(string csvFilePath, bool createTable = true, string? tableName = null, int batchSize = 100000, int timeOutSeconds = 600, char delimiter = ';', bool hasHeader = true, string? rowsToLoad = null, Encoding? encodingRead = null, bool normalizeColumnMismatch = true);
 
         /// <summary>
         /// Allow to update an entity in the database.

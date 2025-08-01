@@ -309,7 +309,7 @@ namespace EH.Command
         }
 
 
-        public long LoadCSV(string csvFilePath, bool createTable, string? tableName, int batchSize, int timeOutSeconds, char delimiter, bool hasHeader, string? rowsToLoad, Encoding? encodingRead)
+        public long LoadCSV(string csvFilePath, bool createTable, string? tableName, int batchSize, int timeOutSeconds, char delimiter, bool hasHeader, string? rowsToLoad, Encoding? encodingRead, bool normalizeColumnMismatch)
         {
             Validations.Validate.IsFileValid(csvFilePath);
             long totalInserts = 0;
@@ -384,7 +384,30 @@ namespace EH.Command
                         if (rows.Length != headers.Length)
                         {
                             Debug.WriteLine($"Mismatch between CSV/TXT header and row column count in row {rowIndex}");
-                            throw new InvalidOperationException($"Mismatch between CSV/TXT header ({headers.Length} columns) and row column count in row {rowIndex} ({rows.Length} columns).");
+                            
+                            if(!normalizeColumnMismatch)
+                                throw new InvalidOperationException($"Mismatch between CSV/TXT header ({headers.Length} columns) and row column count in row {rowIndex} ({rows.Length} columns).");
+                            
+                            // Normalize the row
+                            if (rows.Length < headers.Length)
+                            {
+                                // Fill missing columns with empty strings
+                                var normalized = new string[headers.Length];
+                                Array.Copy(rows, normalized, rows.Length);
+                                for (int i = rows.Length; i < headers.Length; i++)
+                                {
+                                    normalized[i] = string.Empty;
+                                }
+
+                                rows = normalized;
+                            }
+                            else // rows.Length > headers.Length
+                            {
+                                // Trim excess columns
+                                rows = rows.Take(headers.Length).ToArray();
+                            }
+
+                            Debug.WriteLine($"Row {rowIndex} was normalized to match header column count.");
                         }
 
                         DataRow row = dataTable.NewRow();
