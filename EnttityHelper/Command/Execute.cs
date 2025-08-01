@@ -590,11 +590,11 @@ namespace EH.Commands
 
         private static int AnalyzeInputDataLength(object inputDataToCopy, int messageCount, int maxMessages, int maxLength)
         {
-            void LogLongValue(string columnName, string value)
+            void LogLongValue(string columnName, int indexRow, string value)
             {
                 if (messageCount < maxMessages)
                 {
-                    Console.WriteLine($"Column '{columnName}' has a value with {value.Length} characters (limit: {maxLength}): {value.Substring(0, Math.Min(100, value.Length))}...");
+                    Console.WriteLine($"Column '{columnName}' (row {indexRow}) has a value with {value.Length} characters (limit: {maxLength}): {value.Substring(0, Math.Min(100, value.Length))}...");
                     messageCount++;
                 }
                 else if (messageCount == maxMessages)
@@ -607,13 +607,15 @@ namespace EH.Commands
             switch (inputDataToCopy)
             {
                 case DataTable dataTable:
+                    int rowIndex = 0;
                     foreach (DataRow row in dataTable.Rows)
                     {
                         for (int i = 0; i < dataTable.Columns.Count; i++)
                         {
                             if (row[i] is string str && str.Length > maxLength)
-                                LogLongValue(dataTable.Columns[i].ColumnName, str);
+                                LogLongValue(dataTable.Columns[i].ColumnName, i, str);
                         }
+                        rowIndex++;
                     }
                     break;
 
@@ -629,7 +631,7 @@ namespace EH.Commands
                                 if (row[i] is string str && str.Length > maxLength)
                                 {
                                     string colName = columns != null && i < columns.Count ? columns[i].ColumnName : $"Column[{i}]";
-                                    LogLongValue(colName, str);
+                                    LogLongValue(colName, r, str);
                                 }
                             }
                         }
@@ -640,6 +642,7 @@ namespace EH.Commands
                     try
                     {
                         int fieldCount = reader.FieldCount;
+                        int countRow = 0;
                         while (reader.Read())
                         {
                             for (int i = 0; i < fieldCount; i++)
@@ -650,10 +653,11 @@ namespace EH.Commands
                                     if (str.Length > maxLength)
                                     {
                                         string colName = reader.GetName(i);
-                                        LogLongValue(colName, str);
+                                        LogLongValue(colName, countRow, str);
                                     }
                                 }
                             }
+                            countRow++;
                         }
                     }
                     catch (Exception readerEx)
@@ -666,7 +670,8 @@ namespace EH.Commands
                     Debug.WriteLine("Unknown inputDataToCopy type. No validation was performed.");
                     break;
             }
-
+            
+            Console.WriteLine("\n\n\nAdjust the maximum column size in the database manually or change the 'TypesDefault' dictionary.");
             return messageCount;
         }
 
