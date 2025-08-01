@@ -594,7 +594,7 @@ namespace EH.Commands
             {
                 if (messageCount < maxMessages)
                 {
-                    Console.WriteLine($"Column '{columnName}' (row {indexRow}) has a value with {value.Length} characters (limit: {maxLength}): {value.Substring(0, Math.Min(100, value.Length))}...");
+                    Console.WriteLine($"Column '{columnName}' (row {indexRow} - consider batch) has a value with {value.Length} characters (limit: {maxLength}): {value.Substring(0, Math.Min(100, value.Length))}...");
                     messageCount++;
                 }
                 else if (messageCount == maxMessages)
