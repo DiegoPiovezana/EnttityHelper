@@ -578,8 +578,96 @@ namespace EH.Commands
             {
                 Debug.WriteLine("Error when performing the Bulk Copy operation: " + ex.Message);
                 dbContext.CloseConnection();
+                
+                const int maxLength = 4000;
+                const int maxMessages = 10;
+                int messageCount = 0;
+                AnalyzeInputDataLength(inputDataToCopy, messageCount, maxMessages, maxLength);
+
                 throw;
             }
+        }
+
+        private static int AnalyzeInputDataLength(object inputDataToCopy, int messageCount, int maxMessages, int maxLength)
+        {
+            void LogLongValue(string columnName, string value)
+            {
+                if (messageCount < maxMessages)
+                {
+                    Console.WriteLine($"Column '{columnName}' has a value with {value.Length} characters (limit: {maxLength}): {value.Substring(0, Math.Min(100, value.Length))}...");
+                    messageCount++;
+                }
+                else if (messageCount == maxMessages)
+                {
+                    Console.WriteLine("... More values exceeding the limit were found but not displayed.");
+                    messageCount++;
+                }
+            }
+
+            switch (inputDataToCopy)
+            {
+                case DataTable dataTable:
+                    foreach (DataRow row in dataTable.Rows)
+                    {
+                        for (int i = 0; i < dataTable.Columns.Count; i++)
+                        {
+                            if (row[i] is string str && str.Length > maxLength)
+                                LogLongValue(dataTable.Columns[i].ColumnName, str);
+                        }
+                    }
+                    break;
+
+                case DataRow[] rowArray:
+                    if (rowArray.Length > 0)
+                    {
+                        var columns = rowArray[0].Table?.Columns;
+                        for (int r = 0; r < rowArray.Length; r++)
+                        {
+                            var row = rowArray[r];
+                            for (int i = 0; i < row.ItemArray.Length; i++)
+                            {
+                                if (row[i] is string str && str.Length > maxLength)
+                                {
+                                    string colName = columns != null && i < columns.Count ? columns[i].ColumnName : $"Column[{i}]";
+                                    LogLongValue(colName, str);
+                                }
+                            }
+                        }
+                    }
+                    break;
+
+                case IDataReader reader:
+                    try
+                    {
+                        int fieldCount = reader.FieldCount;
+                        while (reader.Read())
+                        {
+                            for (int i = 0; i < fieldCount; i++)
+                            {
+                                if (!reader.IsDBNull(i) && reader.GetFieldType(i) == typeof(string))
+                                {
+                                    string str = reader.GetString(i);
+                                    if (str.Length > maxLength)
+                                    {
+                                        string colName = reader.GetName(i);
+                                        LogLongValue(colName, str);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception readerEx)
+                    {
+                        Debug.WriteLine("Error while analyzing IDataReader: " + readerEx.Message);
+                    }
+                    break;
+
+                default:
+                    Debug.WriteLine("Unknown inputDataToCopy type. No validation was performed.");
+                    break;
+            }
+
+            return messageCount;
         }
 
         private static void DefineDbTypeValueForProvider(IDbDataParameter dbParam, Database dbContext, Property property)
