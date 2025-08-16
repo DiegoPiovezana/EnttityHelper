@@ -15,18 +15,20 @@ namespace EH.Command
             var typesDefaultColumnsDb = dbContext.Provider switch
             {
                 Enums.DbProvider.Oracle => new Dictionary<string, string> {
-                    { "String", "NVARCHAR2(4000)" },
+                    { "String", "VARCHAR2(4000)" },
                     { "Boolean", "NUMBER(1)" },
                     { "DateTime", "TIMESTAMP" },
-                    { "Decimal", "NUMBER" },
-                    { "Double", "NUMBER" },
-                    { "Int16", "NUMBER" },
-                    { "Int32", "NUMBER" },
-                    { "Int64", "NUMBER" },
-                    { "Single", "NUMBER" },
-                    { "TimeSpan", "DATE" },
+                    { "Decimal", "NUMBER(18,6)" },
+                    { "Double", "BINARY_DOUBLE" },
+                    { "Int16", "NUMBER(5)" },
+                    { "Int32", "NUMBER(10)" },
+                    { "Int64", "NUMBER(19)" },
+                    { "Single", "BINARY_FLOAT" },
+                    { "TimeSpan", "INTERVAL DAY TO SECOND" },
                     { "Guid", "RAW(16)" },
-                    { "Object", "NVARCHAR2(4000)" }
+                    { "Char", "NCHAR(1)" },
+                    { "ByteArray", "BLOB" },
+                    { "Object", "CLOB" }
                     },
                 Enums.DbProvider.SqlServer => new Dictionary<string, string>
                     {
