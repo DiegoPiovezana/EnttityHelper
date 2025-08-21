@@ -19,9 +19,12 @@ namespace TestEH_UnitTest
         // private const string stringConnectionSqlServer = "Server=D1390PC;Database=DbTest;Trusted_Connection=True;TrustServerCertificate=True;";
         // private const string stringConnectionSqlServer = "Server=(localdb)\\MSSQLLocalDB;Integrated Security=true;Database=master";
         private const string stringConnectionSqlServer = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=master;Integrated Security=True;";
-        
-        private readonly string stringConnectionBd1 = stringConnectionSqlServer;
-        private readonly string stringConnectionBd2 = stringConnection11g;
+
+        //private readonly string stringConnectionBd1 = stringConnectionSqlServer;
+        //private readonly string stringConnectionBd2 = stringConnection11g;
+
+        private readonly string stringConnectionBd1 = stringConnection11g;
+        private readonly string stringConnectionBd2 = stringConnection19c;
 
         public EntityHelperTests()
         {
@@ -33,12 +36,12 @@ namespace TestEH_UnitTest
         {
 
         }
-        
+
         private string ConvertToVarchar(string columnName, EnttityHelper eh)
         {
             return eh.DbContext.Provider switch
             {
-                Enums.DbProvider.Oracle=> $"TO_CHAR({columnName})",
+                Enums.DbProvider.Oracle => $"TO_CHAR({columnName})",
                 Enums.DbProvider.SqlServer => $"CAST({columnName} AS VARCHAR)",
                 _ => $"CAST({columnName} AS VARCHAR)"
             };
@@ -55,14 +58,14 @@ namespace TestEH_UnitTest
             string ticketId = ConvertToVarchar(nameof(Ticket.IdLog), eh);
             string orderId = ConvertToVarchar(nameof(Order.Id), eh);
             string itemId = ConvertToVarchar(nameof(Item.Id), eh);
-          
+
             string tbCareer = eh.GetTableName<Career>();
             string tbUser = eh.GetTableName<User>();
             string tbGroup = eh.GetTableName<Group>();
             string tbTicket = eh.GetTableName<Ticket>();
             string tbOrder = eh.GetTableName<Order>();
             string tbItem = eh.GetTableName<Item>();
-            
+
             string tbManyToManyScaped = eh.GetQuery.EscapeIdentifier(eh.GetTableNameManyToMany(typeof(User), nameof(User.Groups)));
             string tbCareerScaped = eh.GetQuery.EscapeIdentifier(tbCareer);
             string tbUserScaped = eh.GetQuery.EscapeIdentifier(tbUser);
@@ -76,10 +79,10 @@ namespace TestEH_UnitTest
                 eh.ExecuteNonQuery($@"DELETE FROM {tbManyToManyScaped} WHERE {idGroup} LIKE '{idTest}__' OR {idUser} LIKE '{idTest}__'");
             }
             catch (Exception) { }
-            
-            if (eh.CheckIfExist(tbUser)) { eh.ExecuteNonQuery($@"DELETE FROM {tbUserScaped} WHERE {userId} LIKE '{idTest}__'");}
-            if (eh.CheckIfExist(tbGroup)) { eh.ExecuteNonQuery($@"DELETE FROM {tbGroupScaped} WHERE {groupId} LIKE '{idTest}__'");}
-            if (eh.CheckIfExist(tbCareer)) { eh.ExecuteNonQuery($@"DELETE FROM {tbCareerScaped} WHERE {careerId} LIKE '{idTest}__'");}
+
+            if (eh.CheckIfExist(tbUser)) { eh.ExecuteNonQuery($@"DELETE FROM {tbUserScaped} WHERE {userId} LIKE '{idTest}__'"); }
+            if (eh.CheckIfExist(tbGroup)) { eh.ExecuteNonQuery($@"DELETE FROM {tbGroupScaped} WHERE {groupId} LIKE '{idTest}__'"); }
+            if (eh.CheckIfExist(tbCareer)) { eh.ExecuteNonQuery($@"DELETE FROM {tbCareerScaped} WHERE {careerId} LIKE '{idTest}__'"); }
             if (eh.CheckIfExist(tbTicket)) { eh.ExecuteNonQuery($@"DELETE FROM {tbTicketScaped} WHERE {ticketId} LIKE '{idTest}__'"); }
             if (eh.CheckIfExist(tbOrder)) { eh.ExecuteNonQuery($@"DELETE FROM {tbOrderScaped} WHERE {orderId} LIKE '{idTest}__'"); }
             if (eh.CheckIfExist(tbItem)) { eh.ExecuteNonQuery($@"DELETE FROM {tbItemScaped} WHERE {itemId} LIKE '{idTest}__'"); }
@@ -122,7 +125,7 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 eh.CreateTableIfNotExist<EntityTest>(false);
-                
+
                 switch (eh.DbContext.Provider)
                 {
                     case Enums.DbProvider.Oracle:
@@ -134,22 +137,22 @@ namespace TestEH_UnitTest
                         Assert.Throws<System.Data.SqlClient.SqlException>(() => { eh.CreateTable<EntityTest>(false); });
                         break;
                 }
-                
+
             }
             else
             {
                 Assert.Fail();
             }
         }
-        
+
         [Test, Order(4)]
         public void DropTable()
         {
             EnttityHelper eh = new(stringConnectionBd1);
             if (eh.DbContext.ValidateConnection())
             {
-               var result = eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<EntityTest>()}");
-               Assert.That(result, Is.EqualTo(-1)); // If the table does not exist, it returns 0
+                var result = eh.ExecuteNonQuery($"DROP TABLE {eh.GetTableName<EntityTest>()}");
+                Assert.That(result, Is.EqualTo(-1)); // If the table does not exist, it returns 0
             }
             else
             {
@@ -297,7 +300,7 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 eh.ExecuteNonQuery("DELETE FROM TEST.TB_ENTITY_TEST WHERE ID = 300");
-                
+
                 EntityTest entityTest = new() { Id = 300, Name = "Testando 1 entidade 100 via C#", StartDate = DateTime.Now };
                 eh.Insert(entityTest, true, nameof(entityTest.Id));
 
@@ -347,7 +350,7 @@ namespace TestEH_UnitTest
                 DtCreation = DateTime.Now,
                 IdCareer = 1201
             };
-            
+
             long userInsertResult = eh.Insert(user, true);
             Assert.AreEqual(1, userInsertResult, "User insertion failed.");
 
@@ -480,7 +483,7 @@ namespace TestEH_UnitTest
                 var dt = SheetHelper.GetDataTable(@"C:\Users\diego\Desktop\Tests\Converter\ColunasExcel.xlsx", "1");
 
                 string tableName = "TEST.TableX";
-                
+
                 // If the table exists, it will be deleted
                 if (eh.CheckIfExist(tableName)) eh.ExecuteNonQuery($"DROP TABLE {tableName}");
 
@@ -535,8 +538,8 @@ namespace TestEH_UnitTest
 
             try
             {
-                try { eh1.ExecuteNonQuery($"DROP TABLE {tableNameEscaped}"); } catch {}
-                
+                try { eh1.ExecuteNonQuery($"DROP TABLE {tableNameEscaped}"); } catch { }
+
                 long result1 = 0;
                 if (!eh1.CheckIfExist(tableName))
                 {
@@ -569,8 +572,8 @@ namespace TestEH_UnitTest
             }
             finally
             {
-                try { eh1.ExecuteNonQuery($"DROP TABLE {tableNameEscaped}"); } catch {}
-                try { eh2.ExecuteNonQuery($"DROP TABLE {tableNameDestinyEscaped}"); } catch {}
+                try { eh1.ExecuteNonQuery($"DROP TABLE {tableNameEscaped}"); } catch { }
+                try { eh2.ExecuteNonQuery($"DROP TABLE {tableNameDestinyEscaped}"); } catch { }
             }
         }
 
@@ -582,8 +585,8 @@ namespace TestEH_UnitTest
 
             if (eh.DbContext.ValidateConnection())
             {
-                try{ResetTables("103");} catch{}
-                
+                try { ResetTables("103"); } catch { }
+
                 // Create table - Object User     
                 eh.CreateTableIfNotExist<Career>(true);
                 eh.CreateTableIfNotExist<Group>(true); // Necessary to then create the MxN relationship table (Group X User)
@@ -596,7 +599,7 @@ namespace TestEH_UnitTest
                 // Insert in database
                 Assert.That(eh.Insert(career), Is.EqualTo(1));
                 Assert.That(eh.Insert(userD), Is.EqualTo(1));
-                
+
                 // Modify entity
                 userD.Name = "Diêgo Piovezana";
 
@@ -682,7 +685,7 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 ResetTables("105");
-                
+
                 eh.CreateTableIfNotExist<Group>(true); // Necessary to then create the MxN relationship table
                 eh.CreateTableIfNotExist<User>(false);
 
@@ -735,7 +738,7 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 ResetTables("106");
-                
+
                 // INSERT THE MANY ENTITIES (MXN)
                 Group group4 = new() { Id = 10601, Name = "Masters106-2", Description = "Masters Group" };
                 Group group5 = new() { Id = 10602, Name = "Managers106", Description = "Managers Group" };
@@ -780,7 +783,7 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 ResetTables("107");
-                
+
                 Career carrer2 = new() { IdCareer = 10702, Name = "Pleno", CareerLevel = 2, Active = true };
 
                 if (!eh.CheckIfExist(
@@ -830,7 +833,7 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 ResetTables("108");
-                
+
                 eh.CreateTableIfNotExist<Group>(createOnlyPrimaryTable: true);
                 eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false);
                 // ATTENTION: The User table depends on the Group to establish the MxN relationship and create the auxiliary table (even if users without group)
@@ -852,9 +855,9 @@ namespace TestEH_UnitTest
                     );
                 }
                 catch (Exception) { } // Ignore if the sequence already exists   
-                
+
                 string idTbTicket = eh.GetTableName<Ticket>();
-                
+
                 if (eh.DbContext.Provider == Enums.DbProvider.Oracle)
                 {
                     string queryCreateTriggerOracle = $"CREATE OR REPLACE TRIGGER TRIGGER_TICKET " +
@@ -863,7 +866,7 @@ namespace TestEH_UnitTest
                                                       $"BEGIN " +
                                                       $":NEW.IdLog := SEQUENCE_TICKET.NEXTVAL; " +
                                                       $"END;";
-                    
+
                     eh.ExecuteNonQuery(queryCreateTriggerOracle);
                 }
                 else if (eh.DbContext.Provider == Enums.DbProvider.SqlServer)
@@ -876,7 +879,7 @@ namespace TestEH_UnitTest
                         $"); " +
                         $"IF @sql IS NOT NULL EXEC sp_executesql @sql;"
                     );
-                    
+
                     eh.ExecuteNonQuery($"ALTER TABLE {idTbTicket} DROP COLUMN IdLog;");
                     eh.ExecuteNonQuery($"ALTER TABLE {idTbTicket} ADD IdLog INT IDENTITY(1,1) PRIMARY KEY;");
                 }
@@ -912,9 +915,9 @@ namespace TestEH_UnitTest
                 eh.CreateTableIfNotExist<Group>(true);
                 eh.CreateTableIfNotExist<Career>(true);
                 eh.CreateTableIfNotExist<User>(false);
-                
+
                 ResetTables("109");
-                
+
                 User userX = new("Jayme Souza") { Id = 10901, GitHub = "@JSouza109", DtCreation = DateTime.Now };
                 User userY = new("Bruna Corsa") { Id = 10902, GitHub = "@BrunaCorsa109", DtCreation = DateTime.Now };
                 List<User> users = new() { userX, userY };
@@ -933,9 +936,9 @@ namespace TestEH_UnitTest
                     );
                 }
                 catch (Exception) { } // Ignore if the sequence already exists   
-                
+
                 string idTbTicket = eh.GetTableName<Ticket>();
-                
+
                 if (eh.DbContext.Provider == Enums.DbProvider.Oracle)
                 {
                     string queryCreateTriggerOracle = $"CREATE OR REPLACE TRIGGER TRIGGER_TICKET " +
@@ -944,7 +947,7 @@ namespace TestEH_UnitTest
                                                       $"BEGIN " +
                                                       $":NEW.IdLog := SEQUENCE_TICKET.NEXTVAL; " +
                                                       $"END;";
-                    
+
                     eh.ExecuteNonQuery(queryCreateTriggerOracle);
                 }
                 else if (eh.DbContext.Provider == Enums.DbProvider.SqlServer)
@@ -957,7 +960,7 @@ namespace TestEH_UnitTest
                         $"); " +
                         $"IF @sql IS NOT NULL EXEC sp_executesql @sql;"
                     );
-                    
+
                     eh.ExecuteNonQuery($"ALTER TABLE {idTbTicket} DROP COLUMN IdLog;");
                     eh.ExecuteNonQuery($"ALTER TABLE {idTbTicket} ADD IdLog INT IDENTITY(1,1) PRIMARY KEY;");
                 }
@@ -1028,12 +1031,12 @@ namespace TestEH_UnitTest
                 Classification class1 = new() { Id = Guid.NewGuid(), Name = "Class Test 1", Description = "Test 1" };
                 long result1 = eh.Insert(entity: class1, createTable: true);
                 Assert.That(result1, Is.EqualTo(1));
-                
+
                 Classification class2 = new() { Id = Guid.NewGuid(), Name = "", Description = "" };
                 long result2 = eh.Insert(entity: class2, createTable: true);
                 Assert.That(result2, Is.EqualTo(1));
-                
-                Classification class3 = new(){ Id = new Guid()};
+
+                Classification class3 = new() { Id = new Guid() };
                 long result3 = eh.Insert(entity: class3, createTable: true);
                 Assert.That(result3, Is.EqualTo(1));
 
@@ -1050,7 +1053,7 @@ namespace TestEH_UnitTest
             if (eh.DbContext.ValidateConnection())
             {
                 ResetTables("455");
-                
+
                 Career carrer1 = new(45501, "Developer");
                 Career carrer2 = new(45502, "Management");
                 Career carrer3 = new(45503, "Analyst");
@@ -1100,7 +1103,7 @@ namespace TestEH_UnitTest
         {
             // Act & Assert
             EnttityHelper eh = new(stringConnectionBd1);
-            var ex = Assert.Throws<ArgumentException>(() => eh.NormalizeColumnOrTableName(name, false));
+            var ex = Assert.Throws<ArgumentException>(() => eh.NormalizeColumnOrTableName(name, 30,false));
             Assert.AreEqual(expectedMessage, ex.Message);
         }
 
@@ -1115,7 +1118,7 @@ namespace TestEH_UnitTest
         {
             // Act
             EnttityHelper eh = new(stringConnectionBd1);
-            string result = eh.NormalizeColumnOrTableName(name, true);
+            string result = eh.NormalizeColumnOrTableName(name, 30, true);
 
             // Assert
             Assert.AreEqual(expected, result);
@@ -1130,7 +1133,7 @@ namespace TestEH_UnitTest
         {
             // Act
             EnttityHelper eh = new(stringConnectionBd1);
-            string result = eh.NormalizeColumnOrTableName(name, true);
+            string result = eh.NormalizeColumnOrTableName(name, 30,true);
 
             // Assert
             Assert.AreEqual(expected, result);
@@ -1349,7 +1352,7 @@ namespace TestEH_UnitTest
         [Test, Order(201)]
         public void IncludeAll()
         {
-            
+
             EnttityHelper eh = new(stringConnectionBd1);
             Assert.That(eh.DbContext.ValidateConnection(), Is.EqualTo(true));
 
@@ -1359,7 +1362,7 @@ namespace TestEH_UnitTest
             eh.CreateTableIfNotExist<Group>(createOnlyPrimaryTable: true); // The M:N auxiliary table will not be created here
             eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false); // It will be created here
             eh.CreateTableIfNotExist<Career>(false);
-            
+
             ResetTables("201");
 
             /////////////////////////////////////////////////// 
@@ -1500,7 +1503,7 @@ namespace TestEH_UnitTest
             var result = results.FirstOrDefault();
 
             string query = result.ToQuery(eh.DbContext);
-            
+
             // Assert
             if (eh.DbContext.Provider == Enums.DbProvider.Oracle)
             {
@@ -1512,7 +1515,7 @@ namespace TestEH_UnitTest
                 Assert.That(result.Sql, Does.StartWith("INSERT INTO [TEST].[USER] (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor, IsActive) OUTPUT INSERTED.Id VALUES (@Id, "));
                 StringAssert.EndsWith(", '20202', '20201', '1')", query);
             }
-           
+
             StringAssert.Contains("'20202'", query);
             StringAssert.Contains("'20201'", query);
 
@@ -1545,7 +1548,7 @@ namespace TestEH_UnitTest
             {
                 eh.ExecuteNonQuery($"DROP TABLE {tableName}");
             }
-                
+
             long result = eh.LoadCSV(csvFilePath, true, tableName, batchSize, timeout, delimiter, hasHeader, rangeRows);
             Assert.AreEqual(insertCount, result);
 
@@ -1577,7 +1580,7 @@ namespace TestEH_UnitTest
             Assert.That(eh.DbContext.ValidateConnection());
 
             ResetTables("204");
-            
+
             //eh.CreateTableIfNotExist<Group>(true); // Entity FK necessary for table MxN User and Group
             //eh.CreateTableIfNotExist<User>(false);
 
@@ -1616,7 +1619,7 @@ namespace TestEH_UnitTest
 
             string nameTableEscaped = eh.GetQuery.EscapeIdentifier(eh.GetTableName<User>());
 
-            var notPaginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTableEscaped} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'",                    pageSize: null);
+            var notPaginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTableEscaped} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: null);
             Assert.AreEqual(countUsers, notPaginated1.Rows.Count);
 
             var notPaginated2 =
@@ -1629,7 +1632,7 @@ namespace TestEH_UnitTest
                 filter: $"{ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", tableName: eh.GetTableName<User>(),
                 pageSize: null);
             Assert.AreEqual(countUsers, notPaginated3.Count);
-            
+
 
             var paginated1 =
                 eh.ExecuteSelectDt(
@@ -1662,7 +1665,7 @@ namespace TestEH_UnitTest
                 eh.CreateTableIfNotExist<Group>(createOnlyPrimaryTable: true); // Doesnt create the TB_GROUP_USERStoGROUPS table
                 eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false); // Cretes the TB_GROUP_USERStoGROUPS table
                 eh.CreateTableIfNotExist<Career>(createOnlyPrimaryTable: false);
-                
+
                 ResetTables("205");
 
                 // Insercao de carreira
@@ -1756,7 +1759,7 @@ namespace TestEH_UnitTest
                     GROUP BY g.Id, g.Name
 
                     ORDER BY GroupId, UserId NULLS LAST";
-                
+
                 string complexQuerySqlServer = @"
                     WITH UserGroupSummary AS (
                         SELECT
@@ -1805,7 +1808,7 @@ namespace TestEH_UnitTest
                          )
 
                     SELECT * FROM CombinedResults;";
-                
+
                 // ORDER BY
                 //     GroupId,
                 //     CASE WHEN UserId IS NULL THEN 1 ELSE 0 END,
@@ -1873,7 +1876,7 @@ namespace TestEH_UnitTest
                 Name = $"Group {i}",
                 Description = $"Description for Group {i}"
             }).ToList();
-            
+
             Assert.AreEqual(eh.Insert(groups), groups.Count);
 
 
@@ -1924,7 +1927,7 @@ namespace TestEH_UnitTest
                     JOIN TEST.TB_GROUP_USERS g ON ug.ID_TB_GROUP_USERS = g.Id
                 )
                 SELECT * FROM UserGroupSummary WHERE TO_CHAR(UserId) LIKE '206%' ORDER BY GroupName, UserName";
-            
+
             string complexQueryWithWithAndJoinSqlServer = @"
                 WITH UserGroupSummary AS (
                     SELECT 
@@ -1953,7 +1956,7 @@ namespace TestEH_UnitTest
                 WHERE Id < 20605
                 AND TO_CHAR(Id) LIKE '206%'
                 ORDER BY Name";
-            
+
             string queryWithUnionSqlServer = @"
                 SELECT Id, Name 
                 FROM [TEST].[USER]
@@ -1968,7 +1971,7 @@ namespace TestEH_UnitTest
 
             // Query simples sem clausulas adicionais - 20 registros
             string simpleQueryOracle = "SELECT Id, Name FROM TEST.\"USER\" WHERE TO_CHAR(Id) LIKE '206%'";
-            
+
             string simpleQuerySqlServer = "SELECT Id, Name FROM [TEST].[USER] WHERE CAST(Id AS VARCHAR) LIKE '206%'";
 
             // Query com subquery - 6 registros
@@ -1976,31 +1979,31 @@ namespace TestEH_UnitTest
                 SELECT u.Id, u.Name
                 FROM TEST.""USER"" u
                 WHERE u.Id IN (SELECT ug.ID_USER FROM TEST.TB_GROUP_USERStoGROUPS ug WHERE ug.ID_TB_GROUP_USERS = 20601)";
-            
+
             string queryWithSubquerySqlServer = @"
                 SELECT u.Id, u.Name
                 FROM [TEST].[USER] u
                 WHERE u.Id IN (SELECT ug.ID_USER FROM TEST.TB_GROUP_USERStoGROUPS ug WHERE ug.ID_TB_GROUP_USERS = 20601)";
-            
+
 
             // Teste para cada query
             // Act & Assert
             long totalRecords;
 
             // Teste com complexQueryWithWithAndJoin
-            totalRecords = await eh.GetTotalRecordCountAsync(eh.DbContext.Provider is Enums.DbProvider.Oracle? complexQueryWithWithAndJoinOracle : complexQueryWithWithAndJoinSqlServer);
+            totalRecords = await eh.GetTotalRecordCountAsync(eh.DbContext.Provider is Enums.DbProvider.Oracle ? complexQueryWithWithAndJoinOracle : complexQueryWithWithAndJoinSqlServer);
             Assert.AreEqual(27, totalRecords, "A contagem de registros da query complexa esta incorreta.");
 
             // Teste com queryWithUnion
-            totalRecords = await eh.GetTotalRecordCountAsync(eh.DbContext.Provider is Enums.DbProvider.Oracle? queryWithUnionOracle : queryWithUnionSqlServer);
+            totalRecords = await eh.GetTotalRecordCountAsync(eh.DbContext.Provider is Enums.DbProvider.Oracle ? queryWithUnionOracle : queryWithUnionSqlServer);
             Assert.AreEqual(8, totalRecords, "A contagem de registros da query com UNION esta incorreta.");
 
             // Teste com simpleQuery
-            totalRecords = await eh.GetTotalRecordCountAsync(eh.DbContext.Provider is Enums.DbProvider.Oracle? simpleQueryOracle : simpleQuerySqlServer);
+            totalRecords = await eh.GetTotalRecordCountAsync(eh.DbContext.Provider is Enums.DbProvider.Oracle ? simpleQueryOracle : simpleQuerySqlServer);
             Assert.AreEqual(20, totalRecords, "A contagem de registros da query simples esta incorreta.");
 
             // Teste com queryWithSubquery
-            totalRecords = await eh.GetTotalRecordCountAsync(eh.DbContext.Provider is Enums.DbProvider.Oracle? queryWithSubqueryOracle : queryWithSubquerySqlServer);
+            totalRecords = await eh.GetTotalRecordCountAsync(eh.DbContext.Provider is Enums.DbProvider.Oracle ? queryWithSubqueryOracle : queryWithSubquerySqlServer);
             Assert.AreEqual(6, totalRecords, "A contagem de registros da query com subquery esta incorreta.");
 
 
