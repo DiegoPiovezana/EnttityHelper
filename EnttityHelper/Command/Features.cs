@@ -470,7 +470,7 @@ namespace EH.Command
                 //         : _enttityHelper.DbContext.ExecuteNonQuery(new[] { (QueryCommand?)updateQueryCommandList }, 1).First()
                 // );
 
-                var result = _enttityHelper.DbContext.ExecuteNonQuery(updateQueriesEntity.Value, 1);
+                var result = _enttityHelper.DbContext.ExecuteNonQuery(updateQueriesEntity.Value, updateQueriesEntity.Value.Count);
                 updates += result.Sum();
             }
 
