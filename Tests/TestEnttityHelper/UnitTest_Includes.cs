@@ -1,4 +1,5 @@
 ﻿using EH;
+using System.Diagnostics.Metrics;
 
 namespace TestEH_UnitTest
 {
@@ -10,7 +11,8 @@ namespace TestEH_UnitTest
         [SetUp]
         public void Setup()
         {
-            _enttityHelper = new EnttityHelper($"Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            //_enttityHelper = new EnttityHelper("Data Source=localhost:1521/xe;User Id=system;Password=oracle");
+            _enttityHelper = new EnttityHelper("Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=master;Integrated Security=True;");
         }
 
         [Test]

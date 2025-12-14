@@ -23,7 +23,7 @@ namespace TestEH_UnitTest
         //private readonly string stringConnectionBd1 = stringConnectionSqlServer;
         //private readonly string stringConnectionBd2 = stringConnection11g;
 
-        private readonly string stringConnectionBd1 = stringConnection11g;
+        private readonly string stringConnectionBd1 = stringConnectionSqlServer;
         private readonly string stringConnectionBd2 = stringConnection19c;
 
         public EntityHelperTests()
@@ -407,7 +407,7 @@ namespace TestEH_UnitTest
             //eh.Insert(group2);
 
             long resultGroups = eh.Insert(new List<Group>() { group1, group2 });
-            Assert.That(resultGroups == 2, Is.EqualTo(true));
+            Assert.That(resultGroups, Is.EqualTo(2));
 
             eh.ExecuteNonQuery($"DELETE FROM {eh.GetQuery.EscapeIdentifier(eh.GetTableName<User>())} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '13__'"); // DELETE FROM TB_USER
 
@@ -442,9 +442,9 @@ namespace TestEH_UnitTest
             /////////////////////////////////////////////////// 
             // UPDATE
             //User userUpdate = new() { Id = 1, Name = "Diego Piovezana", GitHub = "@DiegoPiovezana", DtCreation = DateTime.Now, IdCareer = 1 };
-            user1.Groups = new List<Group>() { group1 }; // Remove group2
+            user1.Groups = new List<Group>() { group1, group3 }; // Remove group2 and add group3
             var result = eh.Update(user1);
-            Assert.That(result, Is.EqualTo(2)); // Update user1 (there will always be an update in the entity) + Remove group2 from aux table
+            Assert.That(result, Is.EqualTo(3)); // Update user1 (there will always be an update in the entity) + Remove group2 from aux table + Add group3 to aux table = 3
 
             List<User>? usersUpdated = eh.Get<User>();
             Assert.That(usersUpdated.Count == 2, Is.EqualTo(true));
@@ -452,8 +452,8 @@ namespace TestEH_UnitTest
             var groupsUser1 = usersUpdated.Where(u => u.Id == 1301).FirstOrDefault().Groups;
             Assert.Multiple(() =>
             {
-                Assert.That(groupsUser1.Count, Is.EqualTo(1));
-                Assert.That(groupsUser1.FirstOrDefault().Name.Equals("Developers"), Is.EqualTo(true));
+                Assert.That(groupsUser1.Count, Is.EqualTo(2));
+                Assert.That(groupsUser1.LastOrDefault().Name, Is.EqualTo("Operation"));
             });
 
             // Insert new group with new user
@@ -1588,7 +1588,7 @@ namespace TestEH_UnitTest
             eh.CreateTableIfNotExist<Career>(false);
 
             Career carrer1 = new() { IdCareer = 20401, Name = "Pleno", CareerLevel = 2, Active = true };
-            Assert.AreEqual(eh.Insert(carrer1), 1);
+            Assert.That(eh.Insert(carrer1), Is.EqualTo(1));
 
             const int countUsers = 20;
             var users = new List<User>
@@ -1615,12 +1615,12 @@ namespace TestEH_UnitTest
                 new() { Id = 20420, Name = "Gabriela Santos", GitHub = "@GabrielaSantos", DtCreation = DateTime.Now, IdCareer = 20401, IdSupervisor = 20404 }
             };
 
-            Assert.AreEqual(eh.Insert(users), countUsers);
+            Assert.That(eh.Insert(users), Is.EqualTo(countUsers));
 
             string nameTableEscaped = eh.GetQuery.EscapeIdentifier(eh.GetTableName<User>());
 
             var notPaginated1 = eh.ExecuteSelectDt($"SELECT * FROM {nameTableEscaped} WHERE {ConvertToVarchar(nameof(User.Id), eh)} LIKE '204%'", pageSize: null);
-            Assert.AreEqual(countUsers, notPaginated1.Rows.Count);
+            Assert.That(notPaginated1.Rows.Count, Is.EqualTo(countUsers));
 
             var notPaginated2 =
                 eh.ExecuteSelect<User>(
@@ -1662,8 +1662,8 @@ namespace TestEH_UnitTest
             {
                 // Criacao das tabelas
                 eh.CreateTableIfNotExist<Ticket>(createOnlyPrimaryTable: true);
-                eh.CreateTableIfNotExist<Group>(createOnlyPrimaryTable: true); // Doesnt create the TB_GROUP_USERStoGROUPS table
-                eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false); // Cretes the TB_GROUP_USERStoGROUPS table
+                eh.CreateTableIfNotExist<Group>(createOnlyPrimaryTable: true); // Não cria a tabela de relacionamento TB_GROUP_USERStoGROUPS
+                eh.CreateTableIfNotExist<User>(createOnlyPrimaryTable: false); // Cria a tabela USER + TB_GROUP_USERStoGROUPS
                 eh.CreateTableIfNotExist<Career>(createOnlyPrimaryTable: false);
 
                 ResetTables("205");
@@ -1671,19 +1671,18 @@ namespace TestEH_UnitTest
                 // Insercao de carreira
                 Career career1 = new() { IdCareer = 20501, Name = "Junior", CareerLevel = 1, Active = true };
                 Career career2 = new() { IdCareer = 20502, Name = "Pleno", CareerLevel = 2, Active = true };
-                Assert.AreEqual(eh.Insert(new List<Career> { career1, career2 }), 2);
+                Assert.That(eh.Insert(new List<Career> { career1, career2 }), Is.EqualTo(2));                
 
-                // Insercao de grupos
+                // Criação de grupos com inserção
                 var groups = Enumerable.Range(20501, 5).Select(i => new Group
                 {
                     Id = i,
                     Name = $"Group {i}",
                     Description = $"Description for Group {i}"
                 }).ToList();
-                Assert.AreEqual(eh.Insert(groups), groups.Count);
+                Assert.That(groups.Count, Is.EqualTo(eh.Insert(groups)));
 
-
-                // Insercao de usuarios
+                // Insercao de usuarios (grupos já devem ter sido inseridos previamente)
                 var users = Enumerable.Range(20501, 20).Select(i =>
                 {
                     var user = new User
@@ -1707,15 +1706,16 @@ namespace TestEH_UnitTest
                 }).ToList();
 
                 // Insere usuarios e valida a quantidade de registros inseridos em ambas as tabelas
-                int expectedUserCount = users.Count;
-                int expectedAuxiliaryCount = users.Sum(u => u.Groups.Count); // Soma os relacionamentos User-Group
-                int totalExpectedInserts = expectedUserCount + expectedAuxiliaryCount;
+                int expectedEntitiesCount = users.Count;
+                int expectedAuxiliaryCount = users.Sum(u => u.Groups.Count); // Contagem apenas de relacionamentos User-Group
+                int totalExpectedInserts = expectedEntitiesCount + expectedAuxiliaryCount;
+                // 
 
-                // Realiza a insercao
+                // Realiza a insercao (usuários + relacionamentos) -> USER + TB_GROUP_USERStoGROUPS
                 long actualInsertCount = eh.Insert(users);
 
-                // Valida a quantidade total de inser��es
-                Assert.AreEqual(totalExpectedInserts, actualInsertCount);
+                // Valida a quantidade total de inserções
+                Assert.That(actualInsertCount, Is.EqualTo(totalExpectedInserts));
 
                 // Query complexa com JOIN, UNION, SUM, WITH, etc.
                 string complexQueryOracle = @"
