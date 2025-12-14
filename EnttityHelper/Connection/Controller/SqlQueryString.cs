@@ -72,10 +72,10 @@ namespace EH.Connection
         /// <param name="ignoreInverseAndCollectionProperties">(Optional) If true, properties that are part of an inverse property will be ignored.</param>
         /// <returns>String command.</returns>
         public ICollection<QueryCommand?> Insert<TEntity>(
-            TEntity entity, 
-            Enums.DbProvider? dbType = null, 
-            Dictionary<string, string>? replacesTableName = null, 
-            string? tableName1 = null, 
+            TEntity entity,
+            Enums.DbProvider? dbType = null,
+            Dictionary<string, string>? replacesTableName = null,
+            string? tableName1 = null,
             bool ignoreInverseAndCollectionProperties = false
             ) where TEntity : class
         {
@@ -83,12 +83,15 @@ namespace EH.Connection
 
             List<QueryCommand?> queries = new();
 
-            Dictionary<string, Property>? properties = ToolsProp.GetProperties(entity, true, false, false);
+            Dictionary<string, Property>? properties = ToolsProp.GetProperties(
+                objectEntity:entity, 
+                ignoreColletion:false, 
+                ignoreVirtual:false, 
+                includeNotMapped:false
+            );
 
             Dictionary<string, Property>? filteredProperties = properties
-                .Where(p => p.Value.PropertyInfo.IsFkEntity() == false)
-                .Where(p => p.Value.IsCollection == false)
-                .Where(p => p.Value.Value is not null)
+                .Where(p => !p.Value.PropertyInfo.IsFkEntity() && p.Value.IsCollection == false && p.Value.Value is not null)
                 .ToDictionary(p => p.Key, p => p.Value);
             
             if (filteredProperties is null || filteredProperties.Count == 0)
@@ -332,7 +335,6 @@ namespace EH.Connection
             List<QueryCommand?> queries = new();
 
             var inverseProperties = ToolsProp.GetInverseProperties(entity);
-
             foreach (PropertyInfo invProp in inverseProperties)
             {
                 Type collectionType = invProp.PropertyType;
@@ -434,7 +436,7 @@ namespace EH.Connection
                 {
                     foreach (Property itemInsert in itemsCollectionNew)
                     {
-                        bool itemContains = itemsCollectionNew.Any(p =>
+                        bool itemContains = itemsCollectionOld.Any(p =>
                             p.Name == itemInsert.Name
                             && object.Equals(p.Value, itemInsert.Value)
                         );
@@ -706,7 +708,7 @@ namespace EH.Connection
             if (typeof(IEnumerable).IsAssignableFrom(entityType) && entityType.IsGenericType) { itemType = entityType.GetGenericArguments()[0]; }
 
             object entity = Activator.CreateInstance(itemType) ?? throw new ArgumentNullException(nameof(entity));
-            var properties = ToolsProp.GetProperties(entity, true, false, false);
+            var properties = ToolsProp.GetProperties(objectEntity:entity, ignoreColletion:onlyPrimaryTable, ignoreVirtual:false, includeNotMapped:false);
             var pk = ToolsProp.GetPK(entity);
 
             queryBuilderPrincipal.Append($@"CREATE TABLE {tableNameEscaped} (");
@@ -763,7 +765,7 @@ namespace EH.Connection
                 }
                 else // IsCollection
                 {
-                    if (onlyPrimaryTable) { continue; }
+                    //if (onlyPrimaryTable) { continue; }  // Já tratado acima
 
                     Type entity1Type = entity.GetType(); // User
                     Property? propEntity2 = properties[prop.Value.Name]; // Group
