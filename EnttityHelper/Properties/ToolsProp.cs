@@ -28,7 +28,6 @@ namespace EH.Properties
 
                 Property property = new(prop, objectEntity);
 
-
                 //if (getFormat)
                 //{
                 //    object? propType;
