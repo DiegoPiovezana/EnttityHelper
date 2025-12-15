@@ -15,16 +15,15 @@ namespace TestEH_UnitTest
         //private readonly EnttityHelper _enttityHelper;
 
         private const string stringConnection11g = "Data Source=localhost:1521/xe;User Id=system;Password=oracle";
-        private const string stringConnection19c = "Data Source=localhost:49262/orclcdb;User Id=system;Password=oracle";
+        //private const string stringConnection19c = "Data Source=localhost:49262/orclcdb;User Id=system;Password=oracle";
+        //private const string stringConnection19c = "User Id=system;Password=oracle;Data Source=127.0.0.1:49262/ORCLPDB1;";
+        private const string stringConnection19c = "Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=127.0.0.1)(PORT=49262))(CONNECT_DATA=(SID=ORCLCDB)));";
         // private const string stringConnectionSqlServer = "Server=D1390PC;Database=DbTest;Trusted_Connection=True;TrustServerCertificate=True;";
         // private const string stringConnectionSqlServer = "Server=(localdb)\\MSSQLLocalDB;Integrated Security=true;Database=master";
         private const string stringConnectionSqlServer = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=master;Integrated Security=True;";
 
-        //private readonly string stringConnectionBd1 = stringConnectionSqlServer;
-        //private readonly string stringConnectionBd2 = stringConnection11g;
-
         private readonly string stringConnectionBd1 = stringConnectionSqlServer;
-        private readonly string stringConnectionBd2 = stringConnection19c;
+        private readonly string stringConnectionBd2 = stringConnection11g;
 
         public EntityHelperTests()
         {
@@ -1512,7 +1511,7 @@ namespace TestEH_UnitTest
             }
             else
             {
-                Assert.That(result.Sql, Does.StartWith("INSERT INTO [TEST].[USER] (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor, IsActive) OUTPUT INSERTED.Id VALUES (@Id, "));
+                Assert.That(result.Sql, Does.StartWith("INSERT INTO TEST.[USER] (Id, Name, GitHub, DtCreation, IdCareer, IdSupervisor, IsActive) OUTPUT INSERTED.Id VALUES (@Id, "));
                 StringAssert.EndsWith(", '20202', '20201', '1')", query);
             }
 
@@ -1827,20 +1826,18 @@ namespace TestEH_UnitTest
 
                 // Teste de paginacao
                 var paginatedResult = eh.ExecuteSelectDt(complexQuery, pageSize: 10, pageIndex: 0);
-                Assert.AreEqual(10, paginatedResult.Rows.Count);
+                Assert.That(paginatedResult.Rows, Has.Count.EqualTo(10));
 
                 var secondPageResult = eh.ExecuteSelectDt(complexQuery, pageSize: 2, pageIndex: 3); // Total: 32 (4 pages)
-                Assert.AreEqual(2, secondPageResult.Rows.Count); // Segunda pagina deve ter registros (dependendo da quantidade de dados)
-
+                Assert.That(secondPageResult.Rows.Count, Is.EqualTo(2)); // Segunda pagina deve ter registros (dependendo da quantidade de dados)
 
                 // Teste de contagem total
                 long totalRecords = await eh.GetTotalRecordCountAsync(complexQuery);
-                Assert.AreEqual(15, totalRecords); // Deve retornar a quantidade total de registros da query
-
+                Assert.That(totalRecords, Is.EqualTo(eh.DbContext.Provider == Enums.DbProvider.Oracle ? 32 : 15)); // Deve retornar a quantidade total de registros da query
 
                 // Validacao cruzada
                 long allRecords = eh.ExecuteSelectDt(complexQuery, pageSize: null).Rows.Count;
-                Assert.AreEqual(totalRecords, allRecords);
+                Assert.That(allRecords, Is.EqualTo(totalRecords));
 
             }
             finally

@@ -1114,7 +1114,7 @@ namespace EH.Connection
                         SELECT COUNT(1)
                         FROM (
                             {mainPart}
-                        ) AS CountQuery
+                        ) CountQuery
                         {filterClause}";
                     return new QueryCommand(sql, null, null, null);
                 }
@@ -1130,7 +1130,7 @@ namespace EH.Connection
                 SELECT COUNT(1)
                 FROM (
                     {coreQuery}
-                ) AS CountQuery
+                ) CountQuery
                 {filterClause}";
             return new QueryCommand(fallbackSql, null, null, null);
         }
@@ -1224,11 +1224,12 @@ namespace EH.Connection
             var parts = name.Split('.');
             // Determine if table part needs quoting
             var needsQuoteFlags = parts.Select(NeedsQuoting).ToArray();
-            bool shouldQuoteAll = parts.Length > 1 && needsQuoteFlags[needsQuoteFlags.Length - 1];
+            //bool shouldQuoteAll = parts.Length > 1 && needsQuoteFlags[needsQuoteFlags.Length - 1];
 
             var escaped = parts.Select((part, index) =>
             {
-                bool quote = shouldQuoteAll || needsQuoteFlags[index];
+                //bool quote = shouldQuoteAll || needsQuoteFlags[index];
+                bool quote = needsQuoteFlags[index];
                 if (quote)
                 {
                     return Quote(part);
