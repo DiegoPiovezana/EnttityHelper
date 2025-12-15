@@ -22,8 +22,8 @@ namespace TestEH_UnitTest
         // private const string stringConnectionSqlServer = "Server=(localdb)\\MSSQLLocalDB;Integrated Security=true;Database=master";
         private const string stringConnectionSqlServer = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=master;Integrated Security=True;";
 
-        private readonly string stringConnectionBd1 = stringConnectionSqlServer;
-        private readonly string stringConnectionBd2 = stringConnection11g;
+        private readonly string stringConnectionBd1 = stringConnection11g;
+        private readonly string stringConnectionBd2 = stringConnectionSqlServer;
 
         public EntityHelperTests()
         {
@@ -1185,7 +1185,7 @@ namespace TestEH_UnitTest
         [Test]
         public void LoadCSV_BIGCSVFile()
         {
-            DateTime dtTarget = new DateTime(2025, 07, 02, 21, 20, 0);
+            DateTime dtTarget = new DateTime(2025, 12, 14, 23, 30, 0);
             int minuteExpirationTest = 5;
 
             if (DateTime.Now - dtTarget > TimeSpan.FromMinutes(minuteExpirationTest))
@@ -1220,7 +1220,9 @@ namespace TestEH_UnitTest
             Debug.WriteLine($"Elapsed: {endTime - startTime}");
 
             // Assert
-            Assert.AreEqual(insertCount - 1, result); // -1 because the first row is the header
+            Assert.That(result, Is.EqualTo(insertCount - 1)); // -1 because the first row is the header
+
+            eh.ExecuteNonQuery($"DROP TABLE {tableName}");
         }
 
         [Test]
