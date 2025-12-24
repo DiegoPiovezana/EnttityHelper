@@ -1,8 +1,8 @@
 [![NuGet](https://img.shields.io/nuget/v/EnttityHelper.svg)](https://www.nuget.org/packages/EnttityHelper/)
 
-<img src="https://raw.githubusercontent.com/DiegoPiovezana/DiegoPiovezana/main/Images/br.png" width=2.0% height=2.0%> Veja a documentação em português [clicando aqui](EnttityHelper/Globalization/Readme_pt-br.md).<br/>
+<img src="https://raw.githubusercontent.com/DiegoPiovezana/DiegoPiovezana/main/Images/br.png" width=2.0% height=2.0%>🇧🇷 Veja a documentação em português [clicando aqui](EnttityHelper/Globalization/Readme_pt-br.md).<br/>
 
-# EnttityHelper [Alpha]
+# EnttityHelper [Beta]
 Allows easy manipulation of entities in different databases.<br/>
 
 <img src="EnttityHelper\Images\EnttityHelper_publish.png" width=100% height=100%><br/>
@@ -12,7 +12,7 @@ Allows easy manipulation of entities in different databases.<br/>
 ## AVAILABLE FEATURES:<br/>
 ✔ Open-Source;<br/>
 ✔ Uses ADO.NET;<br/>
-✔ Compatible with different databases such as Oracle (SqlServer and SqLite coming soon);<br/>
+✔ Compatible with different databases such as Oracle and SqlServer;<br/>
 ✔ Performs the main operations: update, insert, select and delete entities;<br/>
 ✔ Allows you to create a table in the database according to properties of a C# object;<br/>
 ✔ Able to consider attributes of an object's properties to create a table;<br/>
@@ -22,7 +22,7 @@ Allows easy manipulation of entities in different databases.<br/>
 ✔ Possible to define the table names and column types in a fully customized or automatic way;<br/>
 ✔ Capable of creating tables from a DataTable;<br/>
 ✔ Select from one database and insert the result of that select into another database (`InserLinkSelect`);<br/>
-✔ [Coming soon] Possible to establish Many-to-Many relationships.<br/>
+✔ Possible to establish Many-to-Many relationships.<br/>
 
 <br/>
 

@@ -1,8 +1,8 @@
 [![NuGet](https://img.shields.io/nuget/v/EnttityHelper.svg)](https://www.nuget.org/packages/EnttityHelper/)
 
-<img src="https://raw.githubusercontent.com/DiegoPiovezana/DiegoPiovezana/main/Images/us.png" width=2.0% height=2.0%> See the documentation in English by [clicking here](../../Readme.md).<br/>
+<img src="https://raw.githubusercontent.com/DiegoPiovezana/DiegoPiovezana/main/Images/us.png" width=2.0% height=2.0%>🇺🇸 See the documentation in English by [clicking here](../../Readme.md).<br/>
 
-# EnttityHelper [Alpha]
+# EnttityHelper [Beta]
 Possibilita a fácil manipulação de entidades em diferentes bancos de dados.<br/>
 
 <img src="..\Images\EnttityHelper_publish.png" width=100% height=100%><br/>
@@ -12,7 +12,7 @@ Possibilita a fácil manipulação de entidades em diferentes bancos de dados.<b
 ## RECURSOS DISPONÍVEIS:<br/>
 ✔ Open-Source;<br/>
 ✔ Usa ADO.NET;<br/>
-✔ Compatível com diferentes bancos de dados, como Oracle (SqlServer e SqLite em breve);<br/>
+✔ Compatível com diferentes bancos de dados, como Oracle e SqlServer;<br/>
 ✔ Realiza as principais operações: atualizar, inserir, selecionar e excluir entidades;<br/>
 ✔ Permite criar uma tabela no banco de dados de acordo com as propriedades de um objeto C#;<br/>
 ✔ Capaz de considerar atributos das propriedades de um objeto para criar uma tabela;<br/>
@@ -22,7 +22,7 @@ Possibilita a fácil manipulação de entidades em diferentes bancos de dados.<b
 ✔ Possível definir o nome das tabelas e o tipo das colunas de maneira totalmente personalizada ou automática;<br/>
 ✔ Capaz de criar tabelas a partir de uma DataTable;<br/>
 ✔ Faça select em um banco e insira o resultado desse select em outro banco (`InserLinkSelect`);<br/>
-✔ [Em breve] Possível estabelecer relações Muito-para-Muitos.<br/>
+✔ Possível estabelecer relações Muito-para-Muitos.<br/>
 
 <br/>
 
@@ -33,7 +33,7 @@ https://bit.ly/FeedbackHappyHelper
 
 ## INSTALAÇÃO:
 ```
- dotnet add package EnttityHelper --version 0.5.0-alpha-1
+ dotnet add package EnttityHelper
 ```	
 <br/>
 
