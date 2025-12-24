@@ -23,7 +23,8 @@
 		<PackageReleaseNotes>- Beta Version</PackageReleaseNotes>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<AppDesignerFolder>Properties</AppDesignerFolder>		
+		<AppDesignerFolder>Properties</AppDesignerFolder>
+		<PackageReadmeFile>README.md</PackageReadmeFile>		
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -75,6 +76,13 @@
 
 	<ItemGroup>
 	  <Reference Include="System.Data.DataSetExtensions" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="README.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
 	</ItemGroup>
 
 	

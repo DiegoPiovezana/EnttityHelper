@@ -1,42 +1,34 @@
-[![NuGet](https://img.shields.io/nuget/v/EnttityHelper.svg)](https://www.nuget.org/packages/EnttityHelper/)
+[![Português](https://img.shields.io/static/v1?label=Veja%20em&message=Português&color=FEDD00&labelColor=009739)](https://github.com/DiegoPiovezana/EnttityHelper/blob/main/EnttityHelper/Globalization/Readme_pt-br.md)
 
-<img src="https://raw.githubusercontent.com/DiegoPiovezana/DiegoPiovezana/main/Images/br.png" width=2.0% height=2.0%> Veja a documentação em português [clicando aqui](EnttityHelper/Globalization/Readme_pt-br.md).<br/>
 
 # EnttityHelper [Beta]
-Allows easy manipulation of entities in different databases.<br/>
+Allows easy manipulation of entities in different databases.
 
-<img src="EnttityHelper\Images\EnttityHelper_publish.png" width=100% height=100%><br/>
-<br/>
-[![Changelog](https://img.shields.io/badge/Changelog-View%20Here-blue.svg)](CHANGELOG.md) [![License](https://img.shields.io/badge/License-GPL-yellow.svg)](LICENSE.txt)
+<img src="https://github.com/DiegoPiovezana/EnttityHelper/blob/888a0c2c276cbaf18a44e6123bf1e650f872d08f/EnttityHelper/Images/EnttityHelper_publish.png?raw=true" width=100% height=100%>
 
-## AVAILABLE FEATURES:<br/>
-✔ Open-Source;<br/>
-✔ Uses ADO.NET;<br/>
-✔ Compatible with different databases such as Oracle and SqlServer;<br/>
-✔ Performs the main operations: update, insert, select and delete entities;<br/>
-✔ Allows you to create a table in the database according to properties of a C# object;<br/>
-✔ Able to consider attributes of an object's properties to create a table;<br/>
-✔ Independent manipulations: Entities can be manipulated without needing to be part of a Context;<br/>
-✔ Secure manipulations: if the amount of change is not as expected, the transaction will not be effective;<br/>
-✔ Perform entity, DataTable, IDataReader, or DataRow[] insertions efficiently;<br/>
-✔ Possible to define the table names and column types in a fully customized or automatic way;<br/>
-✔ Capable of creating tables from a DataTable;<br/>
-✔ Select from one database and insert the result of that select into another database (`InserLinkSelect`);<br/>
-✔ Possible to establish Many-to-Many relationships.<br/>
+[![GitHub](https://img.shields.io/badge/GitHub-View%20Here-blue?logo=github)](https://github.com/DiegoPiovezana/EnttityHelper)
 
-<br/>
+## AVAILABLE FEATURES:
+* ✔ **Open-Source**
+* ✔ **Uses ADO.NET**
+* ✔ **Compatible with different databases** such as Oracle and SqlServer
+* ✔ **CRUD Operations:** Update, insert, select and delete entities
+* ✔ **Schema Generation:** Create tables based on C# objects or DataTables
+* ✔ **Attributes Support:** Considers DataAnnotations (Key, Required, MaxLength, Table, etc)
+* ✔ **Independent manipulations:** Entities don't need a Context
+* ✔ **Secure manipulations:** Transaction-based changes
+* ✔ **Bulk Operations:** Efficient insertion of DataTables or IDataReader
+* ✔ **InserLinkSelect:** Select from one database and insert directly into another
+
 
 ### CONTACT:
 https://bit.ly/FeedbackHappyHelper
 
-<br/><br/>
 
 ## INSTALLATION:
-```
+```bash
  dotnet add package EnttityHelper
 ```
-
-<br/>
 
 ## EXAMPLE OF CRUD USAGE:
 ```c#
@@ -108,7 +100,7 @@ namespace App
 }
 
 ```
-<br/>
+
 
 ## EXAMPLE OF DATATABLE INSERTION:
 ```c#
@@ -147,7 +139,7 @@ namespace App
     }
 }
 ```
-<br/>
+
 
 ## EXAMPLE OF LINK SELECT INSERTION:
 ```c#
@@ -181,4 +173,3 @@ namespace App
     }
 }
 ```
-<br/>
