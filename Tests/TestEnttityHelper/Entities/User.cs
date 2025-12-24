@@ -1,0 +1,39 @@
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using TestEH_UnitTest.Entities;
+
+namespace TestEH_UnitTest.Entities
+{
+    [Table("USER", Schema = "TEST")]
+    public class User
+    {
+        [Key()] public long Id { get; internal set; }
+        [Required][MaxLength(300)] public string Name { get; internal set; }
+        [Required][MaxLength(100)] public string GitHub { get; internal set; }
+        public DateTime DtCreation { get; internal set; }
+        [ForeignKey(nameof(Career))] public long? IdCareer { get; internal set; }
+        public Career? Career { get; internal set; }
+        [InverseProperty(nameof(Group.Users))] public virtual ICollection<Group> Groups { get; internal set; } = new List<Group>();
+        [ForeignKey(nameof(Supervisor))] public long? IdSupervisor { get; internal set; }
+        public virtual User? Supervisor { get; internal set; }
+        public DateTime? CreatedDate { get; internal set; }
+        public bool IsActive { get; internal set; } = true;
+        
+        
+        
+        
+        // [ForeignKey(nameof(Items))] public ICollection<long>? IdItems { get; internal set; }
+        // public virtual ICollection<Item>? Items { get; internal set; } // TODO: Test 1xN
+
+
+        //[NotMapped] public Classification? Classification { get; internal set; }
+
+        public User() { }
+
+        public User(string name)
+        {
+            Name = name;
+        }
+
+    }
+}

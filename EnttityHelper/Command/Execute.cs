@@ -1,0 +1,759 @@
+﻿using EH.Command;
+using EH.Connection;
+using Oracle.ManagedDataAccess.Client;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Diagnostics;
+using System.Linq;
+using System.Text.RegularExpressions;
+using EH.Properties;
+
+namespace EH.Commands
+{
+    internal static class Execute
+    {
+        /// <summary>
+        /// Executes a query and retrieves data from the database, with optional support for pagination.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of entity to map the retrieved data to.</typeparam>
+        /// <param name="dbContext">The database context providing the connection and command execution.</param>
+        /// <param name="query">The SQL query to be executed.</param>
+        /// <param name="getDataReader">
+        /// (Optional) If <c>true</c>, the method returns the <see cref="IDataReader"/> object instead of mapped entities.
+        /// Defaults to <c>false</c>.
+        /// </param>
+        /// param name="typesDefault">
+        /// (Optional) A dictionary containing default types for the columns in the query.
+        /// This is used to map the data types correctly when retrieving entities.
+        /// </param>
+        /// <param name="pageSize">
+        /// (Optional) The number of records to retrieve per page. If specified, the query will be paginated.
+        /// </param>
+        /// <param name="pageIndex">
+        /// The zero-based index of the page to retrieve. Ignored if <paramref name="pageSize"/> is <c>null</c>.
+        /// Defaults to 0.
+        /// </param>
+        /// <param name="filterPage">
+        /// (Optional) Additional filtering criteria for the paginated query. Applied only if <paramref name="pageSize"/> is specified.
+        /// </param>
+        /// <param name="sortColumnPage">
+        /// (Optional) The column name to sort the paginated query. Applied only if <paramref name="pageSize"/> is specified.
+        /// </param>
+        /// <param name="sortAscendingPage">
+        /// Determines the sorting order for the paginated query. 
+        /// <c>true</c> for ascending order; <c>false</c> for descending order. Defaults to <c>true</c>.
+        /// Applied only if <paramref name="pageSize"/> is specified.
+        /// </param>
+        /// <returns>
+        /// Either a list of mapped entities of type <typeparamref name="TEntity"/> or an <see cref="IDataReader"/> object, 
+        /// depending on the value of <paramref name="getDataReader"/>.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if the database connection is null or if the query is not provided.
+        /// </exception>
+        /// <remarks>
+        /// - If <paramref name="pageSize"/> is not specified, the query will execute without pagination.
+        /// - The method uses the specified filtering and sorting options only if <paramref name="pageSize"/> is provided.
+        /// </remarks>
+        internal static object? ExecuteReader<TEntity>(this Database dbContext, string? query, bool getDataReader, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
+        {
+            if (dbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
+            if (query is null) { throw new InvalidOperationException("Query does not exist."); }
+
+            if (pageSize != null) query = new SqlQueryString(dbContext).PaginatedQuery(query, pageSize ?? 0, pageIndex, filterPage, sortColumnPage, sortAscendingPage);
+            //Debug.WriteLine(query);
+
+            IDbConnection connection = dbContext.CreateOpenConnection();
+            using IDbCommand command = dbContext.CreateCommand(query);
+            IDataReader? reader = command.ExecuteReader();
+
+            if (getDataReader) { return reader; }
+
+            if (reader != null)
+            {
+                List<TEntity> entities = Tools.ToListEntity<TEntity>(reader);
+                reader.Close();
+                connection.Close();
+                Debug.WriteLine($"{(entities?.Count) ?? 0} entities mapped!");
+                return entities;
+            }
+
+            return null;
+        }
+        
+        internal static object? ExecuteReader<TEntity>(this Database dbContext, QueryCommand? query, bool getDataReader, int? pageSize, int pageIndex, string? filterPage, string? sortColumnPage, bool sortAscendingPage)
+        {
+            try
+            {
+
+                if (dbContext?.IDbConnection is null)
+                    throw new InvalidOperationException("Connection does not exist.");
+                if (query is null)
+                    throw new InvalidOperationException("Query does not exist.");
+
+                if (pageSize is not null)
+                {
+                    query = new SqlQueryString(dbContext).PaginatedQuery(query, pageSize.Value, pageIndex, filterPage,
+                        sortColumnPage, sortAscendingPage);
+                }
+
+                IDbConnection connection = dbContext.CreateOpenConnection();
+                using IDbCommand command = dbContext.CreateCommand(query.Sql);
+
+                if (query.Parameters?.Count > 0)
+                {
+                    foreach (var param in query.Parameters)
+                    {
+                        var dbParam = command.CreateParameter();
+                        dbParam.ParameterName = param.Key;
+                        dbParam.Value = param.Value?.Value ?? DBNull.Value;
+                        dbParam.Direction = ParameterDirection.Input;
+
+                        DefineDbTypeValueForProvider(dbParam, dbContext, param.Value);
+
+                        command.Parameters.Add(dbParam);
+                    }
+                }
+
+                IDataReader? reader = command.ExecuteReader();
+
+                if (getDataReader)
+                {
+                    return reader;
+                }
+
+                if (reader != null)
+                {
+                    List<TEntity> entities = Tools.ToListEntity<TEntity>(reader);
+                    reader.Close();
+                    connection.Close();
+                    Debug.WriteLine($"{entities?.Count ?? 0} entities mapped!");
+                    return entities;
+                }
+
+                return null;
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                throw;
+            }     
+        }
+
+        /// <summary>
+        /// Executes a collection of SQL non-query commands (e.g., INSERT, UPDATE, DELETE).
+        /// </summary>
+        /// <param name="dbContext">The database context where the commands will be executed.</param>
+        /// <param name="queries">The collection of SQL queries to execute.</param>
+        /// <param name="expectedChanges">(Optional) The expected number of rows affected by each command. If the actual number of affected rows does not match, the transaction is rolled back, and an exception is thrown.</param>
+        /// <returns>
+        /// A collection of integers representing the number of rows affected by each executed command.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the database connection is null, or when the queries collection is null or contains an empty query.
+        /// </exception>
+        /// <exception cref="Exception">
+        /// Thrown when a SQL error occurs, including specific handling for the 'ORA-00942' error.
+        /// </exception>
+        internal static ICollection<long> ExecuteNonQuery(this Database dbContext, ICollection<string?> queries, int expectedChanges = -1)
+        {
+            if (dbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
+            if (queries is null || queries.Count == 0) { throw new InvalidOperationException("Queries do not exist."); }
+
+            IDbConnection connection = dbContext.CreateOpenConnection();
+            IDbTransaction? transaction = dbContext.CreateTransaction() ?? throw new InvalidOperationException("Transaction is null.");
+            string tableName = string.Empty;
+
+            try
+            {
+                ICollection<long> result = new List<long>();
+
+                foreach (var query in queries)
+                {
+                    if (string.IsNullOrEmpty(query?.Trim())) { throw new ArgumentNullException(nameof(query), "Query cannot be null or empty."); }
+
+                    var tables = GetTbDependence(query);
+                    tableName = string.Join(" and ", tables);
+
+                    using IDbCommand command = dbContext.CreateCommand(query);
+                    command.Transaction = transaction;
+
+                    long rowsAffected = command.ExecuteNonQuery();
+                    //Debug.WriteLine(query);                   
+
+                    result.Add(rowsAffected);
+                }
+
+                long changes = result.Sum();
+                if (expectedChanges != -1 && changes != expectedChanges)
+                {
+                    throw new InvalidOperationException($"Expected {expectedChanges} changes, but {changes} were made.");
+                }
+
+                transaction.Commit(); // Possible only for DML
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                transaction.Rollback(); // Not applicable to DDL
+                //connection.Close();
+
+                if (ex.Message.Contains("ORA-00942") && !string.IsNullOrEmpty(tableName))
+                {
+                    throw new Exception($"E-942-EH: Table or view '{tableName}' must exist!", ex);
+                }
+                throw;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open) connection.Close();
+            }
+        }
+        
+        internal static ICollection<long> ExecuteNonQuery(this Database dbContext, ICollection<QueryCommand?> queries, int expectedChanges = -1)
+        {
+            if (dbContext?.IDbConnection is null)
+                throw new InvalidOperationException("Connection does not exist.");
+            if (queries is null || queries.Count == 0)
+                throw new InvalidOperationException("Queries do not exist.");
+
+            IDbConnection connection = dbContext.CreateOpenConnection();
+            IDbTransaction? transaction = dbContext.CreateTransaction() ?? throw new InvalidOperationException("Transaction is null.");
+            string tableName = string.Empty;
+
+            try
+            {
+                ICollection<long> result = new List<long>();
+
+                foreach (var queryCommand in queries)
+                {
+                    if (queryCommand is null || string.IsNullOrWhiteSpace(queryCommand.Sql))
+                        throw new ArgumentNullException(nameof(queryCommand), "Query cannot be null or empty.");
+
+                    var tables = GetTbDependence(queryCommand.Sql);
+                    tableName = string.Join(" and ", tables);
+
+                    using IDbCommand command = dbContext.CreateCommand(queryCommand.Sql);
+                    command.Transaction = transaction;
+                    
+                    foreach (var param in queryCommand.Parameters)
+                    {
+                        var dbParam = command.CreateParameter();
+                        dbParam.Direction = ParameterDirection.Input;
+                        dbParam.ParameterName = param.Key;
+                        // dbParam.Value = param.Value?.Value ?? DBNull.Value;
+                        
+                        DefineDbTypeValueForProvider(dbParam, dbContext, param.Value);
+                        
+                        command.Parameters.Add(dbParam);
+                    }
+                    
+                    foreach (var param in queryCommand.ParametersOutput)
+                    {
+                        var dbParam = command.CreateParameter();
+                        dbParam.ParameterName = param.Key;
+                        dbParam.Direction = ParameterDirection.Output;
+                        
+                        DefineDbTypeValueForProvider(dbParam, dbContext, param.Value);
+                        // dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
+                        
+                        Type typeReturn = dbParam.Value is not DBNull ? dbParam.Value?.GetType() : param.Value.Type ?? typeof(object);
+                        dbParam.DbType = ToolsProp.MapToDbType(typeReturn);
+                        
+                        command.Parameters.Add(dbParam);
+                    }
+
+                    long rowsAffected = command.ExecuteNonQuery();
+                    result.Add(rowsAffected);
+                    
+                    foreach (var outputParam in queryCommand.ParametersOutput)
+                    {
+                        var dbParam = (IDbDataParameter)command.Parameters[outputParam.Key];
+                        if (dbParam != null && dbParam.Value != DBNull.Value)
+                        {
+                            outputParam.Value.Value = dbParam.Value;
+                        }
+                    }
+                }
+
+                long changes = result.Sum();
+                if (expectedChanges != -1 && changes != expectedChanges)
+                {
+                    throw new InvalidOperationException($"Expected {expectedChanges} changes, but {changes} were made.");
+                }
+
+                transaction.Commit(); // Possible only for DML
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                transaction.Rollback(); // Not applicable to DDL
+
+                if (ex.Message.Contains("ORA-00942") && !string.IsNullOrEmpty(tableName))
+                {
+                    throw new Exception($"E-942-EH: Table or view '{tableName}' must exist!", ex);
+                }
+
+                throw;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open)
+                    connection.Close();
+            }
+        }
+        
+        private static List<string> GetTbDependence(string query)
+        {
+            var tables = new List<string>();
+
+            // 'FROM' e 'JOIN'
+            var fromMatches = Regex.Matches(query, @"\b(?:FROM|JOIN)\s+([^\s,]+)", RegexOptions.IgnoreCase);
+            foreach (Match match in fromMatches)
+            {
+                if (match.Success)
+                {
+                    tables.Add(match.Groups[1].Value);
+                }
+            }
+
+            // 'FOREIGN KEY REFERENCES'
+            var foreignKeyMatches = Regex.Matches(query, @"\bFOREIGN\s+KEY\s+\([^\)]+\)\s+REFERENCES\s+([^\s\(]+)", RegexOptions.IgnoreCase);
+            foreach (Match match in foreignKeyMatches)
+            {
+                if (match.Success)
+                {
+                    tables.Add(match.Groups[1].Value);
+                }
+            }
+
+            return tables;
+        }
+
+        /// <summary>
+        /// Executes a collection of SQL queries within a transaction using the provided database context,
+        /// and returns the results of the executed scalar queries as a collection of objects.
+        /// Each query must include an output parameter named ":Result" to capture the return value.
+        /// </summary>
+        /// <param name="dbContext">The database context containing the connection and transaction information.</param>
+        /// <param name="queries">A collection of SQL query strings to be executed as scalar commands. 
+        /// Each query must contain an output parameter named ":Result" for capturing the result.</param>
+        /// <returns>A collection of objects representing the results of each scalar query executed.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the database connection or transaction is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if the queries collection or any individual query is null or empty.</exception>
+        /// <exception cref="Exception">Thrown if an error occurs during the execution of the queries, triggering a transaction rollback.</exception>
+        internal static ICollection<object?> ExecuteScalar(this Database dbContext, ICollection<string?> queries)
+        {
+            if (dbContext?.IDbConnection is null) { throw new InvalidOperationException("Connection does not exist."); }
+            if (queries is null) throw new ArgumentNullException(nameof(queries), "Queries do not exist.");
+
+            IDbConnection connection = dbContext.CreateOpenConnection();
+            IDbTransaction? transaction = dbContext.CreateTransaction() ?? throw new InvalidOperationException("Transaction is null.");
+
+            try
+            {
+                ICollection<object?> results = new List<object?>();
+
+                foreach (var query in queries)
+                {
+                    if (string.IsNullOrEmpty(query?.Trim())) throw new ArgumentNullException(nameof(query), "Query cannot be null or empty.");
+
+                    using IDbCommand command = dbContext.CreateCommand(query);
+                    command.Transaction = transaction;
+
+                    //var parameter = new OracleParameter(":Result", OracleDbType.Int32) { Direction = ParameterDirection.Output }; // Result can be varchar
+                    //var parameter = new OracleParameter("Result", OracleDbType.Varchar2,4000) { Direction = ParameterDirection.Output }; // Result OK
+                    //command.Parameters.Add(parameter);
+
+                    // Generic Parameter
+                    // var parameter = command.CreateParameter();
+                    // parameter.ParameterName = "Result";
+                    // parameter.DbType = DbType.String; // Int32, String, etc
+                    // parameter.Size = 4000; // Mandatory
+                    // parameter.Direction = ParameterDirection.Output;
+                    //
+                    // AdjustDbTypeForProvider(parameter, dbContext);
+                    
+                    // command.Parameters.Add(parameter);
+
+                    var result = command.ExecuteScalar();
+                    //Debug.WriteLine(query);
+
+                    //Debug.WriteLine($"Result: {resultParam.Value}");
+                    //results.Add(parameter.Value ?? result);
+                    // results.Add(result ?? parameter.Value);
+                    results.Add(result);
+                }
+
+                transaction.Commit();
+                connection.Close();
+
+                return results;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                transaction.Rollback();
+                throw;
+            }
+            finally
+            {
+                if (dbContext.IDbConnection is not null && dbContext.IDbConnection.State == ConnectionState.Open)
+                    dbContext.IDbConnection.Close();
+            }
+        }
+        
+        internal static ICollection<object?> ExecuteScalar(this Database dbContext, ICollection<QueryCommand?> queries)
+        {
+            if (dbContext?.IDbConnection is null)
+                throw new InvalidOperationException("Connection does not exist.");
+            if (queries is null)
+                throw new ArgumentNullException(nameof(queries), "Queries do not exist.");
+
+            // TODO: using IDbConnection
+            IDbConnection connection = dbContext.CreateOpenConnection();
+            using IDbTransaction? transaction = dbContext.CreateTransaction() ?? throw new InvalidOperationException("Transaction is null.");
+
+            try
+            {
+                ICollection<object?> results = new List<object?>();
+
+                foreach (var queryCommand in queries)
+                {
+                    if (queryCommand is null || string.IsNullOrWhiteSpace(queryCommand.Sql))
+                        throw new ArgumentNullException(nameof(queryCommand), "Query cannot be null or empty.");
+
+                    // TODO: using IDbCommand
+                    IDbCommand command = dbContext.CreateCommand(queryCommand.Sql);
+                    command.Transaction = transaction;
+                    
+                    foreach (var param in queryCommand.Parameters)
+                    {
+                        if (param.Value == null)
+                            throw new ArgumentNullException(param.Key, "Property cannot be null.");
+                        
+                        var dbParam = command.CreateParameter();
+                        dbParam.Direction = ParameterDirection.Input;
+                        dbParam.ParameterName = param.Key;
+                        
+                        DefineDbTypeValueForProvider(dbParam, dbContext, param.Value);
+                        
+                        // dbParam.Value = param.Value.Value ?? DBNull.Value;
+                        // dbParam.DbType = param.Value.DbType;
+                        
+                        command.Parameters.Add(dbParam);
+                    }
+                    
+                    // var outputParam = command.CreateParameter();
+                    // outputParam.ParameterName = "Result";
+                    // outputParam.DbType = DbType.String;
+                    // outputParam.Size = 4000;
+                    // outputParam.Direction = ParameterDirection.Output;
+                    // command.Parameters.Add(outputParam);
+                    
+                    foreach (var param in queryCommand.ParametersOutput)
+                    {
+                        var dbParam = command.CreateParameter();
+                        dbParam.ParameterName = param.Key;
+                        dbParam.Direction = ParameterDirection.Output;
+                        
+                        DefineDbTypeValueForProvider(dbParam, dbContext, param.Value);
+                        // dbParam.DbType = ToolsProp.MapToDbType(param.Value.Type);
+                        
+                        Type typeReturn = dbParam.Value is not DBNull ? dbParam.Value?.GetType() : param.Value.Type ?? typeof(object);
+                        dbParam.DbType = ToolsProp.MapToDbType(typeReturn);
+
+                        // if (dbParam.DbType == DbType.String || dbParam.DbType == DbType.AnsiString)
+                        //     dbParam.Size = 4000;
+
+                        command.Parameters.Add(dbParam);
+                    }
+
+                    var result = command.ExecuteScalar();
+                    // results.Add(result ?? outputParam.Value);
+                    
+                    foreach (var outputParam in queryCommand.ParametersOutput)
+                    {
+                        var dbParam = (IDbDataParameter)command.Parameters[outputParam.Key];
+                        if (dbParam != null && dbParam.Value != DBNull.Value)
+                        {
+                            outputParam.Value.Value = dbParam.Value;
+                        }
+                    }
+                    
+                    var firstOutput = queryCommand.ParametersOutput.FirstOrDefault();
+                    results.Add(result ?? firstOutput.Value?.Value);
+                }
+
+                transaction.Commit();
+                connection.Close();
+
+                return results;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                transaction.Rollback();
+                throw;
+            }
+            finally
+            {
+                if (dbContext.IDbConnection is not null && dbContext.IDbConnection.State == ConnectionState.Open)
+                    dbContext.IDbConnection.Close();
+            }
+        }
+
+
+        /// <summary>
+        /// Executes a bulk copy operation to transfer data from the provided input source to a specified table in the database.
+        /// The input data can be of type DataRow[], DataTable, or IDataReader, and the appropriate bulk copy mechanism will be used
+        /// based on the underlying database provider (e.g., OracleBulkCopy, SqlBulkCopy).
+        /// </summary>
+        /// <param name="dbContext">The database context used to establish the connection and perform the bulk copy operation.</param>
+        /// <param name="inputDataToCopy">The data to be copied, which can be of type DataRow[], DataTable, or IDataReader.</param>
+        /// <param name="tableName">The name of the destination table where the data will be copied.</param>
+        /// <param name="bulkCopyTimeout">The timeout duration (in seconds) for the bulk copy operation.</param>
+        /// <param name="batchCount">The package number of this bulk copy operation.</param>
+        /// <returns>Returns true if the bulk copy operation is successful; otherwise, throws an exception.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if the database context, input data, or table name is null or empty.</exception>
+        /// <exception cref="NotSupportedException">Thrown if the bulk copy operation is not supported for the provided data type or database provider.</exception>
+        /// <exception cref="Exception">Thrown if an error occurs during the bulk copy operation, causing the connection to close and the exception to be rethrown.</exception>
+        internal static long PerformBulkCopyOperation(this Database dbContext, object inputDataToCopy, string tableName, int bulkCopyTimeout, int batchCount)
+        {
+            // dataToCopy: DataRow[], DataTable, IDataReader
+
+            if (dbContext is null) { throw new ArgumentNullException(nameof(dbContext), "Database context cannot be null."); }
+            if (inputDataToCopy is null) { throw new ArgumentNullException(nameof(inputDataToCopy), "Data to copy cannot be null."); }
+            if (string.IsNullOrEmpty(tableName?.Trim())) { throw new ArgumentNullException(nameof(tableName), "Table name cannot be null or empty."); }
+
+            try
+            {
+                using IDbConnection connection = dbContext.CreateConnection();
+                connection.Open();
+
+                var bulkCopyObject = dbContext.CreateBulkCopy();
+                string tableNameEscaped = new SqlQueryString(dbContext).EscapeIdentifier(tableName);
+                string[] inputNameTable = tableNameEscaped.Split('.');
+                
+                string schemaName = string.Empty;
+                string tableOnlyName = string.Empty;
+                if (inputNameTable.Length > 1)
+                {
+                    schemaName = inputNameTable[0];
+                    tableOnlyName = inputNameTable[1];
+                    if (string.IsNullOrEmpty(schemaName)) { throw new ArgumentNullException(nameof(schemaName), "Schema name cannot be null or empty."); }
+                }
+                else
+                {
+                    tableOnlyName = inputNameTable[0];
+                }
+
+                switch (bulkCopyObject)
+                {
+                    case OracleBulkCopy oracleBulkCopy:
+                        oracleBulkCopy.DestinationSchemaName = schemaName;
+                        oracleBulkCopy.DestinationTableName = tableOnlyName;
+                        oracleBulkCopy.BulkCopyTimeout = bulkCopyTimeout;
+                        if (inputDataToCopy is DataRow[] dataRowsOracle) { oracleBulkCopy.WriteToServer(dataRowsOracle); return dataRowsOracle.Length; }
+                        else if (inputDataToCopy is DataTable dataTable) { oracleBulkCopy.WriteToServer(dataTable); return dataTable.Rows.Count; }
+                        else if (inputDataToCopy is IDataReader dataReader) { oracleBulkCopy.WriteToServer(dataReader); return dataReader.RecordsAffected; }
+                        else { throw new NotSupportedException("Bulk Copy operation is not yet supported for this data type."); }
+
+                    case SqlBulkCopy sqlBulkCopy:
+                        sqlBulkCopy.DestinationTableName = schemaName != null ? $"{schemaName}.{tableOnlyName}" : tableOnlyName;
+                        sqlBulkCopy.BulkCopyTimeout = bulkCopyTimeout;
+                        if (inputDataToCopy is DataRow[] dataRowsSql) { sqlBulkCopy.WriteToServer(dataRowsSql); return dataRowsSql.Length; }
+                        else if (inputDataToCopy is DataTable dataTable) { sqlBulkCopy.WriteToServer(dataTable); return dataTable.Rows.Count; }
+                        else if (inputDataToCopy is IDataReader dataReader) { sqlBulkCopy.WriteToServer(dataReader); return dataReader.RecordsAffected; }
+                        else { throw new NotSupportedException("Bulk Copy operation is not yet supported for this data type."); }
+
+                    default:
+                        throw new NotSupportedException("Bulk Copy operation is not yet supported for this database type.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error when performing the Bulk Copy operation: " + ex.Message);
+                dbContext.CloseConnection();
+                
+                string sqlType = ToolsProp.GetTypeSql(typeof(string), dbContext);
+                string sizeString = new string(sqlType.Where(char.IsDigit).ToArray());
+                int maxLengthString = sizeString.Length > 0 ? int.Parse(sizeString) : 4000; // Default max length for string columns
+                const int maxMessages = 10;
+                int messageCount = 0;
+                AnalyzeInputDataLength(inputDataToCopy, messageCount, batchCount, maxMessages, maxLengthString);
+
+                throw;
+            }
+        }
+
+        private static int AnalyzeInputDataLength(object inputDataToCopy, int messageCount, int batchCount, int maxMessages, int maxLengthString)
+        {
+            void LogLongValue(string columnName, int indexRow, string value)
+            {
+                if (messageCount < maxMessages)
+                {
+                    Console.WriteLine($"Column '{columnName}' (row {indexRow*batchCount}) has a value with {value.Length} characters (limit: {maxLengthString}): {value.Substring(0, Math.Min(100, value.Length))}...");
+                    messageCount++;
+                }
+                else if (messageCount == maxMessages)
+                {
+                    Console.WriteLine("... More values exceeding the limit were found but not displayed.");
+                    messageCount++;
+                }
+            }
+
+            int rowIndex = 0;
+            switch (inputDataToCopy)
+            {  
+                case DataTable dataTable:
+                    foreach (DataRow row in dataTable.Rows)
+                    {
+                        for (int columnIndex = 0; columnIndex < dataTable.Columns.Count; columnIndex++)
+                        {
+                            if (row[columnIndex] is string str && str.Length > maxLengthString)
+                                LogLongValue(dataTable.Columns[columnIndex].ColumnName, rowIndex + 1, str);
+                        }
+                        rowIndex++;
+                    }
+                    break;
+
+                case DataRow[] rowArray:
+                    if (rowArray.Length > 0)
+                    {
+                        var columns = rowArray.FirstOrDefault().Table?.Columns;
+                        for (rowIndex = 0; rowIndex < rowArray.Length; rowIndex++)
+                        {
+                            var row = rowArray[rowIndex];
+                            for (int i = 0; i < row.ItemArray.Length; i++)
+                            {
+                                string colName = columns != null && i < columns.Count ? columns[i].ColumnName : $"Column[{i}]";
+                                if (row[i] is string str && str.Length > maxLengthString)
+                                {
+                                    LogLongValue(colName, rowIndex + 1, str);
+                                }
+                            }
+                        }
+                    }
+                    break;
+
+                case IDataReader reader:
+                    try
+                    {
+                        int fieldCount = reader.FieldCount;
+                        while (reader.Read())
+                        {
+                            for (int i = 0; i < fieldCount; i++)
+                            {
+                                if (!reader.IsDBNull(i) && reader.GetFieldType(i) == typeof(string))
+                                {
+                                    string str = reader.GetString(i);
+                                    if (str.Length > maxLengthString)
+                                    {
+                                        string colName = reader.GetName(i);
+                                        LogLongValue(colName, rowIndex + 1, str);
+                                    }
+                                }
+                            }
+                            rowIndex++;
+                        }
+                    }
+                    catch (Exception readerEx)
+                    {
+                        Debug.WriteLine("Error while analyzing IDataReader: " + readerEx.Message);
+                    }
+                    break;
+
+                default:
+                    Debug.WriteLine("Unknown inputDataToCopy type. No validation was performed.");
+                    break;
+            }
+            
+            Console.WriteLine("\n\n\nAdjust the maximum column size in the database manually or change the 'TypesDefault' dictionary.");
+            return messageCount;
+        }
+
+        private static void DefineDbTypeValueForProvider(IDbDataParameter dbParam, Database dbContext, Property property)
+        {
+            // 1) Null
+            if (property.Value is null)
+            {
+                dbParam.Value = DBNull.Value;
+                return;
+            }
+
+            Type? realType = property.Type;
+            string sqlType = ToolsProp.GetTypeSql(realType, dbContext).ToLowerInvariant();
+            object rawValue = property.Value!; // Not null because we check for null above
+
+            try
+            {
+                // 2) STRINGS (varchar, nvarchar, char, nchar)
+                if (sqlType.Contains("char")) // && dbParam.DbType != DbType.String
+                {
+                    switch (dbContext.Provider)
+                    {
+                        default: // All providers
+                            dbParam.Value = rawValue.ToString();
+                            return;
+                    }
+                }
+
+                // 3) Boolean
+                if (realType == typeof(bool) || dbParam.DbType == DbType.Boolean) 
+                {
+                    switch (dbContext.Provider)
+                    {
+                        case Enums.DbProvider.Oracle:
+                            dbParam.DbType = DbType.Int16;
+                            bool v = (bool)rawValue;
+                            dbParam.Value = v ? (short)1 : (short)0;
+                            return;
+                        default:
+                            dbParam.DbType = DbType.Boolean;
+                            dbParam.Value = rawValue;
+                            return;
+                    }
+                }
+
+                // 4) Guid
+                if (realType == typeof(Guid))
+                {
+                    switch (dbContext.Provider)
+                    {
+                        case Enums.DbProvider.Oracle:
+                            dbParam.DbType = DbType.Binary;
+                            dbParam.Size = 16;
+                            dbParam.Value = ((Guid)rawValue).ToByteArray();
+                            return;
+                        case Enums.DbProvider.SqlServer:
+                            dbParam.DbType = DbType.String;
+                            dbParam.Size = 36;
+                            dbParam.Value = rawValue.ToString();
+                            return;
+                        default:
+                            // Provider support native GUID type
+                            dbParam.DbType = DbType.Guid;
+                            dbParam.Value = rawValue;
+                            return;
+                    }
+                }
+
+                // 5) Other types without adjustment required
+                dbParam.Value = rawValue;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+        
+        
+
+    }
+}

@@ -1,0 +1,82 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net462;netstandard2.0;netstandard2.1</TargetFrameworks>
+		<LangVersion>9.0</LangVersion>
+		<Nullable>enable</Nullable>
+
+		<Title>EnttityHelper</Title>
+		<AssemblyTitle>EnttityHelper</AssemblyTitle>
+		<AssemblyName>EnttityHelper</AssemblyName>
+		<PackageId>EnttityHelper</PackageId>
+		<Description>Allows easy manipulation of entities in different databases.</Description>
+		<Version>0.5.0</Version>
+		<Authors>Diêgo Piovezana</Authors>
+		<Company>DiegoPiov</Company>
+		<RepositoryUrl>https://github.com/DiegoPiovezana/EnttityHelper</RepositoryUrl>
+		<PackageTags>Entity;Framework;EF;Data;O/RM;ORM;SQL;EnttityHelper;Enttity;Helper;ADO.NET;ADO;PL/SQL;Oracle;SqlServer;Table;Object;</PackageTags>
+		<Copyright>GNU General Public License v3.0</Copyright>
+		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+		<ApplicationIcon>EnttityHelper\Images\EnttityHelper_icon.ico</ApplicationIcon>
+		<PackageIcon>EnttityHelper_icon.png</PackageIcon>
+		<PackageReleaseNotes>- Beta Version</PackageReleaseNotes>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<AppDesignerFolder>Properties</AppDesignerFolder>		
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="Tests\**" />
+	  <EmbeddedResource Remove="Tests\**" />
+	  <None Remove="Tests\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="EnttityHelper\Images\EnttityHelper_icon.png" />
+	  <None Remove="**\*.~*" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Include="EnttityHelper\Images\EnttityHelper_icon.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="EnttityHelper\Images\EnttityHelper_icon.png">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </Resource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+		<PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
+		<PackageReference Include="System.Formats.Asn1" Version="9.0.4" />
+		<PackageReference Include="System.Text.Json" Version="9.0.4" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
+		<PackageReference Include="Oracle.ManagedDataAccess" Version="21.13.0" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
+		<PackageReference Include="Oracle.ManagedDataAccess" Version="21.13.0" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+		<PackageReference Include="Oracle.ManagedDataAccess.Core">
+			<Version>3.21.130</Version>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="LICENSE.txt" Pack="true" PackagePath="" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="System.Data.DataSetExtensions" />
+	</ItemGroup>
+
+	
+
+</Project>
