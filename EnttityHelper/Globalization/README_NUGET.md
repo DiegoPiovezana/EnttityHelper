@@ -4,7 +4,7 @@
 # EnttityHelper [Beta]
 Allows easy manipulation of entities in different databases.
 
-<img src="https://github.com/DiegoPiovezana/EnttityHelper/blob/888a0c2c276cbaf18a44e6123bf1e650f872d08f/EnttityHelper/Images/EnttityHelper_publish.png?raw=true" width=100% height=100%>
+![EnttityHelper](https://raw.githubusercontent.com/DiegoPiovezana/EnttityHelper/888a0c2c276cbaf18a44e6123bf1e650f872d08f/EnttityHelper/Images/EnttityHelper_publish.png)
 
 [![GitHub](https://img.shields.io/badge/GitHub-View%20Here-blue?logo=github)](https://github.com/DiegoPiovezana/EnttityHelper)
 
